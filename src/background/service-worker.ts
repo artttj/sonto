@@ -48,21 +48,6 @@ const GENERATE_PROMPT =
   `- No AI words: "delve," "tapestry," "vibrant," "pivotal," "underscore," "testament," "nestled," "landscape," "renowned," "notable," "leverage," "streamline."\n` +
   `- Just say the thing.`;
 
-const VALIDATE_PROMPT =
-  `You are a strict reviewer. You receive a short tip or idea.\n\n` +
-  `FAIL it if ANY of these are true:\n` +
-  `1. It describes a feature, shortcut, or command that doesn't actually exist.\n` +
-  `2. It's a definition ("X is a tool that does Y") instead of a useful tip.\n` +
-  `3. It references the user's browsing, history, searches, or data in any way.\n` +
-  `4. It says "based on," "since you," "if you're using," "given your," or similar.\n` +
-  `5. It mentions, quotes, or paraphrases text that looks like it came from input data.\n` +
-  `6. It's a proverb, quote, fun fact, or trivia.\n` +
-  `7. It starts with "Here's a", "Pro tip:", "Tip:", "Fun fact:", or "Did you know".\n\n` +
-  `Respond EXACTLY:\n` +
-  `- PASS\n` +
-  `- FAIL: <a clean 1-2 sentence replacement tip about the same topic>\n\n` +
-  `Be strict.`;
-
 async function generateInsight(
   snippetSample: { text: string; title: string; source: string }[],
   previousInsights: string[] = [],
@@ -82,49 +67,22 @@ async function generateInsight(
     ? `\n\n## DO NOT REPEAT\n${previousInsights.map((p) => `- ${p}`).join('\n')}`
     : '';
 
-  const controller1 = new AbortController();
-  const timer1 = setTimeout(() => controller1.abort(), 15000);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
 
-  let draft: string;
   try {
-    draft = await strategy.chat({
+    return await strategy.chat({
       apiKey: key,
       model,
       messages: [
         { role: 'system', content: GENERATE_PROMPT + doNotRepeat },
-        { role: 'user', content: `My saved data:\n${context}` },
+        { role: 'user', content: `Context:\n${context}` },
       ],
-      signal: controller1.signal,
+      signal: controller.signal,
     });
   } finally {
-    clearTimeout(timer1);
+    clearTimeout(timer);
   }
-
-  const controller2 = new AbortController();
-  const timer2 = setTimeout(() => controller2.abort(), 15000);
-
-  let verdict: string;
-  try {
-    verdict = await strategy.chat({
-      apiKey: key,
-      model,
-      messages: [
-        { role: 'system', content: VALIDATE_PROMPT },
-        { role: 'user', content: draft },
-      ],
-      signal: controller2.signal,
-    });
-  } finally {
-    clearTimeout(timer2);
-  }
-
-  const trimmed = verdict.trim();
-  if (trimmed === 'PASS') return draft;
-
-  const failMatch = /^FAIL:\s*(.+)/s.exec(trimmed);
-  if (failMatch) return failMatch[1].trim();
-
-  return draft;
 }
 
 const HISTORY_ALARM = 'sonto-history-sync';
