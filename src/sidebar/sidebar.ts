@@ -61,8 +61,9 @@ type FilterMode = 'all' | 'manual' | 'history';
 type ViewMode = 'zen' | 'browse' | 'chat';
 
 const ZEN_INITIAL_BATCH = 3;
-const ZEN_DRIP_BATCH = 2;
-const ZEN_DRIP_MS = 30000;
+const ZEN_DRIP_BATCH = 1;
+const ZEN_DRIP_MS = 15000;
+const ZEN_MAX_CATCHUP = 6;
 const SVG_BULB = [
   '<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">',
   '<circle cx="8" cy="6" r="4"/>',
@@ -283,13 +284,25 @@ class SontoSidebar {
     this.stopZen();
 
     try {
-      const cached = await chrome.storage.session.get('sonto_zen_feed');
+      const cached = await chrome.storage.session.get(['sonto_zen_feed', 'sonto_zen_last_drip']);
       const items = (cached?.sonto_zen_feed as string[]) ?? [];
+      const lastDrip = (cached?.sonto_zen_last_drip as number) ?? 0;
       if (items.length > 0) {
         this.zenFeed.innerHTML = '';
         for (const text of items) {
           this.appendZenBubbleElement(text);
         }
+
+        const missedCycles = lastDrip > 0
+          ? Math.floor((Date.now() - lastDrip) / ZEN_DRIP_MS)
+          : 0;
+        const catchup = Math.min(missedCycles * ZEN_DRIP_BATCH, ZEN_MAX_CATCHUP);
+        if (catchup > 0) {
+          const samples = Array.from({ length: catchup }, () => this.pickSample());
+          await Promise.all(samples.map((s) => this.addZenBubbleWithSample(s)));
+          void this.cacheZenFeed();
+        }
+
         this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
         return;
       }
@@ -326,7 +339,10 @@ class SontoSidebar {
   private cacheZenFeed(): void {
     const texts = Array.from(this.zenFeed.querySelectorAll('.zen-bubble span'))
       .map((el) => el.textContent ?? '');
-    void chrome.storage.session.set({ sonto_zen_feed: texts }).catch(() => {});
+    void chrome.storage.session.set({
+      sonto_zen_feed: texts,
+      sonto_zen_last_drip: Date.now(),
+    }).catch(() => {});
   }
 
   private stopZen(): void {
