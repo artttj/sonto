@@ -299,7 +299,10 @@ class SontoSidebar {
           : 0;
         const catchup = Math.min(missedCycles * ZEN_DRIP_BATCH, ZEN_MAX_CATCHUP);
         if (catchup > 0) {
-          await this.loadBubblesSequentially(catchup);
+          const newInsights = await this.fetchInsightsBatch(catchup);
+          for (const text of newInsights) {
+            this.appendZenBubbleElement(text);
+          }
           void this.cacheZenFeed();
         }
 
@@ -331,6 +334,7 @@ class SontoSidebar {
     }
 
     await this.loadBubblesSequentially(ZEN_DRIP_BATCH);
+    this.zenFeed.scrollTo({ top: 0, behavior: 'smooth' });
     void this.cacheZenFeed();
   }
 
@@ -399,6 +403,35 @@ class SontoSidebar {
     }
   }
 
+  private async fetchInsightsBatch(count: number): Promise<string[]> {
+    const results: string[] = [];
+    for (let i = 0; i < count; i++) {
+      if (this.snippets.length < 3) break;
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: MSG.GENERATE_INSIGHT,
+          snippetSample: this.pickSample(),
+          previousInsights: this.pastInsights.slice(-20),
+        }) as { ok: boolean; insight?: string };
+
+        if (response?.ok && response.insight) {
+          const isDuplicate = this.pastInsights.some((p) =>
+            p === response.insight || p.slice(0, 60) === response.insight!.slice(0, 60)
+          );
+          if (isDuplicate) continue;
+
+          results.push(response.insight);
+          this.pastInsights.push(response.insight);
+          if (this.pastInsights.length > 30) this.pastInsights = this.pastInsights.slice(-30);
+        }
+      } catch {}
+    }
+    if (results.length > 0) {
+      void chrome.storage.session.set({ sonto_past_insights: this.pastInsights }).catch(() => {});
+    }
+    return results;
+  }
+
   private async addZenBubbleWithSample(sample: { text: string; title: string; source: string }[]): Promise<void> {
     try {
       const response = await chrome.runtime.sendMessage({
@@ -415,7 +448,6 @@ class SontoSidebar {
 
         this.hideZenLoader();
         this.appendZenBubbleElement(response.insight);
-        this.zenFeed.scrollTo({ top: 0, behavior: 'smooth' });
 
         this.pastInsights.push(response.insight);
         if (this.pastInsights.length > 30) this.pastInsights = this.pastInsights.slice(-30);
