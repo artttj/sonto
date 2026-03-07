@@ -284,6 +284,12 @@ class SontoSidebar {
   private async startZen(): Promise<void> {
     this.stopZen();
 
+    const hasBubbles = this.zenFeed.querySelectorAll('.zen-bubble').length > 0;
+    if (hasBubbles) {
+      this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
+      return;
+    }
+
     try {
       const cached = await chrome.storage.session.get(['sonto_zen_feed', 'sonto_zen_last_drip']);
       const items = (cached?.sonto_zen_feed as string[]) ?? [];
