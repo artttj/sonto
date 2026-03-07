@@ -8,6 +8,8 @@ export const MSG = {
   DELETE_SNIPPET: 'DELETE_SNIPPET',
   GET_ALL_SNIPPETS: 'GET_ALL_SNIPPETS',
   OPEN_SETTINGS: 'OPEN_SETTINGS',
+  SNIPPET_ADDED: 'SNIPPET_ADDED',
+  GENERATE_INSIGHT: 'GENERATE_INSIGHT',
 } as const;
 
 export interface CaptureSnippetMessage {
@@ -35,12 +37,19 @@ export interface OpenSettingsMessage {
   type: typeof MSG.OPEN_SETTINGS;
 }
 
+export interface GenerateInsightMessage {
+  type: typeof MSG.GENERATE_INSIGHT;
+  snippetSample: { text: string; title: string; source: string }[];
+  previousInsights?: string[];
+}
+
 export type RuntimeMessage =
   | CaptureSnippetMessage
   | QuerySnippetsMessage
   | DeleteSnippetMessage
   | GetAllSnippetsMessage
-  | OpenSettingsMessage;
+  | OpenSettingsMessage
+  | GenerateInsightMessage;
 
 export interface CaptureSuccessResult {
   ok: true;

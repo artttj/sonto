@@ -15,7 +15,13 @@
       </div>
       <div class="header-actions">
         <div class="mode-toggle">
-          <button id="btn-browse" class="mode-btn active" type="button" title="Browse saved snippets">
+          <button id="btn-zen" class="mode-btn active" type="button" title="Zen mode">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="10" cy="10" r="7"/>
+              <path d="M10 6v4l2.5 2.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button id="btn-browse" class="mode-btn" type="button" title="Browse saved snippets">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
               <rect x="3" y="3" width="6" height="6" rx="1.5"/>
               <rect x="11" y="3" width="6" height="6" rx="1.5"/>
@@ -39,7 +45,11 @@
       </div>
     </header>
 
-    <div id="view-browse" class="view">
+    <div id="view-zen" class="view zen-view">
+      <div id="zen-feed" class="zen-feed"></div>
+    </div>
+
+    <div id="view-browse" class="view hidden">
       <div class="snippet-count-bar">
         <div class="filter-tabs">
           <button class="filter-tab active" data-filter="all" type="button">All <span id="count-all" class="filter-count">0</span></button>

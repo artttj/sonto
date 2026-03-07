@@ -57,6 +57,11 @@ function buildPrompt(query: string, results: QueryResult[]): ChatMessage[] {
 }
 
 type FilterMode = 'all' | 'manual' | 'history';
+type ViewMode = 'zen' | 'browse' | 'chat';
+
+const ZEN_INITIAL_BATCH = 4;
+const ZEN_DRIP_MS = 60000;
+const ZEN_REFRESH_MS = 180000;
 
 class SontoSidebar {
   private snippets: Snippet[] = [];
@@ -64,12 +69,19 @@ class SontoSidebar {
   private chatHistory: { role: 'user' | 'assistant' | 'error'; text: string }[] = [];
   private isLoading = false;
   private abortController: AbortController | null = null;
-  private mode: 'browse' | 'chat' = 'browse';
+  private mode: ViewMode = 'zen';
+  private pastInsights: string[] = [];
 
+  private zenRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private zenDripTimer: ReturnType<typeof setInterval> | null = null;
+
+  private zenBtn = qs<HTMLButtonElement>('#btn-zen');
   private browseBtn = qs<HTMLButtonElement>('#btn-browse');
   private chatBtn = qs<HTMLButtonElement>('#btn-chat');
+  private viewZen = qs<HTMLElement>('#view-zen');
   private viewBrowse = qs<HTMLElement>('#view-browse');
   private viewChat = qs<HTMLElement>('#view-chat');
+  private zenFeed = qs<HTMLElement>('#zen-feed');
   private snippetList = qs<HTMLElement>('#snippet-list');
   private chatMessages = qs<HTMLElement>('#chat-messages');
   private chatInput = qs<HTMLTextAreaElement>('#chat-input');
@@ -80,6 +92,13 @@ class SontoSidebar {
       void chrome.runtime.sendMessage({ type: MSG.OPEN_SETTINGS });
     });
 
+    chrome.runtime.onMessage.addListener((message: { type: string }) => {
+      if (message.type === MSG.SNIPPET_ADDED) {
+        void this.loadSnippets();
+      }
+    });
+
+    this.zenBtn.addEventListener('click', () => this.setMode('zen'));
     this.browseBtn.addEventListener('click', () => this.setMode('browse'));
     this.chatBtn.addEventListener('click', () => this.setMode('chat'));
     qs<HTMLButtonElement>('#btn-clear-all').addEventListener('click', () => void this.clearAll());
@@ -101,15 +120,29 @@ class SontoSidebar {
       }
     });
 
+    try {
+      const stored = await chrome.storage.session.get('sonto_past_insights');
+      this.pastInsights = (stored?.sonto_past_insights as string[]) ?? [];
+    } catch {}
+
     await this.loadSnippets();
+    void this.startZen();
   }
 
-  private setMode(mode: 'browse' | 'chat'): void {
+  private setMode(mode: ViewMode): void {
     this.mode = mode;
+    this.zenBtn.classList.toggle('active', mode === 'zen');
     this.browseBtn.classList.toggle('active', mode === 'browse');
     this.chatBtn.classList.toggle('active', mode === 'chat');
+    this.viewZen.classList.toggle('hidden', mode !== 'zen');
     this.viewBrowse.classList.toggle('hidden', mode !== 'browse');
     this.viewChat.classList.toggle('hidden', mode !== 'chat');
+
+    if (mode === 'zen') {
+      void this.startZen();
+    } else {
+      this.stopZen();
+    }
   }
 
   private async loadSnippets(): Promise<void> {
@@ -214,6 +247,117 @@ class SontoSidebar {
     this.snippets = this.snippets.filter((s) => !ids.has(s.id));
     this.renderSnippets();
   }
+
+  // ── Zen mode ──────────────────────────────────────────────────────────
+
+  private async startZen(): Promise<void> {
+    this.stopZen();
+    this.zenFeed.innerHTML = '';
+
+    this.showZenLoader();
+    for (let i = 0; i < ZEN_INITIAL_BATCH; i++) {
+      await this.addZenBubble();
+    }
+    this.hideZenLoader();
+
+    if (this.mode === 'zen') {
+      this.zenDripTimer = setInterval(() => {
+        void this.addZenBubble();
+      }, ZEN_DRIP_MS);
+
+      this.zenRefreshTimer = setInterval(() => {
+        void this.refreshZen();
+      }, ZEN_REFRESH_MS);
+    }
+  }
+
+  private async refreshZen(): Promise<void> {
+    if (this.zenDripTimer) {
+      clearInterval(this.zenDripTimer);
+      this.zenDripTimer = null;
+    }
+
+    const bubbles = this.zenFeed.querySelectorAll('.zen-bubble');
+    bubbles.forEach((b, i) => {
+      const el = b as HTMLElement;
+      el.style.transition = `opacity 1s ease ${i * 80}ms, transform 1s ease ${i * 80}ms`;
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-6px)';
+    });
+
+    const fadeOutMs = 1000 + bubbles.length * 80;
+    setTimeout(async () => {
+      this.zenFeed.innerHTML = '';
+      this.showZenLoader();
+      for (let i = 0; i < ZEN_INITIAL_BATCH; i++) {
+        await this.addZenBubble();
+      }
+      this.hideZenLoader();
+
+      this.zenDripTimer = setInterval(() => {
+        void this.addZenBubble();
+      }, ZEN_DRIP_MS);
+    }, fadeOutMs);
+  }
+
+  private stopZen(): void {
+    if (this.zenRefreshTimer) {
+      clearInterval(this.zenRefreshTimer);
+      this.zenRefreshTimer = null;
+    }
+    if (this.zenDripTimer) {
+      clearInterval(this.zenDripTimer);
+      this.zenDripTimer = null;
+    }
+  }
+
+  private showZenLoader(): void {
+    let loader = this.zenFeed.querySelector('.zen-loading');
+    if (!loader) {
+      loader = document.createElement('div');
+      loader.className = 'zen-loading';
+      loader.innerHTML = '<div class="spinner"></div>';
+      this.zenFeed.appendChild(loader);
+    }
+  }
+
+  private hideZenLoader(): void {
+    this.zenFeed.querySelector('.zen-loading')?.remove();
+  }
+
+  private async addZenBubble(): Promise<void> {
+    if (this.snippets.length < 3) return;
+
+    const sample = [...this.snippets]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 10)
+      .map((s) => ({ text: s.text.slice(0, 120), title: s.title || '', source: s.source ?? 'manual' }));
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: MSG.GENERATE_INSIGHT,
+        snippetSample: sample,
+        previousInsights: this.pastInsights.slice(-10),
+      }) as { ok: boolean; insight?: string };
+
+      if (response?.ok && response.insight) {
+        this.hideZenLoader();
+        const bubble = document.createElement('div');
+        bubble.className = 'zen-bubble';
+        bubble.innerHTML = `<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="6" r="4"/><path d="M6.5 10v1.5a1.5 1.5 0 0 0 3 0V10" stroke-linecap="round"/><path d="M8 14v.5" stroke-linecap="round"/></svg><span>${escapeHtml(response.insight)}</span>`;
+        this.zenFeed.appendChild(bubble);
+        bubble.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+        this.pastInsights.push(response.insight);
+        if (this.pastInsights.length > 30) this.pastInsights = this.pastInsights.slice(-30);
+        void chrome.storage.session.set({ sonto_past_insights: this.pastInsights }).catch(() => {});
+      }
+    } catch {
+      // no key or API error
+    }
+  }
+
+  // ── Chat ──────────────────────────────────────────────────────────────
 
   private appendChatMessage(role: 'user' | 'assistant' | 'error', text: string): void {
     const icons: Record<string, string> = {
