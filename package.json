@@ -1,0 +1,20 @@
+{
+  "name": "sonto",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "Artem Iagovdik <artyom.yagovdik@gmail.com> (https://github.com/artttj)",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.js"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.37",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.5.0"
+  }
+}

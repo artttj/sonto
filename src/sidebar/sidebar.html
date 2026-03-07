@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sonto</title>
+  <link rel="stylesheet" href="sidebar.css" />
+</head>
+<body>
+  <div class="layout">
+    <header class="header">
+      <div class="brand">
+        <img src="../icons/icon48.png" class="brand-icon" alt="" />
+        <span class="brand-name">Sonto</span>
+      </div>
+      <div class="header-actions">
+        <div class="mode-toggle">
+          <button id="btn-browse" class="mode-btn active" type="button" title="Browse saved snippets">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="3" y="4" width="14" height="3" rx="1"/>
+              <rect x="3" y="9" width="14" height="3" rx="1"/>
+              <rect x="3" y="14" width="8" height="3" rx="1"/>
+            </svg>
+          </button>
+          <button id="btn-chat" class="mode-btn" type="button" title="Chat with your snippets">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M3 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7l-4 3V5z"/>
+            </svg>
+          </button>
+        </div>
+        <button id="btn-settings" class="icon-btn" type="button" title="Settings">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="10" cy="10" r="2.5"/>
+            <path d="M10 2v1.5m0 13V18M2 10h1.5m13 0H18M4.4 4.4l1.1 1.1m9 9 1.1 1.1M4.4 15.6l1.1-1.1m9-9 1.1-1.1"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="view-browse" class="view">
+      <div class="snippet-count-bar">
+        <span id="snippet-count" class="count-text">0 snippets</span>
+        <button id="btn-clear-all" class="link-btn danger" type="button">Clear all</button>
+      </div>
+      <div id="snippet-list" class="snippet-list">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.4">
+              <rect x="8" y="10" width="32" height="28" rx="3"/>
+              <path d="M16 18h16M16 24h12M16 30h8"/>
+            </svg>
+          </div>
+          <div class="empty-title">No saved snippets</div>
+          <div class="empty-desc">Highlight text on any page and press <strong>Alt+Shift+C</strong> or right-click to save it here.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-chat" class="view hidden">
+      <div id="chat-messages" class="chat-messages"></div>
+      <div id="chat-initializing" class="chat-status-msg">
+        <div class="spinner"></div>
+        <span>Loading embedding model...</span>
+      </div>
+      <div class="chat-input-area">
+        <textarea
+          id="chat-input"
+          class="chat-input"
+          placeholder="Ask anything about your saved snippets..."
+          rows="3"
+          disabled
+        ></textarea>
+        <button id="btn-send" class="send-btn" type="button" disabled>
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 10l14-7-5 7 5 7-14-7z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="sidebar.js"></script>
+</body>
+</html>
