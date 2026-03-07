@@ -192,13 +192,13 @@ html, body {
   gap: 9px;
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(135deg, rgba(232,185,49,0.04), rgba(255,255,255,0.025));
+  border: 1px solid rgba(232,185,49,0.10);
   font-size: 13px;
   line-height: 1.65;
   color: var(--c-text-2);
   animation: bubbleIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
 }
 
 .zen-bulb {
@@ -206,11 +206,15 @@ html, body {
   height: 14px;
   flex-shrink: 0;
   margin-top: 3px;
-  opacity: 0.35;
+  color: #e8b931;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 4px rgba(232,185,49,0.35));
 }
 
 .zen-bubble:hover {
-  border-color: rgba(255,255,255,0.18);
+  border-color: rgba(232,185,49,0.22);
+  background: linear-gradient(135deg, rgba(232,185,49,0.07), rgba(255,255,255,0.04));
+  box-shadow: 0 0 14px rgba(232,185,49,0.06);
 }
 
 @keyframes bubbleIn {
