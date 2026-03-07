@@ -25,6 +25,11 @@ async function embed(text: string): Promise<number[]> {
 }
 
 chrome.runtime.onMessage.addListener((message: { type: string; text?: string }, _sender, sendResponse) => {
+  if (message.type === 'SONTO_PING') {
+    sendResponse({ ok: true });
+    return;
+  }
+
   if (message.type !== 'SONTO_EMBED') return;
 
   embed(message.text ?? '')

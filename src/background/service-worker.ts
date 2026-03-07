@@ -1,6 +1,6 @@
 import { MSG, type RuntimeMessage } from '../shared/messages';
 import { embed } from '../shared/embeddings/engine';
-import { addSnippet, deleteSnippet, getAllSnippets, search } from '../shared/embeddings/vector-store';
+import { addSnippet, deleteSnippet, getAllSnippets, search, hasSnippetForUrl } from '../shared/embeddings/vector-store';
 import { MAX_CAPTURE_CHARS, SEARCH_TOP_K } from '../shared/constants';
 import type { Snippet } from '../shared/types';
 
@@ -8,7 +8,7 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-async function captureSnippet(text: string, url: string, title: string): Promise<void> {
+async function captureSnippet(text: string, url: string, title: string, source: Snippet['source'] = 'manual'): Promise<void> {
   const trimmed = text.slice(0, MAX_CAPTURE_CHARS);
   const embedding = await embed(trimmed);
   const snippet: Snippet = {
@@ -18,8 +18,42 @@ async function captureSnippet(text: string, url: string, title: string): Promise
     title,
     timestamp: Date.now(),
     embedding,
+    source,
   };
   await addSnippet(snippet);
+}
+
+const HISTORY_ALARM = 'sonto-history-sync';
+const HISTORY_SYNC_INTERVAL_MINUTES = 30;
+const HISTORY_INITIAL_DAYS = 7;
+const HISTORY_MAX_RESULTS = 200;
+
+async function syncHistory(startTime?: number): Promise<void> {
+  const msPerDay = 86400000;
+  const defaultStart = Date.now() - HISTORY_INITIAL_DAYS * msPerDay;
+  const items = await chrome.history.search({
+    text: '',
+    startTime: startTime ?? defaultStart,
+    maxResults: HISTORY_MAX_RESULTS,
+  });
+
+  for (const item of items) {
+    const url = item.url ?? '';
+    const title = item.title ?? '';
+    if (!url || !title.trim()) continue;
+    if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) continue;
+    if (await hasSnippetForUrl(url)) continue;
+
+    const text = title.trim();
+    await captureSnippet(text, url, title, 'history').catch(() => { /* skip individual failures */ });
+  }
+}
+
+async function scheduleHistorySync(): Promise<void> {
+  const existing = await chrome.alarms.get(HISTORY_ALARM);
+  if (!existing) {
+    chrome.alarms.create(HISTORY_ALARM, { periodInMinutes: HISTORY_SYNC_INTERVAL_MINUTES });
+  }
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -28,6 +62,15 @@ chrome.runtime.onInstalled.addListener(() => {
     title: 'Save to Sonto',
     contexts: ['selection'],
   });
+
+  void scheduleHistorySync();
+  void syncHistory();
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name !== HISTORY_ALARM) return;
+  const startTime = Date.now() - HISTORY_SYNC_INTERVAL_MINUTES * 60 * 1000;
+  void syncHistory(startTime);
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {

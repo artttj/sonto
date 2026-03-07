@@ -26,5 +26,5 @@ export const REQUEST_TIMEOUT_MS = 30000;
 export const SEARCH_TOP_K = 5;
 export const EMBEDDING_MODEL = 'Xenova/all-MiniLM-L6-v2';
 export const DB_NAME = 'sonto_db';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 export const STORE_NAME = 'snippets';

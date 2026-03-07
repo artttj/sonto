@@ -2,6 +2,8 @@ export type ProviderName = 'openai' | 'gemini' | 'grok';
 
 export type AppLanguage = 'en' | 'de';
 
+export type SnippetSource = 'manual' | 'history';
+
 export interface AppSettings {
   llmProvider: ProviderName;
   openaiModel: string;
@@ -17,6 +19,7 @@ export interface Snippet {
   title: string;
   timestamp: number;
   embedding: number[];
+  source?: SnippetSource;
 }
 
 export interface ChatMessage {

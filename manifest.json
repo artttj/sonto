@@ -15,7 +15,9 @@
     "sidePanel",
     "contextMenus",
     "scripting",
-    "offscreen"
+    "offscreen",
+    "history",
+    "alarms"
   ],
   "host_permissions": [
     "*://*/*",

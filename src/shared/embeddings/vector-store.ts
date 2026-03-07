@@ -5,10 +5,16 @@ function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
 
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (event) => {
       const db = req.result;
+      let store: IDBObjectStore;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      } else {
+        store = (event.target as IDBOpenDBRequest).transaction!.objectStore(STORE_NAME);
+      }
+      if (!store.indexNames.contains('url')) {
+        store.createIndex('url', 'url', { unique: false });
       }
     };
 
@@ -66,6 +72,16 @@ export async function search(queryEmbedding: number[], topK: number): Promise<Qu
     .map((snippet) => ({ snippet, score: cosineSimilarity(queryEmbedding, snippet.embedding) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, topK);
+}
+
+export async function hasSnippetForUrl(url: string): Promise<boolean> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).index('url').count(IDBKeyRange.only(url));
+    req.onsuccess = () => resolve(req.result > 0);
+    req.onerror = () => reject(req.error);
+  });
 }
 
 export async function getSnippetCount(): Promise<number> {
