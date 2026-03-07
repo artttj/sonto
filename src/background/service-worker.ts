@@ -27,36 +27,41 @@ async function captureSnippet(text: string, url: string, title: string, source: 
 }
 
 const GENERATE_PROMPT =
-  `You receive browsing data. Pick ONE topic from it and share ONE actionable tip, shortcut, or technique that helps the user work better or faster with that topic. 1-2 sentences max.\n\n` +
-  `## RULES\n` +
-  `- The tip must be practical and specific. Something the user can apply right now.\n` +
-  `- Focus on: keyboard shortcuts, hidden features, workflow tricks, performance tips, config tweaks, CLI flags, lesser-known settings, or efficiency techniques.\n` +
-  `- ONLY write about things you are 100% certain about. If unsure, pick a different topic.\n` +
-  `- NEVER describe or define what something is. NEVER say "X is a tool/platform that does Y." The user already knows.\n` +
-  `- NEVER make claims about people unless globally famous.\n` +
-  `- NEVER invent features, shortcuts, or commands. Everything must be real.\n` +
-  `- NEVER reference the user's browsing, history, or data. Just state the tip.\n` +
-  `- No proverbs, no quotes, no fun facts. Only useful information.\n\n` +
+  `You receive context data. Pick ONE topic from it. Output ONE of these (vary the type each time):\n` +
+  `- A practical tip, shortcut, or hidden feature for that topic\n` +
+  `- A useful idea or approach that improves how someone works with that topic\n` +
+  `- A lesser-known technique or workflow improvement related to it\n\n` +
+  `1-2 sentences max.\n\n` +
+  `## HARD RULES\n` +
+  `- ONLY write about things you are 100% certain exist and work.\n` +
+  `- The output must sound like you just know this, not like you looked it up from their data.\n` +
+  `- NEVER mention, quote, or paraphrase any text from the input data.\n` +
+  `- NEVER reference browsing, history, search, reading, or anything the user did.\n` +
+  `- NEVER say "based on," "since you," "if you're using," "given that," or similar.\n` +
+  `- NEVER define or describe what something is.\n` +
+  `- NEVER invent features, shortcuts, or commands.\n` +
+  `- No proverbs, no quotes, no fun facts, no trivia.\n\n` +
   `## STYLE\n` +
-  `- Write like a short text from a friend. No labels, no "Pro tip:", no "Did you know".\n` +
+  `- Write like a friend sharing something useful. Casual, direct.\n` +
+  `- No labels: no "Pro tip:", "Tip:", "Fun fact:", "Did you know", "Here's a".\n` +
   `- Period or comma only. No em dashes.\n` +
-  `- No AI words: "delve," "tapestry," "vibrant," "pivotal," "underscore," "testament," "nestled," "landscape," "renowned," "notable."\n` +
-  `- No puffery: "fascinating," "remarkable," "extraordinary," "stunning."\n` +
-  `- Just state the tip. Nothing else.`;
+  `- No AI words: "delve," "tapestry," "vibrant," "pivotal," "underscore," "testament," "nestled," "landscape," "renowned," "notable," "leverage," "streamline."\n` +
+  `- Just say the thing.`;
 
 const VALIDATE_PROMPT =
-  `You are a strict fact-checker. You will receive a short tip or technique.\n\n` +
-  `Check ALL of these:\n` +
-  `1. Is it factually accurate? Does the feature, shortcut, or technique actually exist and work as described?\n` +
-  `2. Is it practical and actionable? Can someone use this right now?\n` +
-  `3. Is it a definition or description instead of a tip? ("X is a tool that does Y" is NOT a tip.)\n` +
-  `4. Does it reference the user's browsing or history? This is NOT allowed.\n` +
-  `5. Is it a proverb, quote, or general life advice? This is NOT allowed. Only practical tips.\n` +
-  `6. Does it start with "Here's a", "Pro tip:", "Fun fact:", or "Did you know"? NOT allowed.\n\n` +
-  `Respond with EXACTLY one of these:\n` +
-  `- PASS (only if all checks pass)\n` +
-  `- FAIL: <a replacement 1-2 sentence actionable tip about the same or similar topic>\n\n` +
-  `Be strict. Any doubt means FAIL.`;
+  `You are a strict reviewer. You receive a short tip or idea.\n\n` +
+  `FAIL it if ANY of these are true:\n` +
+  `1. It describes a feature, shortcut, or command that doesn't actually exist.\n` +
+  `2. It's a definition ("X is a tool that does Y") instead of a useful tip.\n` +
+  `3. It references the user's browsing, history, searches, or data in any way.\n` +
+  `4. It says "based on," "since you," "if you're using," "given your," or similar.\n` +
+  `5. It mentions, quotes, or paraphrases text that looks like it came from input data.\n` +
+  `6. It's a proverb, quote, fun fact, or trivia.\n` +
+  `7. It starts with "Here's a", "Pro tip:", "Tip:", "Fun fact:", or "Did you know".\n\n` +
+  `Respond EXACTLY:\n` +
+  `- PASS\n` +
+  `- FAIL: <a clean 1-2 sentence replacement tip about the same topic>\n\n` +
+  `Be strict.`;
 
 async function generateInsight(
   snippetSample: { text: string; title: string; source: string }[],
