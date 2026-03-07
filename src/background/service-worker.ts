@@ -23,6 +23,7 @@ async function captureSnippet(text: string, url: string, title: string, source: 
     source,
   };
   await addSnippet(snippet);
+  void chrome.runtime.sendMessage({ type: MSG.SNIPPET_ADDED }).catch(() => {});
 }
 
 async function generateInsight(
@@ -48,37 +49,31 @@ async function generateInsight(
     `You are given a sample of the user's saved snippets and browsing history. ` +
     `Based on the ACTUAL TOPICS in their data, share ONE short interesting thing. ` +
     `You MUST randomly pick a DIFFERENT category each time. The categories are:\n` +
-    `1. An evidence-based health or cognitive performance insight from peer-reviewed research\n` +
-    `2. A surprising scientific or historical fact connected to one of their topics\n` +
-    `3. A book or paper recommendation from an acclaimed author or researcher — never recommend apps, products, or commercial tools\n` +
-    `4. A quote from a great thinker, scientist, or writer with attribution (e.g. "— Seneca")\n` +
-    `5. A Japanese, Zen, Arabic, Persian, or African proverb with origin\n` +
-    `6. An unexpected intellectual connection between two of their topics\n` +
-    `7. A thought experiment or research question inspired by their interests\n` +
-    `8. A lesser-known fact about something they've been exploring\n` +
-    `9. A mental model or reasoning framework used by experts in a relevant field\n` +
-    `10. A counterintuitive finding from research that challenges common assumptions about their topics\n\n` +
-    `RULES:\n` +
-    `- NEVER recommend commercial products, apps, services, or brands. Only recommend books, papers, ideas, or techniques.\n` +
-    `- Speak as a knowledgeable academic, not a marketer. No promotional language.\n` +
-    `- The content MUST be grounded in their actual data — pick a specific topic and build from it.\n` +
+    `1. A well-known quote from a real, famous person with their name (e.g. "— Seneca"). Only use quotes you are 100% certain are real and correctly attributed.\n` +
+    `2. A real Japanese, Zen, Arabic, Persian, or African proverb with origin. Only use proverbs that actually exist in that culture.\n` +
+    `3. A verified scientific or historical fact. Must be something widely documented and true.\n` +
+    `4. A real book recommendation by a real author. Include the author's full name. The book must actually exist.\n` +
+    `5. A health or cognitive tip backed by real, named research (name the study or institution).\n` +
+    `6. A real connection between two of their topics that you can verify.\n\n` +
+    `CRITICAL RULES:\n` +
+    `- ONLY share things you are CERTAIN are true. If you are not 100% sure a quote, fact, or book is real, do not use it.\n` +
+    `- NEVER invent quotes, attribute quotes to the wrong person, or make up book titles.\n` +
+    `- NEVER fabricate research findings or name studies that don't exist.\n` +
+    `- NEVER recommend commercial products, apps, services, or brands.\n` +
     `- Do NOT say "based on your history" or "I noticed you were reading about". Just present it directly.\n` +
-    `- To pick a category: assign each a number 1-10, think of a random 5-digit number, add its digits, pick the remainder mod 10.\n` +
+    `- The content must connect to a specific topic from their data.\n` +
+    `- To pick a category: assign each a number 1-6, think of a random 5-digit number, add its digits, pick the remainder mod 6.\n` +
     `- Keep it to 1-2 sentences. No labels, no prefixes like "Tip:", "Fact:", "Quote:".\n` +
-    `- WRITING STYLE: Write like a real person, not an AI. Avoid these patterns:\n` +
+    `- WRITING STYLE: Write like a real person, not an AI.\n` +
     `  * No words like: crucial, delve, vibrant, tapestry, landscape, pivotal, foster, underscore, showcase, enhance, leverage, streamline, groundbreaking, nestled, testament, enduring\n` +
-    `  * No em dashes. Use commas or periods instead.\n` +
-    `  * No rule-of-three lists. Don't force ideas into groups of three.\n` +
-    `  * No -ing phrases tacked on for fake depth (highlighting, emphasizing, reflecting, showcasing, underscoring)\n` +
-    `  * No "serves as", "stands as" — just use "is"\n` +
-    `  * No promotional puffery: "breathtaking", "stunning", "remarkable", "extraordinary"\n` +
-    `  * No hedging: "it could potentially be argued that"\n` +
-    `  * No generic conclusions: "the future looks bright"\n` +
-    `  * Vary sentence length. Mix short and long. Don't make every sentence the same structure.\n` +
-    `  * Be specific, not vague. Name the researcher, the year, the page number.\n` +
-    `  * Sound like a person sharing something interesting over coffee, not a press release.` +
+    `  * No em dashes. Use commas or periods.\n` +
+    `  * No rule-of-three lists.\n` +
+    `  * No -ing filler phrases (highlighting, emphasizing, reflecting, showcasing)\n` +
+    `  * No "serves as", "stands as". Just use "is".\n` +
+    `  * No puffery: "breathtaking", "stunning", "remarkable", "extraordinary"\n` +
+    `  * Sound like a person sharing something interesting over coffee.` +
     (previousInsights.length > 0
-      ? `\n\nIMPORTANT: Do NOT repeat, rephrase, or use the same category as any of these previous outputs:\n${previousInsights.map((p) => `- ${p}`).join('\n')}`
+      ? `\n\nDo NOT repeat or rephrase any of these previous outputs:\n${previousInsights.map((p) => `- ${p}`).join('\n')}`
       : '');
 
   try {
@@ -215,7 +210,6 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
     const { text, url, title } = message;
     void captureSnippet(text, url, title)
       .then(() => {
-        void chrome.runtime.sendMessage({ type: MSG.SNIPPET_ADDED }).catch(() => {});
         sendResponse({ ok: true, type: MSG.CAPTURE_SUCCESS });
       })
       .catch((err: unknown) => {

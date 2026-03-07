@@ -44,11 +44,11 @@ Sonto is a Chrome extension that captures highlighted text from any webpage, sto
 
 Sonto uses Retrieval-Augmented Generation (RAG):
 
-1. **Capture** — Save text from any page via shortcut or context menu. Browser history (last 30 days) syncs automatically every 30 minutes.
-2. **Embed** — Each snippet is converted to a vector embedding via API (`text-embedding-3-small` for OpenAI, `text-embedding-004` for Gemini).
-3. **Store** — Embeddings and text are stored locally in IndexedDB. Nothing leaves your device at this point.
-4. **Search** — When you ask a question, your query is embedded and compared against stored vectors using cosine similarity.
-5. **Answer** — The top 10 matching snippets are sent as context to your chat model. The AI generates a grounded response.
+1. **Capture**:Save text from any page via shortcut or context menu. Browser history (last 30 days) syncs automatically every 30 minutes.
+2. **Embed**:Each snippet is converted to a vector embedding via API (`text-embedding-3-small` for OpenAI, `text-embedding-004` for Gemini).
+3. **Store**:Embeddings and text are stored locally in IndexedDB. Nothing leaves your device at this point.
+4. **Search**:When you ask a question, your query is embedded and compared against stored vectors using cosine similarity.
+5. **Answer**:The top 10 matching snippets are sent as context to your chat model. The AI generates a grounded response.
 
 ---
 
