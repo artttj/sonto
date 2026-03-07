@@ -287,9 +287,10 @@ class SontoSidebar {
       const cached = await chrome.storage.session.get(['sonto_zen_feed', 'sonto_zen_last_drip']);
       const items = (cached?.sonto_zen_feed as string[]) ?? [];
       const lastDrip = (cached?.sonto_zen_last_drip as number) ?? 0;
-      if (items.length > 0) {
+      const unique = [...new Set(items)];
+      if (unique.length > 0) {
         this.zenFeed.innerHTML = '';
-        for (const text of items) {
+        for (const text of unique) {
           this.appendZenBubbleElement(text);
         }
 
@@ -298,8 +299,7 @@ class SontoSidebar {
           : 0;
         const catchup = Math.min(missedCycles * ZEN_DRIP_BATCH, ZEN_MAX_CATCHUP);
         if (catchup > 0) {
-          const samples = Array.from({ length: catchup }, () => this.pickSample());
-          await Promise.all(samples.map((s) => this.addZenBubbleWithSample(s)));
+          await this.loadBubblesSequentially(catchup);
           void this.cacheZenFeed();
         }
 
@@ -312,8 +312,7 @@ class SontoSidebar {
     this.zenUsedIds.clear();
 
     this.showZenLoader();
-    const samples = Array.from({ length: ZEN_INITIAL_BATCH }, () => this.pickSample());
-    await Promise.all(samples.map((s) => this.addZenBubbleWithSample(s)));
+    await this.loadBubblesSequentially(ZEN_INITIAL_BATCH);
     this.hideZenLoader();
 
     if (this.mode === 'zen') {
@@ -331,8 +330,7 @@ class SontoSidebar {
       setTimeout(() => last.remove(), 800);
     }
 
-    const samples = Array.from({ length: ZEN_DRIP_BATCH }, () => this.pickSample());
-    await Promise.all(samples.map((s) => this.addZenBubbleWithSample(s)));
+    await this.loadBubblesSequentially(ZEN_DRIP_BATCH);
     void this.cacheZenFeed();
   }
 
@@ -394,9 +392,11 @@ class SontoSidebar {
     }));
   }
 
-  private async addZenBubble(): Promise<void> {
-    if (this.snippets.length < 3) return;
-    await this.addZenBubbleWithSample(this.pickSample());
+  private async loadBubblesSequentially(count: number): Promise<void> {
+    for (let i = 0; i < count; i++) {
+      if (this.snippets.length < 3) break;
+      await this.addZenBubbleWithSample(this.pickSample());
+    }
   }
 
   private async addZenBubbleWithSample(sample: { text: string; title: string; source: string }[]): Promise<void> {
@@ -408,6 +408,11 @@ class SontoSidebar {
       }) as { ok: boolean; insight?: string };
 
       if (response?.ok && response.insight) {
+        const isDuplicate = this.pastInsights.some((p) =>
+          p === response.insight || p.slice(0, 60) === response.insight!.slice(0, 60)
+        );
+        if (isDuplicate) return;
+
         this.hideZenLoader();
         this.appendZenBubbleElement(response.insight);
         this.zenFeed.scrollTo({ top: 0, behavior: 'smooth' });
