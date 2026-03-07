@@ -60,7 +60,8 @@ function buildPrompt(query: string, results: QueryResult[]): ChatMessage[] {
 type FilterMode = 'all' | 'manual' | 'history';
 type ViewMode = 'zen' | 'browse' | 'chat';
 
-const ZEN_INITIAL_BATCH = 4;
+const ZEN_INITIAL_BATCH = 3;
+const ZEN_DRIP_BATCH = 2;
 const ZEN_DRIP_MS = 30000;
 const SVG_BULB = [
   '<svg class="zen-bulb" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">',
@@ -316,7 +317,8 @@ class SontoSidebar {
       setTimeout(() => first.remove(), 800);
     }
 
-    await this.addZenBubble();
+    const samples = Array.from({ length: ZEN_DRIP_BATCH }, () => this.pickSample());
+    await Promise.all(samples.map((s) => this.addZenBubbleWithSample(s)));
     void this.cacheZenFeed();
   }
 
