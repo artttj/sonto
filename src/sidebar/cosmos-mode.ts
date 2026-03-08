@@ -18,27 +18,57 @@ interface SpiroParams {
   Loffset?: number; // initial angle offset for left arm in degrees
 }
 
-// Dense center — from htmlspirograph.com/#0,50,4,0,1,0.8,-90,-535,631,-0.005,145,476,-3.2,142,501,3,4,0,1,740
+// Dense center — from htmlspirograph.com/#0,50,4,0,1,0.8,-90,-535,631,-0.005,145,476,-3.2,142,501,3
 const BASE_DENSE: SpiroParams = {
   Crota: 0.8, HBx: -90, HBy: -535, Hdist: 631,
   Lrota: -0.005, Larm1: 145, Larm2: 476,
   Rrota: -3.2, Rarm1: 142, Rarm2: 501, Ext: 3,
 };
 
-// Geometric lobe — from htmlspirograph.com/#0,50,0,0,1,-0.8,52,-760,508,0.0125,94,534,3.2,188,560,56,102,0,1,1597
-// One arm very slow (0.0125°/step), the other fast (3.2°/step) → diamond lobe pattern
+// Geometric lobe — from htmlspirograph.com/#0,50,0,0,1,-0.8,52,-760,508,0.0125,94,534,3.2,188,560,56,102
 const BASE_DIAMOND: SpiroParams = {
   Crota: -0.8, HBx: 52, HBy: -760, Hdist: 508,
   Lrota: 0.0125, Larm1: 94, Larm2: 534,
   Rrota: 3.2, Rarm1: 188, Rarm2: 560, Ext: 56, Loffset: 102,
 };
 
-// Open ring — from htmlspirograph.com/#0,50,0,1,1,-1.44,30,-700,1174,2.5,120,860,-3.6,100,1050,75,0,0,1,1064
+// Open ring — from htmlspirograph.com/#0,50,0,1,1,-1.44,30,-700,1174,2.5,120,860,-3.6,100,1050,75
 const BASE_OPEN: SpiroParams = {
   Crota: -1.44, HBx: 30, HBy: -700, Hdist: 1174,
   Lrota: 2.5, Larm1: 120, Larm2: 860,
   Rrota: -3.6, Rarm1: 100, Rarm2: 1050, Ext: 75,
 };
+
+// Gallery patterns from htmlspirograph.com/uploads — used as fallbacks
+const GALLERY_BASES: SpiroParams[] = [
+  // #1,9,4,...,3.6,-17,-336,322,-12.6,140,290,-0.02353,79,317,78,18
+  { Crota: 3.6, HBx: -17, HBy: -336, Hdist: 322, Lrota: -12.6, Larm1: 140, Larm2: 290, Rrota: -0.02353, Rarm1: 79, Rarm2: 317, Ext: 78, Loffset: 18 },
+  // #0,200,0,...,0.4,-44,-232,288,-4.4,21,232,0.003571,129,325,67,331
+  { Crota: 0.4, HBx: -44, HBy: -232, Hdist: 288, Lrota: -4.4, Larm1: 21, Larm2: 232, Rrota: 0.003571, Rarm1: 129, Rarm2: 325, Ext: 67, Loffset: 331 },
+  // #0,200,4,...,0.91,-52,-203,317,4.1,93,313,3.8,127,327,80,156
+  { Crota: 0.91, HBx: -52, HBy: -203, Hdist: 317, Lrota: 4.1, Larm1: 93, Larm2: 313, Rrota: 3.8, Rarm1: 127, Rarm2: 327, Ext: 80, Loffset: 156 },
+  // #0,200,4,...,1,-76,-224,281,0.007692,98,299,-2.3333,104,332,75,7
+  { Crota: 1, HBx: -76, HBy: -224, Hdist: 281, Lrota: 0.007692, Larm1: 98, Larm2: 299, Rrota: -2.3333, Rarm1: 104, Rarm2: 332, Ext: 75, Loffset: 7 },
+];
+
+// Apple-style palette — luminous on dark background via screen blend
+const PALETTE: [number, number, number][] = [
+  [74, 158, 255],   // blue
+  [94, 92, 230],    // indigo
+  [191, 90, 242],   // purple
+  [90, 200, 250],   // teal
+  [99, 230, 190],   // mint
+  [255, 149, 0],    // orange
+  [255, 55, 95],    // rose
+  [48, 209, 88],    // green
+];
+
+function pickColorPair(): [[number, number, number], [number, number, number]] {
+  const a = Math.floor(Math.random() * PALETTE.length);
+  let b = Math.floor(Math.random() * (PALETTE.length - 1));
+  if (b >= a) b++;
+  return [PALETTE[a], PALETTE[b]];
+}
 
 function rnd(min: number, max: number): number {
   return min + Math.random() * (max - min);
@@ -77,7 +107,7 @@ function generateDenseParams(): SpiroParams {
 
     return { Crota, HBx, HBy, Hdist, Lrota, Larm1, Larm2, Rrota, Rarm1, Rarm2, Ext };
   }
-  return { ...BASE_DENSE };
+  return Math.random() < 0.5 ? { ...BASE_DENSE } : { ...GALLERY_BASES[2] };
 }
 
 function generateOpenParams(): SpiroParams {
@@ -137,8 +167,10 @@ function generateGeometricParams(): SpiroParams {
     const Crota = rnd(-1.5, 1.5);
     if (Math.abs(Crota) < 0.05) continue;
     // One very slow arm + one fast arm → lobe/petal patterns
-    const Lrota = rnd(0.005, 0.06) * (Math.random() < 0.5 ? 1 : -1);
-    const Rrota = rnd(1.5, 4) * (Math.random() < 0.5 ? 1 : -1);
+    // Randomise which arm is slow to get varied compositions
+    const slowRota = rnd(0.005, 0.06) * (Math.random() < 0.5 ? 1 : -1);
+    const fastRota = rnd(1.5, 5) * (Math.random() < 0.5 ? 1 : -1);
+    const [Lrota, Rrota] = Math.random() < 0.5 ? [slowRota, fastRota] : [fastRota, slowRota];
 
     const HBx = rnd(-80, 80);
     const HBy = rnd(-900, -500);
@@ -147,7 +179,8 @@ function generateGeometricParams(): SpiroParams {
 
     return { Crota, HBx, HBy, Hdist, Lrota, Larm1, Larm2, Rrota, Rarm1, Rarm2, Ext, Loffset };
   }
-  return { ...BASE_DIAMOND };
+  const geomBases = [BASE_DIAMOND, GALLERY_BASES[0], GALLERY_BASES[1], GALLERY_BASES[3]];
+  return { ...geomBases[Math.floor(Math.random() * geomBases.length)] };
 }
 
 class SpirographCanvas {
@@ -159,6 +192,9 @@ class SpirographCanvas {
   private style: 'dense' | 'open' | 'geometric' = 'dense';
   private stepsTotal = 0;
   private drawn = 0;
+  private colorA: [number, number, number] = [74, 158, 255];
+  private colorB: [number, number, number] = [94, 92, 230];
+  private alpha = 0.14;
 
   // Original 960px canvas reference size
   private static readonly REF = 960;
@@ -247,26 +283,12 @@ class SpirographCanvas {
     const fx = cx + Math.cos(na) * nd;
     const fy = cy + Math.sin(na) * nd;
 
-    let color: string;
-    if (this.style === 'dense') {
-      // Analogue colormode: three phase-shifted sine waves for smooth rainbow cycling
-      const phase = this.Lrot * AM;
-      const phase2 = this.Rrot * AM;
-      const r = Math.round(Math.sin(phase) * 127 + 127);
-      const g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 127 + 127);
-      const b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 127 + 127);
-      color = `rgb(${r},${g},${b})`;
-    } else if (this.style === 'open') {
-      // One smooth blue → orange → blue arc over the full drawing
-      const t = this.stepsTotal > 0 ? this.drawn / this.stepsTotal : 0;
-      const hue = Math.round(210 + Math.sin(t * Math.PI) * 175);
-      color = `hsl(${hue}, 90%, 65%)`;
-    } else {
-      // Geometric: two full oscillations → alternating blue/orange strands per lobe
-      const t = this.stepsTotal > 0 ? this.drawn / this.stepsTotal : 0;
-      const hue = Math.round(210 + Math.sin(t * 2 * Math.PI) * 175);
-      color = `hsl(${hue}, 90%, 52%)`;
-    }
+    // Blend between two Apple palette colors as drawing progresses
+    const t = this.stepsTotal > 0 ? this.drawn / this.stepsTotal : 0;
+    const r = Math.round(this.colorA[0] + (this.colorB[0] - this.colorA[0]) * t);
+    const g = Math.round(this.colorA[1] + (this.colorB[1] - this.colorA[1]) * t);
+    const b = Math.round(this.colorA[2] + (this.colorB[2] - this.colorA[2]) * t);
+    const color = `rgba(${r},${g},${b},${this.alpha})`;
 
     return { fx, fy, color };
   }
@@ -285,18 +307,22 @@ class SpirographCanvas {
       this.Crot = 0;
       this.drawn = 0;
 
+      // Pick two Apple palette colors for this pattern
+      [this.colorA, this.colorB] = pickColorPair();
+      // Alpha controls accumulation — lower = more strands before saturation
+      this.alpha = this.style === 'dense' ? 0.14 : this.style === 'open' ? 0.20 : 0.16;
+
       const fps = 60;
       const frames = Math.round(durationMs / 1000 * fps);
       let stepsPerFrame: number;
 
       if (this.style === 'geometric') {
-        // L arm is very slow — need enough steps for it to travel ~60° so the
-        // lobe structure is clearly visible. Clamp to reasonable range.
-        const lSpeed = Math.abs(this.params.Lrota);
-        const targetSteps = Math.round(60 / lSpeed);
-        stepsPerFrame = Math.max(10, Math.min(150, Math.ceil(targetSteps / frames)));
+        // Use the slowest arm to determine how many steps are needed to show lobe structure
+        const slowSpeed = Math.max(0.01, Math.min(Math.abs(this.params.Lrota), Math.abs(this.params.Rrota)));
+        const targetSteps = Math.round(60 / slowSpeed);
+        stepsPerFrame = Math.max(10, Math.min(200, Math.ceil(targetSteps / frames)));
       } else {
-        stepsPerFrame = this.style === 'dense' ? 30 : 12;
+        stepsPerFrame = this.style === 'dense' ? 65 : 15;
       }
       this.stepsTotal = stepsPerFrame * frames;
 
@@ -304,10 +330,9 @@ class SpirographCanvas {
       const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 1.3;
 
       this.ctx.globalCompositeOperation = 'screen';
-      // Dark indigo base so the center void blends rather than reads as a harsh black hole
       this.ctx.fillStyle = '#060410';
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-      this.ctx.lineWidth = 0.8;
+      this.ctx.lineWidth = this.style === 'dense' ? 0.6 : 0.8;
 
       this.running = true;
       const endAt = Date.now() + durationMs;

@@ -253,8 +253,9 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
       if (triviaCache.length === 0) {
         try {
           const cat = TRIVIA_CATEGORIES[Math.floor(Math.random() * TRIVIA_CATEGORIES.length)];
+          const difficulty = Math.random() < 0.5 ? 'hard' : 'medium';
           const res = await fetch(
-            `https://opentdb.com/api.php?amount=10&category=${cat}&difficulty=hard&type=multiple`,
+            `https://opentdb.com/api.php?amount=10&category=${cat}&difficulty=${difficulty}&type=multiple`,
             { signal: AbortSignal.timeout(8000) },
           );
           if (!res.ok) return null;
