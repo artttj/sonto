@@ -190,7 +190,7 @@ html, body {
 }
 
 .zen-bubble {
-  padding: 10px 0;
+  padding: 14px 0;
   font-size: 13px;
   font-weight: 400;
   line-height: 1.55;
@@ -264,6 +264,25 @@ html, body {
 .zen-bubble:nth-child(n+5) {
   color: rgba(255,255,255,0.10);
 }
+
+.zen-bubble.spotlight {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgba(255,255,255,0.96);
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+.zen-bubble.spotlight .zen-bulb {
+  width: 17px;
+  height: 17px;
+  margin-top: 4px;
+  opacity: 1;
+  filter: drop-shadow(0 0 5px rgba(232,185,49,0.5));
+}
+.zen-bubble.spotlight .zen-bulb--challenge { filter: drop-shadow(0 0 5px rgba(249,115,22,0.55)); }
+.zen-bubble.spotlight .zen-bulb--affirm    { filter: drop-shadow(0 0 5px rgba(45,212,180,0.55)); }
+.zen-bubble.spotlight .zen-bulb--quote     { filter: drop-shadow(0 0 5px rgba(167,139,250,0.55)); }
 
 .zen-link {
   color: inherit;

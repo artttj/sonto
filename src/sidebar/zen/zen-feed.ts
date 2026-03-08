@@ -38,6 +38,7 @@ export class ZenFeed {
   private lastActivity = Date.now();
   private language: string;
   private snippetsFn: () => Snippet[];
+  private _starting = false;
 
   constructor(
     private readonly feedEl: HTMLElement,
@@ -48,18 +49,32 @@ export class ZenFeed {
 
     document.addEventListener('pointermove', () => { this.lastActivity = Date.now(); });
     document.addEventListener('keydown', () => { this.lastActivity = Date.now(); });
+
+    this.feedEl.addEventListener('click', (e) => {
+      const bubble = (e.target as HTMLElement).closest<HTMLElement>('.zen-bubble');
+      if (!bubble) return;
+      const isSpotlit = bubble.classList.contains('spotlight');
+      this.feedEl.querySelectorAll('.zen-bubble').forEach((b) => b.classList.remove('spotlight'));
+      if (!isSpotlit) bubble.classList.add('spotlight');
+    });
   }
 
   async start(): Promise<void> {
+    if (this._starting) return;
+
+    // Already running with content — just make sure timer is alive
+    if (this.zenDripTimer && this.feedEl.querySelectorAll('.zen-bubble').length > 0) return;
+
+    this._starting = true;
     this.stop();
 
-    const hasBubbles = this.feedEl.querySelectorAll('.zen-bubble').length > 0;
-    if (hasBubbles) {
-      this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
-      return;
-    }
-
     try {
+      const hasBubbles = this.feedEl.querySelectorAll('.zen-bubble').length > 0;
+      if (hasBubbles) {
+        this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
+        return;
+      }
+
       const cached = await chrome.storage.session.get(['sonto_zen_feed', 'sonto_zen_last_drip']);
       const raw = (cached?.sonto_zen_feed as string[]) ?? [];
       const lastDrip = (cached?.sonto_zen_last_drip as number) ?? 0;
@@ -67,37 +82,35 @@ export class ZenFeed {
       if (raw.length > 0) {
         this.feedEl.innerHTML = '';
         const seen = new Set<string>();
-        for (const text of raw) {
+        // Reverse so that the first item in cache ends up on top (newest = top)
+        for (const text of [...raw].reverse()) {
           if (!text || seen.has(text)) continue;
           seen.add(text);
           this.appendBubbleElement(text);
         }
 
-        await this.extractCategories(this.snippetsFn());
+        void this.extractCategories(this.snippetsFn());
 
         const missedCycles = lastDrip > 0 ? Math.floor((Date.now() - lastDrip) / ZEN_DRIP_MS) : 0;
-        const catchup = Math.min(missedCycles * 1, ZEN_MAX_CATCHUP);
+        const catchup = Math.min(missedCycles, ZEN_MAX_CATCHUP);
         if (catchup > 0) {
-          for (let i = 0; i < catchup; i++) {
-            await this.addBubble();
-          }
+          for (let i = 0; i < catchup; i++) await this.addBubble();
           void this.cacheZenFeed();
         }
 
         this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
         return;
       }
-    } catch {}
 
-    this.feedEl.innerHTML = '';
-    this.showLoader();
-
-    await this.extractCategories(this.snippetsFn());
-    await this.loadInitialBubbles(ZEN_INITIAL_BATCH);
-
-    this.hideLoader();
-
-    this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
+      this.feedEl.innerHTML = '';
+      this.showLoader();
+      await this.extractCategories(this.snippetsFn());
+      await this.loadInitialBubbles(ZEN_INITIAL_BATCH);
+      this.hideLoader();
+      this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
+    } finally {
+      this._starting = false;
+    }
   }
 
   stop(): void {

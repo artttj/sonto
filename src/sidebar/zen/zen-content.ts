@@ -6,7 +6,7 @@ export function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;');
 }
 
-export const ZEN_INITIAL_BATCH = 3;
+export const ZEN_INITIAL_BATCH = 1;
 export const ZEN_DRIP_BATCH = 1;
 export const ZEN_DRIP_MS = 30000;
 export const ZEN_IDLE_MS = 5 * 60 * 1000;
