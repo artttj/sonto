@@ -17,18 +17,25 @@ interface SpiroParams {
   Rrota: number; Rarm1: number; Rarm2: number; Ext: number;
 }
 
-// From htmlspirograph.com/#0,50,4,0,1,0.8,-90,-535,631,-0.005,145,476,-3.2,142,501,3,4,0,1,740
-const BASE: SpiroParams = {
+// Dense center — from htmlspirograph.com/#0,50,4,0,1,0.8,-90,-535,631,-0.005,145,476,-3.2,142,501,3,4,0,1,740
+const BASE_DENSE: SpiroParams = {
   Crota: 0.8, HBx: -90, HBy: -535, Hdist: 631,
   Lrota: -0.005, Larm1: 145, Larm2: 476,
   Rrota: -3.2, Rarm1: 142, Rarm2: 501, Ext: 3,
+};
+
+// Open ring — from htmlspirograph.com/#0,50,0,1,1,-1.44,30,-700,1174,2.5,120,860,-3.6,100,1050,75,0,0,1,1064
+const BASE_OPEN: SpiroParams = {
+  Crota: -1.44, HBx: 30, HBy: -700, Hdist: 1174,
+  Lrota: 2.5, Larm1: 120, Larm2: 860,
+  Rrota: -3.6, Rarm1: 100, Rarm2: 1050, Ext: 75,
 };
 
 function rnd(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
 
-function generateParams(): SpiroParams {
+function generateDenseParams(): SpiroParams {
   for (let attempt = 0; attempt < 100; attempt++) {
     const Hdist = rnd(450, 780);
     const Larm1 = rnd(100, 200);
@@ -61,7 +68,42 @@ function generateParams(): SpiroParams {
 
     return { Crota, HBx, HBy, Hdist, Lrota, Larm1, Larm2, Rrota, Rarm1, Rarm2, Ext };
   }
-  return { ...BASE };
+  return { ...BASE_DENSE };
+}
+
+function generateOpenParams(): SpiroParams {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const Hdist = rnd(700, 1400);
+    const Larm1 = rnd(80, 180);
+    const Rarm1 = rnd(80, 180);
+    const DMin = Math.max(0, Hdist - Larm1 - Rarm1);
+    const DMax = Hdist + Larm1 + Rarm1;
+
+    if (DMin < 80) continue;
+
+    const armSum = rnd(DMax + 80, DMax + 600);
+    // Larger arm difference creates visible center void (open ring)
+    const diffMax = Math.min(DMin * 0.45, armSum * 0.28);
+    if (diffMax <= 10) continue;
+
+    const armDiff = rnd(-diffMax, diffMax);
+    const Larm2 = (armSum + armDiff) / 2;
+    const Rarm2 = (armSum - armDiff) / 2;
+    if (Larm2 < 80 || Rarm2 < 80) continue;
+
+    const Crota = rnd(-2, 2);
+    const Lrota = rnd(-4, 4);
+    const Rrota = rnd(-4, 4);
+    if (Math.abs(Crota) < 0.1 || Math.abs(Lrota) < 0.05 || Math.abs(Rrota) < 0.05) continue;
+    if (Math.abs(Math.abs(Lrota) - Math.abs(Rrota)) < 0.05) continue;
+
+    const HBx = rnd(-150, 150);
+    const HBy = rnd(-900, -400);
+    const Ext = rnd(10, 120);
+
+    return { Crota, HBx, HBy, Hdist, Lrota, Larm1, Larm2, Rrota, Rarm1, Rarm2, Ext };
+  }
+  return { ...BASE_OPEN };
 }
 
 class SpirographCanvas {
@@ -70,11 +112,15 @@ class SpirographCanvas {
   private rafId = 0;
   private running = false;
 
+  private style: 'dense' | 'open' = 'dense';
+  private stepsTotal = 0;
+  private drawn = 0;
+
   // Original 960px canvas reference size
   private static readonly REF = 960;
 
   // Pantograph params (in original 960px units)
-  private params: SpiroParams = { ...BASE };
+  private params: SpiroParams = { ...BASE_DENSE };
 
   // Rotation accumulators in degrees
   private Lrot = 0;
@@ -94,7 +140,7 @@ class SpirographCanvas {
     this.canvas.height = this.canvas.offsetHeight || 400;
   }
 
-  private calc(scale: number): { fx: number; fy: number; r: number; g: number; b: number } | null {
+  private calc(scale: number): { fx: number; fy: number; color: string } | null {
     const cx = this.canvas.width / 2;
     const cy = this.canvas.height / 2;
 
@@ -150,29 +196,47 @@ class SpirographCanvas {
     const nd = Math.hypot(nx, ny);
     if (nd === 0) return null;
 
-    // No cutpixels — let canvas bounds clip naturally (matches cutpixels=0 in original)
+    // No cutpixels — let canvas bounds clip naturally
     let na = Math.atan2(ny, nx);
     na += this.Crot * AM;
 
     const fx = cx + Math.cos(na) * nd;
     const fy = cy + Math.sin(na) * nd;
 
-    // Analogue colormode: three phase-shifted sine waves for smooth rainbow cycling
-    const phase = this.Lrot * AM;
-    const phase2 = this.Rrot * AM;
-    const r = Math.round(Math.sin(phase) * 127 + 127);
-    const g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 127 + 127);
-    const b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 127 + 127);
+    let color: string;
+    if (this.style === 'dense') {
+      // Analogue colormode: three phase-shifted sine waves for smooth rainbow cycling
+      const phase = this.Lrot * AM;
+      const phase2 = this.Rrot * AM;
+      const r = Math.round(Math.sin(phase) * 127 + 127);
+      const g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 127 + 127);
+      const b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 127 + 127);
+      color = `rgb(${r},${g},${b})`;
+    } else {
+      // HSL colormode: one smooth blue → orange → blue arc over the full drawing
+      const t = this.stepsTotal > 0 ? this.drawn / this.stepsTotal : 0;
+      const hue = Math.round(210 + Math.sin(t * Math.PI) * 175);
+      color = `hsl(${hue}, 90%, 65%)`;
+    }
 
-    return { fx, fy, r, g, b };
+    return { fx, fy, color };
   }
 
   start(durationMs: number): Promise<void> {
     return new Promise((resolve) => {
-      this.params = generateParams();
+      this.style = Math.random() < 0.5 ? 'dense' : 'open';
+      this.params = this.style === 'dense' ? generateDenseParams() : generateOpenParams();
       this.Lrot = 0;
       this.Rrot = 0;
       this.Crot = 0;
+      this.drawn = 0;
+
+      // Steps to draw: spread evenly over the full duration so each pattern
+      // builds up at the same visual pace regardless of rotation speed.
+      // Dense gets more steps for a filled look; open gets fewer for visible strands.
+      const fps = 60;
+      const stepsPerFrame = this.style === 'dense' ? 15 : 6;
+      this.stepsTotal = stepsPerFrame * Math.round(durationMs / 1000 * fps);
 
       this.resize();
       const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 1.3;
@@ -191,16 +255,18 @@ class SpirographCanvas {
         if (!this.running) { resolve(); return; }
         if (Date.now() >= endAt) { this.running = false; resolve(); return; }
 
-        for (let i = 0; i < 200; i++) {
+        // Draw steps until stepsTotal reached, then just hold the completed pattern
+        for (let i = 0; i < stepsPerFrame && this.drawn < this.stepsTotal; i++) {
           this.Lrot = (this.Lrot + this.params.Lrota + 360) % 360;
           this.Rrot = (this.Rrot + this.params.Rrota + 360) % 360;
           this.Crot = (this.Crot + this.params.Crota + 360) % 360;
+          this.drawn++;
 
           const pt = this.calc(scale);
           if (pt) {
             if (prevPt) {
               this.ctx.beginPath();
-              this.ctx.strokeStyle = `rgb(${pt.r},${pt.g},${pt.b})`;
+              this.ctx.strokeStyle = pt.color;
               this.ctx.moveTo(prevPt.fx, prevPt.fy);
               this.ctx.lineTo(pt.fx, pt.fy);
               this.ctx.stroke();
@@ -270,7 +336,7 @@ export class CosmosMode {
   private spiro: SpirographCanvas | null = null;
   private pastKeys = new Set<string>();
   private disabledSources = new Set<string>();
-  private intervalMs = 10000;
+  private intervalMs = 15000;
 
   private readonly canvasWrap: HTMLElement;
   private readonly msgEl: HTMLElement;
@@ -407,7 +473,8 @@ export class CosmosMode {
       if (this.stopped) return;
     }
 
-    const showMs = Math.max(this.intervalMs - SPIRO_MS - FADE_MS * 2, 1500);
+    // Account for three sequential fades: message out + spiro fade-out + message in
+    const showMs = Math.max(this.intervalMs - SPIRO_MS - FADE_MS * 3, 1500);
 
     // Kick off fetch after a delay so it's ready when we need it
     const nextResultPromise = new Promise<ZenFetchResult>((resolve) => {
@@ -426,18 +493,18 @@ export class CosmosMode {
     await this.spiro.start(SPIRO_MS);
     if (this.stopped) return;
 
+    // Spiro fully fades out first, then message fades in — no overlap
+    await this.spiro.fadeOut(FADE_MS);
+    if (this.stopped) return;
+
+    this.spiro.remove();
+    this.spiro = null;
+
     const nextResult = await nextResultPromise;
     if (this.stopped) return;
 
     this.renderResult(nextResult);
-
-    await Promise.all([
-      this.spiro.fadeOut(FADE_MS),
-      fadeEl(this.msgEl, 0, 1, FADE_MS),
-    ]);
-
-    this.spiro.remove();
-    this.spiro = null;
+    await fadeEl(this.msgEl, 0, 1, FADE_MS);
 
     void this.runLoop(false);
   }

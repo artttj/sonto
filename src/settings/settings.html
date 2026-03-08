@@ -66,10 +66,37 @@
       <section id="tab-general" class="tab-panel">
         <div class="panel-header">
           <h1 data-i18n="general_heading">General</h1>
-          <p data-i18n="general_desc">Configure the AI provider and language for chatting with your saved snippets.</p>
         </div>
 
         <div class="setting-group">
+          <div class="setting-group-header">Zen Mode</div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="zen_display_title">Display</div>
+              <div class="setting-desc" data-i18n="zen_display_desc">Feed scrolls continuously. Cosmos shows one message with a spirograph between each.</div>
+            </div>
+            <div class="segmented" id="zen-display-segmented">
+              <button class="seg-btn" data-value="feed" type="button">Feed</button>
+              <button class="seg-btn active" data-value="cosmos" type="button">Cosmos</button>
+            </div>
+          </div>
+
+          <div class="setting-row setting-row--refresh">
+            <div class="setting-label">
+              <div class="setting-title" data-i18n="zen_refresh_title">Refresh interval</div>
+              <div class="setting-desc" data-i18n="zen_refresh_desc">How often the message changes</div>
+            </div>
+            <div class="drip-interval-control">
+              <input type="range" id="drip-interval-slider" min="5" max="60" step="5" value="15" />
+              <span id="drip-interval-value" class="drip-interval-value">15s</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header">Assistant</div>
+
           <div class="setting-row">
             <div class="setting-label">
               <div class="setting-title" data-i18n="general_provider">AI Provider</div>
@@ -89,28 +116,6 @@
             <div class="segmented" id="language-segmented">
               <button class="seg-btn" data-value="en" type="button">English</button>
               <button class="seg-btn" data-value="de" type="button">Deutsch</button>
-            </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label">
-              <div class="setting-title" data-i18n="zen_display_title">Zen display</div>
-              <div class="setting-desc" data-i18n="zen_display_desc">Feed scrolls continuously. Cosmos shows one message with spirograph animation in between.</div>
-            </div>
-            <div class="segmented" id="zen-display-segmented">
-              <button class="seg-btn active" data-value="feed" type="button">Feed</button>
-              <button class="seg-btn" data-value="cosmos" type="button">Cosmos</button>
-            </div>
-          </div>
-
-          <div class="setting-row setting-row--refresh">
-            <div class="setting-label">
-              <div class="setting-title" data-i18n="zen_refresh_title">Refresh interval</div>
-              <div class="setting-desc" data-i18n="zen_refresh_desc">How often the Zen feed or Cosmos message updates</div>
-            </div>
-            <div class="drip-interval-control">
-              <input type="range" id="drip-interval-slider" min="5" max="60" step="5" value="15" />
-              <span id="drip-interval-value" class="drip-interval-value">15s</span>
             </div>
           </div>
         </div>
