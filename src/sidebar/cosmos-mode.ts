@@ -15,6 +15,7 @@ interface SpiroParams {
   Crota: number; HBx: number; HBy: number; Hdist: number;
   Lrota: number; Larm1: number; Larm2: number;
   Rrota: number; Rarm1: number; Rarm2: number; Ext: number;
+  Loffset?: number; // initial angle offset for left arm in degrees
 }
 
 // Dense center — from htmlspirograph.com/#0,50,4,0,1,0.8,-90,-535,631,-0.005,145,476,-3.2,142,501,3,4,0,1,740
@@ -22,6 +23,14 @@ const BASE_DENSE: SpiroParams = {
   Crota: 0.8, HBx: -90, HBy: -535, Hdist: 631,
   Lrota: -0.005, Larm1: 145, Larm2: 476,
   Rrota: -3.2, Rarm1: 142, Rarm2: 501, Ext: 3,
+};
+
+// Geometric lobe — from htmlspirograph.com/#0,50,0,0,1,-0.8,52,-760,508,0.0125,94,534,3.2,188,560,56,102,0,1,1597
+// One arm very slow (0.0125°/step), the other fast (3.2°/step) → diamond lobe pattern
+const BASE_DIAMOND: SpiroParams = {
+  Crota: -0.8, HBx: 52, HBy: -760, Hdist: 508,
+  Lrota: 0.0125, Larm1: 94, Larm2: 534,
+  Rrota: 3.2, Rarm1: 188, Rarm2: 560, Ext: 56, Loffset: 102,
 };
 
 // Open ring — from htmlspirograph.com/#0,50,0,1,1,-1.44,30,-700,1174,2.5,120,860,-3.6,100,1050,75,0,0,1,1064
@@ -106,13 +115,48 @@ function generateOpenParams(): SpiroParams {
   return { ...BASE_OPEN };
 }
 
+function generateGeometricParams(): SpiroParams {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const Hdist = rnd(400, 800);
+    const Larm1 = rnd(60, 180);
+    const Rarm1 = rnd(120, 240);
+    const DMin = Math.max(0, Hdist - Larm1 - Rarm1);
+    const DMax = Hdist + Larm1 + Rarm1;
+
+    if (DMin < 30) continue;
+
+    const armSum = rnd(DMax + 30, DMax + 350);
+    const diffMax = Math.min(DMin - 10, armSum * 0.12);
+    if (diffMax <= 5) continue;
+
+    const armDiff = rnd(-diffMax, diffMax);
+    const Larm2 = (armSum + armDiff) / 2;
+    const Rarm2 = (armSum - armDiff) / 2;
+    if (Larm2 < 60 || Rarm2 < 60) continue;
+
+    const Crota = rnd(-1.5, 1.5);
+    if (Math.abs(Crota) < 0.05) continue;
+    // One very slow arm + one fast arm → lobe/petal patterns
+    const Lrota = rnd(0.005, 0.06) * (Math.random() < 0.5 ? 1 : -1);
+    const Rrota = rnd(1.5, 4) * (Math.random() < 0.5 ? 1 : -1);
+
+    const HBx = rnd(-80, 80);
+    const HBy = rnd(-900, -500);
+    const Ext = rnd(10, 100);
+    const Loffset = rnd(0, 360);
+
+    return { Crota, HBx, HBy, Hdist, Lrota, Larm1, Larm2, Rrota, Rarm1, Rarm2, Ext, Loffset };
+  }
+  return { ...BASE_DIAMOND };
+}
+
 class SpirographCanvas {
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
   private rafId = 0;
   private running = false;
 
-  private style: 'dense' | 'open' = 'dense';
+  private style: 'dense' | 'open' | 'geometric' = 'dense';
   private stepsTotal = 0;
   private drawn = 0;
 
@@ -212,10 +256,15 @@ class SpirographCanvas {
       const g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 127 + 127);
       const b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 127 + 127);
       color = `rgb(${r},${g},${b})`;
-    } else {
-      // HSL colormode: one smooth blue → orange → blue arc over the full drawing
+    } else if (this.style === 'open') {
+      // One smooth blue → orange → blue arc over the full drawing
       const t = this.stepsTotal > 0 ? this.drawn / this.stepsTotal : 0;
       const hue = Math.round(210 + Math.sin(t * Math.PI) * 175);
+      color = `hsl(${hue}, 90%, 65%)`;
+    } else {
+      // Geometric: two full oscillations → alternating blue/orange strands per lobe
+      const t = this.stepsTotal > 0 ? this.drawn / this.stepsTotal : 0;
+      const hue = Math.round(210 + Math.sin(t * 2 * Math.PI) * 175);
       color = `hsl(${hue}, 90%, 65%)`;
     }
 
@@ -224,18 +273,22 @@ class SpirographCanvas {
 
   start(durationMs: number): Promise<void> {
     return new Promise((resolve) => {
-      this.style = Math.random() < 0.5 ? 'dense' : 'open';
-      this.params = this.style === 'dense' ? generateDenseParams() : generateOpenParams();
-      this.Lrot = 0;
+      const roll = Math.random();
+      this.style = roll < 0.34 ? 'dense' : roll < 0.67 ? 'open' : 'geometric';
+      this.params = this.style === 'dense'
+        ? generateDenseParams()
+        : this.style === 'open'
+          ? generateOpenParams()
+          : generateGeometricParams();
+      this.Lrot = this.params.Loffset ?? 0;
       this.Rrot = 0;
       this.Crot = 0;
       this.drawn = 0;
 
-      // Steps to draw: spread evenly over the full duration so each pattern
-      // builds up at the same visual pace regardless of rotation speed.
-      // Dense gets more steps for a filled look; open gets fewer for visible strands.
+      // Steps per frame controls visual density and draw speed.
+      // Dense: more steps → fills the space. Geometric: fewer → visible fine strands.
       const fps = 60;
-      const stepsPerFrame = this.style === 'dense' ? 30 : 12;
+      const stepsPerFrame = this.style === 'dense' ? 30 : this.style === 'geometric' ? 9 : 12;
       this.stepsTotal = stepsPerFrame * Math.round(durationMs / 1000 * fps);
 
       this.resize();
