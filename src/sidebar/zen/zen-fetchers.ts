@@ -267,7 +267,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           const cat = TRIVIA_CATEGORIES[Math.floor(Math.random() * TRIVIA_CATEGORIES.length)];
           const difficulty = Math.random() < 0.5 ? 'hard' : 'medium';
           const res = await fetch(
-            `https://opentdb.com/api.php?amount=10&category=${cat}&difficulty=${difficulty}&type=multiple`,
+            `https://opentdb.com/api.php?amount=10&category=${cat}&difficulty=${difficulty}&type=boolean`,
             { signal: AbortSignal.timeout(8000) },
           );
           if (!res.ok) return null;
@@ -288,7 +288,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
       const item = triviaCache.splice(Math.floor(Math.random() * triviaCache.length), 1)[0];
       if (!item) return null;
       if ((item.question + item.answer).length < 20) return null;
-      if (/which of the following|all of the following|none of the following|which one of|which statement/i.test(item.question)) return null;
       const query = encodeURIComponent(`${item.question} ${item.answer}`);
       const html = `<span class="zen-trivia-answer">${escapeHtml(item.answer)}</span><span class="zen-trivia-question">${escapeHtml(item.question)}</span>`;
       return {
