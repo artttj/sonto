@@ -401,6 +401,42 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
+    id: 'marsRover',
+    label: 'Perseverance Rover',
+    weight: 2,
+    fetch: async () => {
+      const today = new Date();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const currentYear = today.getFullYear();
+      const year = Math.floor(Math.random() * (currentYear - 2021)) + 2021;
+      const date = `${year}-${mm}-${dd}`;
+      const dateLabel = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+      });
+
+      try {
+        const res = await fetch(
+          `https://rovers.nebulum.one/api/v1/rovers/perseverance/photos?earth_date=${date}`,
+          { signal: AbortSignal.timeout(9000) },
+        );
+        if (!res.ok) return null;
+        const data = await res.json() as {
+          photos?: Array<{ img_src: string; camera: { full_name: string }; rover: { name: string } }>;
+        };
+        const photos = data.photos ?? [];
+        if (photos.length === 0) return null;
+        const photo = photos[Math.floor(Math.random() * Math.min(photos.length, 20))];
+        return {
+          imageUrl: photo.img_src,
+          caption: `Mars on ${dateLabel} · Perseverance · ${photo.camera.full_name}`,
+        };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
     id: 'funQuote',
     label: 'Fun Quotes',
     weight: 4,
