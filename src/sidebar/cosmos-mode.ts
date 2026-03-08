@@ -186,7 +186,7 @@ class SpirographCanvas {
         if (!this.running) { resolve(); return; }
         if (Date.now() >= endAt) { this.running = false; resolve(); return; }
 
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 200; i++) {
           this.Lrot = (this.Lrot + this.params.Lrota + 360) % 360;
           this.Rrot = (this.Rrot + this.params.Rrota + 360) % 360;
           this.Crot = (this.Crot + this.params.Crota + 360) % 360;
