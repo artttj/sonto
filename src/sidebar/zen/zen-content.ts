@@ -8,7 +8,7 @@ export function escapeHtml(str: string): string {
 
 export const ZEN_INITIAL_BATCH = 1;
 export const ZEN_DRIP_BATCH = 1;
-export const ZEN_DRIP_MS = 30000;
+export const ZEN_DRIP_MS = 5000;
 export const ZEN_IDLE_MS = 5 * 60 * 1000;
 export const ZEN_MAX_CATCHUP = 6;
 export const ZEN_MAX_BUBBLES = 20;
