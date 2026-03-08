@@ -68,6 +68,15 @@ class SontoSidebar {
     this.browseBtn.addEventListener('click', () => this.setMode('browse'));
     this.chatBtn.addEventListener('click', () => this.setMode('chat'));
 
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.sonto_zen_display) {
+        const newMode = changes.sonto_zen_display.newValue as string;
+        if (newMode === 'feed' || newMode === 'cosmos') {
+          void this.switchZenDisplay(newMode);
+        }
+      }
+    });
+
     qs<HTMLButtonElement>('#btn-clear-all').addEventListener('click', () => void this.browseManager.clearAll());
 
     document.querySelectorAll<HTMLButtonElement>('.filter-tab').forEach((btn) => {
@@ -136,6 +145,34 @@ class SontoSidebar {
         prompt.classList.add('hidden');
       })();
     });
+  }
+
+  private async switchZenDisplay(display: 'feed' | 'cosmos'): Promise<void> {
+    if (display === this.zenDisplay) return;
+
+    this.zenFeed?.stop();
+    this.cosmosMode?.stop();
+    this.zenDisplay = display;
+
+    if (display === 'cosmos') {
+      this.zenFeedEl.classList.add('hidden');
+      this.cosmosViewEl.classList.remove('hidden');
+      this.zenFeed = null;
+      this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
+      this.cosmosMode.refresh(this.snippets, this.language);
+      if (this.mode === 'zen') void this.cosmosMode.start();
+    } else {
+      this.cosmosViewEl.classList.add('hidden');
+      this.zenFeedEl.classList.remove('hidden');
+      this.cosmosMode = null;
+      this.zenFeed = new ZenFeed(this.zenFeedEl, {
+        language: this.language,
+        snippets: () => this.snippets,
+      });
+      await this.zenFeed.restorePastFacts();
+      this.zenFeed.refresh(this.snippets, this.language);
+      if (this.mode === 'zen') void this.zenFeed.start();
+    }
   }
 
   private setMode(mode: ViewMode): void {

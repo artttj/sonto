@@ -89,7 +89,6 @@ function escapeHtml(str: string): string {
 }
 
 const ZEN_SOURCES: Array<{ id: string; label: string }> = [
-  { id: 'predefined',          label: 'Challenges, Affirmations & Quotes' },
   { id: 'metArtwork',          label: 'Art from The Met (New York)' },
   { id: 'clevelandArtwork',    label: 'Art from Cleveland Museum' },
   { id: 'marsRover',           label: 'Perseverance Rover Photos' },
@@ -103,6 +102,8 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'affirmation',         label: 'Daily Affirmations' },
   { id: 'adviceSlip',          label: 'Advice Slip' },
   { id: 'funQuote',            label: 'Fun Quotes' },
+  { id: 'kotowaza',            label: 'Japanese Proverbs' },
+  { id: 'obliqueStrategies',   label: 'Oblique Strategies' },
   { id: 'favqsQotd',           label: 'Quote of the Day' },
   { id: 'customRss',           label: 'Custom RSS Feeds' },
 ];

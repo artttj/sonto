@@ -437,6 +437,19 @@ html, body {
   margin-top: 4px;
 }
 
+.zen-kotowaza-jp {
+  display: block;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.zen-kotowaza-meaning {
+  display: block;
+  font-size: 0.78em;
+  opacity: 0.6;
+  margin-top: 4px;
+}
+
 @keyframes lyricIn {
   from {
     opacity: 0;

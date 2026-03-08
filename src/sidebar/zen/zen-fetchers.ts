@@ -1,14 +1,14 @@
 import {
   AI_PATTERNS,
-  AFFIRMATIONS_PREDEFINED,
-  CHALLENGES,
-  QUOTES_PREDEFINED,
+  OBLIQUE_STRATEGIES,
   SVG_HN,
+  SVG_OBLIQUE,
   SVG_REDDIT,
   escapeHtml,
 } from './zen-content';
 import { getCustomFeeds } from '../../shared/storage';
 import { parseFeed } from '../../shared/rss-parser';
+import kotowazaData from '../../../node_modules/kotowaza/data/kotowaza.json';
 
 // Wrap text in smart quotes unless it already starts with one.
 // Splits on em-dash attribution so the author stays outside the quotes:
@@ -61,7 +61,8 @@ const MET_HIGHLIGHTED_IDS = [
 ];
 
 let triviaCache: Array<{ question: string; answer: string }> = [];
-let predefinedQueue: Array<{ text: string; icon: string }> = [];
+let kotowazaQueue: Array<unknown> = [];
+let obliqueQueue: string[] = [];
 
 function decodeHtml(str: string): string {
   return new DOMParser().parseFromString(str, 'text/html').body.textContent ?? str;
@@ -221,7 +222,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         };
         if (item.dead || item.deleted || item.type !== 'story') return null;
         const title = item.title?.replace(/<[^>]+>/g, '').trim() ?? '';
-        if (title.length < 10 || AI_PATTERNS.some((p) => p.test(title))) return null;
+        if (title.length < 10 || /^Ask HN:/i.test(title) || AI_PATTERNS.some((p) => p.test(title))) return null;
         const link = item.url ?? `https://news.ycombinator.com/item?id=${id}`;
         return { text: title, link, icon: SVG_HN };
       } catch {
@@ -549,24 +550,33 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
-    id: 'predefined',
-    label: 'Predefined Messages',
-    weight: 20,
-    fetch: async () => {
-      if (predefinedQueue.length === 0) {
-        const pool = [
-          ...CHALLENGES.map((text) => ({ text, icon: '' })),
-          ...AFFIRMATIONS_PREDEFINED.map((text) => ({ text: wrapQuotes(text), icon: '' })),
-          ...QUOTES_PREDEFINED.map((text) => ({ text: wrapQuotes(text), icon: '' })),
-        ];
-        for (let i = pool.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [pool[i], pool[j]] = [pool[j], pool[i]];
-        }
-        predefinedQueue = pool;
+    id: 'kotowaza',
+    label: 'Japanese Proverbs',
+    weight: 4,
+    fetch: async (ctx) => {
+      if (kotowazaQueue.length === 0) {
+        kotowazaQueue = [...kotowazaData].sort(() => Math.random() - 0.5);
       }
-      const item = predefinedQueue.pop();
-      return item ? { text: item.text, icon: item.icon } : null;
+      const item = kotowazaQueue.pop() as { japanese?: string; romaji?: string; literal?: string; meaning?: { en?: string } } | undefined;
+      if (!item?.japanese) return null;
+      const jp = item.japanese;
+      const meaning = item.meaning?.en ?? item.literal ?? '';
+      if (!meaning || !ctx.isValidFact(meaning)) return null;
+      const html = `<span class="zen-kotowaza-jp">${escapeHtml(jp)}</span><span class="zen-kotowaza-meaning">${escapeHtml(meaning)}</span>`;
+      return { text: `${jp} — ${meaning}`, html };
+    },
+  },
+  {
+    id: 'obliqueStrategies',
+    label: 'Oblique Strategies',
+    weight: 5,
+    fetch: async () => {
+      if (obliqueQueue.length === 0) {
+        obliqueQueue = [...OBLIQUE_STRATEGIES].sort(() => Math.random() - 0.5);
+      }
+      const card = obliqueQueue.pop();
+      if (!card) return null;
+      return { text: card, icon: SVG_OBLIQUE };
     },
   },
 ];
