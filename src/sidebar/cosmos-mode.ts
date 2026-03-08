@@ -265,7 +265,7 @@ class SpirographCanvas {
       // Geometric: two full oscillations → alternating blue/orange strands per lobe
       const t = this.stepsTotal > 0 ? this.drawn / this.stepsTotal : 0;
       const hue = Math.round(210 + Math.sin(t * 2 * Math.PI) * 175);
-      color = `hsl(${hue}, 90%, 65%)`;
+      color = `hsl(${hue}, 90%, 52%)`;
     }
 
     return { fx, fy, color };
@@ -285,11 +285,20 @@ class SpirographCanvas {
       this.Crot = 0;
       this.drawn = 0;
 
-      // Steps per frame controls visual density and draw speed.
-      // Dense: more steps → fills the space. Geometric: fewer → visible fine strands.
       const fps = 60;
-      const stepsPerFrame = this.style === 'dense' ? 30 : this.style === 'geometric' ? 9 : 12;
-      this.stepsTotal = stepsPerFrame * Math.round(durationMs / 1000 * fps);
+      const frames = Math.round(durationMs / 1000 * fps);
+      let stepsPerFrame: number;
+
+      if (this.style === 'geometric') {
+        // L arm is very slow — need enough steps for it to travel ~60° so the
+        // lobe structure is clearly visible. Clamp to reasonable range.
+        const lSpeed = Math.abs(this.params.Lrota);
+        const targetSteps = Math.round(60 / lSpeed);
+        stepsPerFrame = Math.max(10, Math.min(150, Math.ceil(targetSteps / frames)));
+      } else {
+        stepsPerFrame = this.style === 'dense' ? 30 : 12;
+      }
+      this.stepsTotal = stepsPerFrame * frames;
 
       this.resize();
       const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 1.3;
