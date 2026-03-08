@@ -292,16 +292,17 @@ class SpirographCanvas {
       // Screen blend causes center areas to glow toward white as strands accumulate
       this.alpha = this.style === 'dense' ? 0.45 : this.style === 'open' ? 0.55 : 0.50;
 
-      const fps = 60;
+      // Target 30fps as the minimum — pattern must complete even on a throttled tab.
+      const fps = 30;
       const frames = Math.round(durationMs / 1000 * fps);
       let stepsPerFrame: number;
 
       if (this.style === 'geometric') {
         const slowSpeed = Math.max(0.01, Math.min(Math.abs(this.params.Lrota), Math.abs(this.params.Rrota)));
         const targetSteps = Math.round(60 / slowSpeed);
-        stepsPerFrame = Math.max(10, Math.min(150, Math.ceil(targetSteps / frames)));
+        stepsPerFrame = Math.max(20, Math.min(300, Math.ceil(targetSteps / frames)));
       } else {
-        stepsPerFrame = this.style === 'dense' ? 25 : 10;
+        stepsPerFrame = this.style === 'dense' ? 50 : 20;
       }
       this.stepsTotal = stepsPerFrame * frames;
 
@@ -319,7 +320,9 @@ class SpirographCanvas {
 
       const tick = () => {
         if (!this.running) { resolve(); return; }
-        if (Date.now() >= endAt) { this.running = false; resolve(); return; }
+        // Only stop when the pattern is fully drawn AND the display time has elapsed.
+        // Checking time alone would cut the spirograph short on throttled or slow frames.
+        if (this.drawn >= this.stepsTotal && Date.now() >= endAt) { this.running = false; resolve(); return; }
 
         // Draw steps until stepsTotal reached, then just hold the completed pattern
         for (let i = 0; i < stepsPerFrame && this.drawn < this.stepsTotal; i++) {
