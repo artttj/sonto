@@ -51,25 +51,6 @@ const GALLERY_BASES: SpiroParams[] = [
   { Crota: 1, HBx: -76, HBy: -224, Hdist: 281, Lrota: 0.007692, Larm1: 98, Larm2: 299, Rrota: -2.3333, Rarm1: 104, Rarm2: 332, Ext: 75, Loffset: 7 },
 ];
 
-// Apple-style palette — luminous on dark background via screen blend
-const PALETTE: [number, number, number][] = [
-  [74, 158, 255],   // blue
-  [94, 92, 230],    // indigo
-  [191, 90, 242],   // purple
-  [90, 200, 250],   // teal
-  [99, 230, 190],   // mint
-  [255, 149, 0],    // orange
-  [255, 55, 95],    // rose
-  [48, 209, 88],    // green
-];
-
-function pickColorPair(): [[number, number, number], [number, number, number]] {
-  const a = Math.floor(Math.random() * PALETTE.length);
-  let b = Math.floor(Math.random() * (PALETTE.length - 1));
-  if (b >= a) b++;
-  return [PALETTE[a], PALETTE[b]];
-}
-
 function rnd(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
@@ -192,9 +173,7 @@ class SpirographCanvas {
   private style: 'dense' | 'open' | 'geometric' = 'dense';
   private stepsTotal = 0;
   private drawn = 0;
-  private colorA: [number, number, number] = [74, 158, 255];
-  private colorB: [number, number, number] = [94, 92, 230];
-  private alpha = 0.14;
+  private alpha = 0.20;
 
   // Original 960px canvas reference size
   private static readonly REF = 960;
@@ -283,11 +262,13 @@ class SpirographCanvas {
     const fx = cx + Math.cos(na) * nd;
     const fy = cy + Math.sin(na) * nd;
 
-    // Blend between two Apple palette colors as drawing progresses
-    const t = this.stepsTotal > 0 ? this.drawn / this.stepsTotal : 0;
-    const r = Math.round(this.colorA[0] + (this.colorB[0] - this.colorA[0]) * t);
-    const g = Math.round(this.colorA[1] + (this.colorB[1] - this.colorA[1]) * t);
-    const b = Math.round(this.colorA[2] + (this.colorB[2] - this.colorA[2]) * t);
+    // Analogue colormode: three phase-shifted sine waves across L and R arm rotations
+    // Creates the classic spirograph color sweep — blue/cyan → gold/orange → white → pink
+    const phase = this.Lrot * AM;
+    const phase2 = this.Rrot * AM;
+    const r = Math.round(Math.sin(phase) * 127 + 127);
+    const g = Math.round(Math.sin(phase + Math.PI * 2 / 3) * 127 + 127);
+    const b = Math.round(Math.sin(phase2 + Math.PI * 4 / 3) * 127 + 127);
     const color = `rgba(${r},${g},${b},${this.alpha})`;
 
     return { fx, fy, color };
@@ -307,10 +288,9 @@ class SpirographCanvas {
       this.Crot = 0;
       this.drawn = 0;
 
-      // Pick two Apple palette colors for this pattern
-      [this.colorA, this.colorB] = pickColorPair();
-      // Alpha controls accumulation — lower = more strands before saturation
-      this.alpha = this.style === 'dense' ? 0.14 : this.style === 'open' ? 0.20 : 0.16;
+      // Alpha controls how many overlapping strands before saturation
+      // Higher alpha = more vivid individual strands; lower = finer mesh before glow
+      this.alpha = this.style === 'dense' ? 0.22 : this.style === 'open' ? 0.32 : 0.26;
 
       const fps = 60;
       const frames = Math.round(durationMs / 1000 * fps);
@@ -322,7 +302,7 @@ class SpirographCanvas {
         const targetSteps = Math.round(60 / slowSpeed);
         stepsPerFrame = Math.max(10, Math.min(200, Math.ceil(targetSteps / frames)));
       } else {
-        stepsPerFrame = this.style === 'dense' ? 65 : 15;
+        stepsPerFrame = this.style === 'dense' ? 45 : 15;
       }
       this.stepsTotal = stepsPerFrame * frames;
 
