@@ -92,7 +92,6 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'predefined',          label: 'Challenges, Affirmations & Quotes' },
   { id: 'metArtwork',          label: 'Art from The Met (New York)' },
   { id: 'clevelandArtwork',    label: 'Art from Cleveland Museum' },
-  { id: 'marsRover',           label: 'NASA Mars Rover Photos' },
   { id: 'hnStory',             label: 'Hacker News Headlines' },
   { id: 'reddit',              label: 'Reddit Top Posts' },
   { id: 'trivia',              label: 'Trivia (Art, Science, Books)' },

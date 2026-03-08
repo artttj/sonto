@@ -102,7 +102,6 @@ Ask questions about your saved content. Sonto finds the closest matches using ve
 | --- | --- |
 | The Met Museum | Public domain paintings |
 | Cleveland Museum of Art | Artworks and facts |
-| NASA Mars Rover | Curiosity and Perseverance photos |
 | NASA Mars Images | Surface photos from the NASA image library |
 | Hacker News | Top stories |
 | Reddit | Posts from science, history, space and more |

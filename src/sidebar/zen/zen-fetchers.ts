@@ -307,7 +307,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'metArtwork',
     label: 'Met Artwork',
-    weight: 6,
+    weight: 4,
     fetch: async (ctx) => {
       const fetchObject = async (objectId: number) => {
         const objRes = await fetch(
@@ -361,7 +361,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'nasaMarsImage',
     label: 'NASA Mars Images',
-    weight: 6,
+    weight: 2,
     fetch: async () => {
       try {
         const page = Math.floor(Math.random() * 33) + 1;
@@ -395,53 +395,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const year = meta?.date_created ? new Date(meta.date_created).getFullYear() : '';
         const caption = year ? `${title} · NASA · ${year}` : `${title} · NASA`;
         return { imageUrl, caption };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
-    id: 'marsRover',
-    label: 'Mars Rover Photos',
-    weight: 6,
-    fetch: async () => {
-      const today = new Date();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      const currentYear = today.getFullYear();
-
-      const year = Math.floor(Math.random() * (currentYear - 2014)) + 2014;
-      const date = `${year}-${mm}-${dd}`;
-      const dateLabel = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric',
-      });
-
-      const rovers: string[] = ['curiosity'];
-      if (year >= 2021) rovers.push('perseverance');
-
-      try {
-        const responses = await Promise.allSettled(
-          rovers.map((rover) =>
-            fetch(`https://rovers.nebulum.one/api/v1/rovers/${rover}/photos?earth_date=${date}`, {
-              signal: AbortSignal.timeout(9000),
-            }).then((r) => (r.ok ? r.json() : null)),
-          ),
-        );
-
-        const photos: Array<{ img_src: string; camera: { full_name: string }; rover: { name: string } }> = [];
-        for (const res of responses) {
-          if (res.status === 'fulfilled' && res.value) {
-            const data = res.value as { photos?: Array<{ img_src: string; camera: { full_name: string }; rover: { name: string } }> };
-            photos.push(...(data.photos ?? []));
-          }
-        }
-
-        if (photos.length === 0) return null;
-        const photo = photos[Math.floor(Math.random() * Math.min(photos.length, 20))];
-        return {
-          imageUrl: photo.img_src,
-          caption: `Mars on ${dateLabel} · ${photo.rover.name} · ${photo.camera.full_name}`,
-        };
       } catch {
         return null;
       }
@@ -495,7 +448,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'clevelandArtwork',
     label: 'Cleveland Museum of Art',
-    weight: 6,
+    weight: 4,
     fetch: async (ctx) => {
       try {
         const skip = Math.floor(Math.random() * 3000);
