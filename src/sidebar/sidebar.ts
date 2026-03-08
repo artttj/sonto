@@ -1,8 +1,9 @@
 import { MSG } from '../shared/messages';
-import { getSettings } from '../shared/storage';
+import { getSettings, getZenDisplay } from '../shared/storage';
 import type { Snippet } from '../shared/types';
 import { BrowseManager } from './browse-manager';
 import { ChatManager } from './chat-manager';
+import { CosmosMode } from './cosmos-mode';
 import { ZenFeed } from './zen/zen-feed';
 
 type FilterMode = 'all' | 'manual' | 'history';
@@ -16,6 +17,7 @@ class SontoSidebar {
   private mode: ViewMode = 'zen';
   private snippets: Snippet[] = [];
   private language = 'en';
+  private zenDisplay: 'feed' | 'cosmos' = 'feed';
 
   private readonly zenBtn = qs<HTMLButtonElement>('#btn-zen');
   private readonly browseBtn = qs<HTMLButtonElement>('#btn-browse');
@@ -24,6 +26,7 @@ class SontoSidebar {
   private readonly viewBrowse = qs<HTMLElement>('#view-browse');
   private readonly viewChat = qs<HTMLElement>('#view-chat');
   private readonly zenFeedEl = qs<HTMLElement>('#zen-feed');
+  private readonly cosmosViewEl = qs<HTMLElement>('#cosmos-view');
   private readonly snippetListEl = qs<HTMLElement>('#snippet-list');
   private readonly chatMessagesEl = qs<HTMLElement>('#chat-messages');
   private readonly chatInputEl = qs<HTMLTextAreaElement>('#chat-input');
@@ -34,10 +37,8 @@ class SontoSidebar {
     (all, manual, history) => this.updateCounts(all, manual, history),
   );
 
-  private readonly zenFeed = new ZenFeed(this.zenFeedEl, {
-    language: this.language,
-    snippets: () => this.snippets,
-  });
+  private zenFeed: ZenFeed | null = null;
+  private cosmosMode: CosmosMode | null = null;
 
   private readonly chatManager = new ChatManager(
     this.chatMessagesEl,
@@ -55,7 +56,7 @@ class SontoSidebar {
       if (message.type === MSG.SNIPPET_ADDED) {
         void this.browseManager.load().then(() => {
           this.snippets = this.browseManager.getSnippets();
-          if (this.mode === 'zen') {
+          if (this.mode === 'zen' && this.zenFeed) {
             this.zenFeed.invalidateCategories();
             void this.zenFeed.start();
           }
@@ -86,18 +87,33 @@ class SontoSidebar {
       }
     });
 
-    await this.zenFeed.restorePastFacts();
-
     try {
-      const settings = await getSettings();
+      const [settings, zenDisplay] = await Promise.all([getSettings(), getZenDisplay()]);
       this.language = settings.language ?? 'en';
-      this.zenFeed.refresh(this.snippets, this.language);
+      this.zenDisplay = zenDisplay;
     } catch {}
+
+    if (this.zenDisplay === 'cosmos') {
+      this.zenFeedEl.classList.add('hidden');
+      this.cosmosViewEl.classList.remove('hidden');
+      this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
+    } else {
+      this.zenFeed = new ZenFeed(this.zenFeedEl, {
+        language: this.language,
+        snippets: () => this.snippets,
+      });
+      await this.zenFeed.restorePastFacts();
+      this.zenFeed.refresh(this.snippets, this.language);
+    }
 
     await this.browseManager.load();
     this.snippets = this.browseManager.getSnippets();
 
-    void this.zenFeed.start();
+    if (this.zenDisplay === 'cosmos') {
+      void this.cosmosMode!.start();
+    } else {
+      void this.zenFeed!.start();
+    }
   }
 
   private setMode(mode: ViewMode): void {
@@ -110,9 +126,14 @@ class SontoSidebar {
     this.viewChat.classList.toggle('hidden', mode !== 'chat');
 
     if (mode === 'zen') {
-      void this.zenFeed.start();
+      if (this.zenDisplay === 'cosmos') {
+        void this.cosmosMode?.start();
+      } else {
+        void this.zenFeed?.start();
+      }
     } else {
-      this.zenFeed.stop();
+      this.zenFeed?.stop();
+      this.cosmosMode?.stop();
     }
   }
 

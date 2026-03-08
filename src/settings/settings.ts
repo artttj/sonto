@@ -10,6 +10,8 @@ import {
   saveDisabledSources,
   getDripInterval,
   saveDripInterval,
+  getZenDisplay,
+  saveZenDisplay,
 } from '../shared/storage';
 import { setLocale, applyI18n } from '../shared/i18n';
 import type { ProviderName } from '../shared/types';
@@ -152,6 +154,13 @@ async function init(): Promise<void> {
   if (versionEl) {
     versionEl.textContent = chrome.runtime.getManifest().version;
   }
+
+  // Zen display mode
+  const zenDisplay = await getZenDisplay();
+  const setZenDisplay = initSegmented('zen-display-segmented', (val) => {
+    void saveZenDisplay(val as 'feed' | 'cosmos');
+  });
+  setZenDisplay(zenDisplay);
 
   // Drip interval slider
   const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;

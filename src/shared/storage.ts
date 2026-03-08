@@ -70,3 +70,15 @@ export async function getDripInterval(): Promise<number> {
 export async function saveDripInterval(ms: number): Promise<void> {
   await chrome.storage.local.set({ [DRIP_INTERVAL_KEY]: ms });
 }
+
+const ZEN_DISPLAY_KEY = 'sonto_zen_display';
+
+export async function getZenDisplay(): Promise<'feed' | 'cosmos'> {
+  const result = await chrome.storage.local.get(ZEN_DISPLAY_KEY);
+  const val = result[ZEN_DISPLAY_KEY] as string | undefined;
+  return val === 'cosmos' ? 'cosmos' : 'feed';
+}
+
+export async function saveZenDisplay(mode: 'feed' | 'cosmos'): Promise<void> {
+  await chrome.storage.local.set({ [ZEN_DISPLAY_KEY]: mode });
+}
