@@ -409,10 +409,30 @@ class SontoSidebar {
     }
   }
 
-  private appendZenBubbleElement(text: string): HTMLElement {
+  private appendZenBubbleElement(text: string, link?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
-    bubble.innerHTML = `${SVG_BULB}<span>${escapeHtml(text)}</span>`;
+    const linkHtml = link
+      ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>`
+      : '';
+    bubble.innerHTML = `${SVG_BULB}<span>${escapeHtml(text)}${linkHtml}</span>`;
+    const first = this.zenFeed.firstChild;
+    if (first) {
+      this.zenFeed.insertBefore(bubble, first);
+    } else {
+      this.zenFeed.appendChild(bubble);
+    }
+    return bubble;
+  }
+
+  private appendZenArtBubble(imageUrl: string, caption: string): HTMLElement {
+    const bubble = document.createElement('div');
+    bubble.className = 'zen-bubble';
+    bubble.innerHTML = `${SVG_BULB}<div class="zen-art"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /><span class="zen-art-caption">${escapeHtml(caption)}</span></div>`;
+    const img = bubble.querySelector<HTMLImageElement>('.zen-art-img');
+    if (img) {
+      img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
+    }
     const first = this.zenFeed.firstChild;
     if (first) {
       this.zenFeed.insertBefore(bubble, first);
@@ -479,7 +499,11 @@ class SontoSidebar {
     } catch {}
   }
 
-  private async fetchApiFact(): Promise<string | null> {
+  private isValidFact(text: string): boolean {
+    return text.length >= 50 && !text.includes('[NULL]') && !AI_PATTERNS.some((p) => p.test(text));
+  }
+
+  private async fetchUselessFact(): Promise<string | null> {
     try {
       const res = await fetch(`https://uselessfacts.jsph.pl/api/v2/facts/random?language=${this.language}`, {
         signal: AbortSignal.timeout(8000),
@@ -487,12 +511,170 @@ class SontoSidebar {
       if (!res.ok) return null;
       const data = await res.json() as { text?: string };
       const text = data.text?.trim() ?? '';
-      if (
-        text.length < 50 ||
-        text.includes('[NULL]') ||
-        AI_PATTERNS.some((p) => p.test(text))
-      ) return null;
-      return text;
+      return this.isValidFact(text) ? text : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchStoicQuote(): Promise<string | null> {
+    if (this.language !== 'en') return null;
+    try {
+      const res = await fetch('https://stoic.tekloon.net/stoic-quote', {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json() as { data?: { quote?: string; author?: string } };
+      const quote = data.data?.quote?.trim() ?? '';
+      const author = data.data?.author?.trim();
+      if (!this.isValidFact(quote)) return null;
+      return author ? `${quote} — ${author}` : quote;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchDesignQuote(): Promise<string | null> {
+    if (this.language !== 'en') return null;
+    try {
+      const res = await fetch(`https://quotesondesign.com/wp-json/custom/v1/random-post?nocache=${Date.now()}`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json() as { title?: string; content?: string };
+      const raw = data.content?.replace(/<[^>]+>/g, '').trim() ?? '';
+      const author = data.title?.trim();
+      if (!this.isValidFact(raw)) return null;
+      return author ? `${raw} — ${author}` : raw;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchHNStory(): Promise<{ text: string; link: string } | null> {
+    try {
+      const listRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json', {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!listRes.ok) return null;
+      const ids = await listRes.json() as number[];
+      const pool = ids.slice(0, 30);
+      const id = pool[Math.floor(Math.random() * pool.length)];
+      const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!itemRes.ok) return null;
+      const item = await itemRes.json() as { title?: string; url?: string; type?: string; dead?: boolean; deleted?: boolean };
+      if (item.dead || item.deleted || item.type !== 'story') return null;
+      const title = item.title?.replace(/<[^>]+>/g, '').trim() ?? '';
+      if (title.length < 10 || AI_PATTERNS.some((p) => p.test(title))) return null;
+      const link = item.url ?? `https://news.ycombinator.com/item?id=${id}`;
+      return { text: `HN: ${title}`, link };
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchMetArtwork(category: string): Promise<{ imageUrl: string; caption: string } | null> {
+    try {
+      const keyword = encodeURIComponent(category.split(/\s+/).slice(0, 3).join(' '));
+      const searchRes = await fetch(
+        `https://collectionapi.metmuseum.org/public/collection/v1/search?q=${keyword}&hasImages=true&isPublicDomain=true`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if (!searchRes.ok) return null;
+      const searchData = await searchRes.json() as { total: number; objectIDs?: number[] };
+      if (!searchData.objectIDs || searchData.objectIDs.length === 0) return null;
+      const pool = searchData.objectIDs.slice(0, 50);
+      const objectId = pool[Math.floor(Math.random() * pool.length)];
+      const objRes = await fetch(
+        `https://collectionapi.metmuseum.org/public/collection/v1/objects/${objectId}`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if (!objRes.ok) return null;
+      const obj = await objRes.json() as {
+        primaryImageSmall?: string;
+        title?: string;
+        artistDisplayName?: string;
+        objectDate?: string;
+        isPublicDomain?: boolean;
+      };
+      if (!obj.primaryImageSmall || !obj.isPublicDomain) return null;
+      const title = obj.title?.trim() || 'Untitled';
+      const parts = [title];
+      if (obj.artistDisplayName?.trim()) parts.push(obj.artistDisplayName.trim());
+      if (obj.objectDate?.trim()) parts.push(obj.objectDate.trim());
+      return { imageUrl: obj.primaryImageSmall, caption: parts.join(' — ') };
+    } catch {
+      return null;
+    }
+  }
+
+  private getGeolocation(): Promise<GeolocationCoordinates> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) { reject(new Error('no geolocation')); return; }
+      const timer = setTimeout(() => reject(new Error('timeout')), 6000);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { clearTimeout(timer); resolve(pos.coords); },
+        (err) => { clearTimeout(timer); reject(err); },
+        { timeout: 6000, maximumAge: 300000 },
+      );
+    });
+  }
+
+  private async fetchWeatherForecast(): Promise<string | null> {
+    const WMO_EN: Record<number, string> = {
+      0: 'clear sky', 1: 'mainly clear', 2: 'partly cloudy', 3: 'overcast',
+      45: 'foggy', 48: 'icy fog',
+      51: 'light drizzle', 53: 'moderate drizzle', 55: 'heavy drizzle',
+      61: 'light rain', 63: 'moderate rain', 65: 'heavy rain',
+      71: 'light snow', 73: 'moderate snow', 75: 'heavy snow',
+      80: 'rain showers', 81: 'moderate showers', 82: 'heavy showers',
+      95: 'thunderstorm', 96: 'thunderstorm with hail', 99: 'severe thunderstorm',
+    };
+    const WMO_DE: Record<number, string> = {
+      0: 'klarer Himmel', 1: 'überwiegend klar', 2: 'teils bewölkt', 3: 'bedeckt',
+      45: 'Nebel', 48: 'Eisnebel',
+      51: 'leichter Nieselregen', 53: 'mäßiger Nieselregen', 55: 'starker Nieselregen',
+      61: 'leichter Regen', 63: 'mäßiger Regen', 65: 'starker Regen',
+      71: 'leichter Schnee', 73: 'mäßiger Schnee', 75: 'starker Schnee',
+      80: 'Regenschauer', 81: 'mäßige Schauer', 82: 'starke Schauer',
+      95: 'Gewitter', 96: 'Gewitter mit Hagel', 99: 'schweres Gewitter',
+    };
+    try {
+      const coords = await this.getGeolocation();
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude.toFixed(4)}&longitude=${coords.longitude.toFixed(4)}&current=temperature_2m,weathercode,wind_speed_10m&timezone=auto`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) return null;
+      const data = await res.json() as {
+        current?: { temperature_2m?: number; weathercode?: number; wind_speed_10m?: number };
+      };
+      const c = data.current;
+      if (!c) return null;
+      const temp = Math.round(c.temperature_2m ?? 0);
+      const wind = Math.round(c.wind_speed_10m ?? 0);
+      const code = c.weathercode ?? 0;
+      const wmo = this.language === 'de' ? WMO_DE : WMO_EN;
+      const condition = wmo[code] ?? (this.language === 'de' ? 'wechselhaft' : 'mixed conditions');
+      return this.language === 'de'
+        ? `Aktuell ${temp}°C, ${condition}, Wind ${wind} km/h.`
+        : `Currently ${temp}°C with ${condition} and ${wind} km/h winds.`;
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchAdviceSlip(): Promise<string | null> {
+    if (this.language !== 'en') return null;
+    try {
+      const res = await fetch('https://api.adviceslip.com/advice', {
+        signal: AbortSignal.timeout(8000),
+        cache: 'no-cache',
+      });
+      if (!res.ok) return null;
+      const data = await res.json() as { slip?: { advice: string } };
+      const text = data.slip?.advice.trim() ?? '';
+      return this.isValidFact(text) ? text : null;
     } catch {
       return null;
     }
@@ -512,16 +694,43 @@ class SontoSidebar {
   private async addZenBubble(): Promise<void> {
     if (this.zenCategories.length === 0) return;
 
-    if (Math.random() < 0.2) {
-      const apiFact = await this.fetchApiFact();
-      if (apiFact) {
-        const isDuplicate = this.pastFacts.some((p) =>
-          p === apiFact || p.slice(0, 60) === apiFact.slice(0, 60)
-        );
-        if (!isDuplicate) {
+    const roll = Math.random();
+
+    if (roll < 0.06) {
+      const artCategory = this.pickCategory();
+      if (artCategory) {
+        const art = await this.fetchMetArtwork(artCategory);
+        if (art && !this.pastFacts.some((p) => p.slice(0, 60) === art.caption.slice(0, 60))) {
           this.hideZenLoader();
-          this.appendZenBubbleElement(apiFact);
-          this.pastFacts.push(apiFact);
+          this.appendZenArtBubble(art.imageUrl, art.caption);
+          this.pastFacts.push(art.caption);
+          if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
+          void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
+          void this.cacheZenFeed();
+          return;
+        }
+      }
+    }
+
+    type TextResult = string | { text: string; link?: string } | null;
+    const externalFetcher: (() => Promise<TextResult>) | null =
+      roll < 0.13 ? () => this.fetchUselessFact() :
+      roll < 0.21 ? () => this.fetchAdviceSlip() :
+      roll < 0.29 ? () => this.fetchStoicQuote() :
+      roll < 0.37 ? () => this.fetchDesignQuote() :
+      roll < 0.46 ? () => this.fetchHNStory() :
+      roll < 0.53 ? () => this.fetchWeatherForecast() :
+      null;
+
+    if (externalFetcher) {
+      const result = await externalFetcher();
+      if (result) {
+        const text = typeof result === 'string' ? result : result.text;
+        const link = typeof result === 'object' && result !== null ? result.link : undefined;
+        if (!this.pastFacts.some((p) => p.slice(0, 60) === text.slice(0, 60))) {
+          this.hideZenLoader();
+          this.appendZenBubbleElement(text, link);
+          this.pastFacts.push(text);
           if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
           void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
           void this.cacheZenFeed();
