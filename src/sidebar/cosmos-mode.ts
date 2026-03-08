@@ -235,7 +235,7 @@ class SpirographCanvas {
       // builds up at the same visual pace regardless of rotation speed.
       // Dense gets more steps for a filled look; open gets fewer for visible strands.
       const fps = 60;
-      const stepsPerFrame = this.style === 'dense' ? 15 : 6;
+      const stepsPerFrame = this.style === 'dense' ? 30 : 12;
       this.stepsTotal = stepsPerFrame * Math.round(durationMs / 1000 * fps);
 
       this.resize();
