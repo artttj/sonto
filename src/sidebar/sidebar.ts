@@ -628,6 +628,55 @@ class SontoSidebar {
     }
   }
 
+  private readonly REDDIT_SUBREDDITS = [
+    'todayilearned', 'science', 'Futurology', 'space', 'history',
+    'technology', 'programming', 'entrepreneur', 'interestingasfuck', 'philosophy',
+    'business', 'AskScience', 'dataisbeautiful',
+  ];
+
+  private async fetchRedditPost(): Promise<{ text: string; link: string } | null> {
+    try {
+      const sub = this.REDDIT_SUBREDDITS[Math.floor(Math.random() * this.REDDIT_SUBREDDITS.length)];
+      const res = await fetch(`https://www.reddit.com/r/${sub}/hot.json?limit=25&raw_json=1`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json() as {
+        data?: { children?: Array<{ data: { title: string; permalink: string; score: number; stickied: boolean; over_18: boolean } }> };
+      };
+      const posts = (data.data?.children ?? [])
+        .map((p) => p.data)
+        .filter((p) => !p.stickied && !p.over_18 && p.score > 50 && p.title.length >= 20)
+        .filter((p) => !AI_PATTERNS.some((pat) => pat.test(p.title)));
+      if (posts.length === 0) return null;
+      const pick = posts[Math.floor(Math.random() * Math.min(posts.length, 10))];
+      return {
+        text: `r/${sub}: ${pick.title}`,
+        link: `https://www.reddit.com${pick.permalink}`,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchZenQuote(): Promise<string | null> {
+    if (this.language !== 'en') return null;
+    try {
+      const res = await fetch('https://zenquotes.io/api/random', {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json() as Array<{ q?: string; a?: string }>;
+      const item = data[0];
+      const quote = item?.q?.trim() ?? '';
+      const author = item?.a?.trim();
+      if (!this.isValidFact(quote)) return null;
+      return author ? `${quote} — ${author}` : quote;
+    } catch {
+      return null;
+    }
+  }
+
   private getGeolocation(): Promise<GeolocationCoordinates> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) { reject(new Error('no geolocation')); return; }
@@ -732,12 +781,14 @@ class SontoSidebar {
 
     type TextResult = string | { text: string; link?: string } | null;
     const externalFetcher: (() => Promise<TextResult>) | null =
-      roll < 0.13 ? () => this.fetchUselessFact() :
-      roll < 0.21 ? () => this.fetchAdviceSlip() :
-      roll < 0.29 ? () => this.fetchStoicQuote() :
-      roll < 0.37 ? () => this.fetchDesignQuote() :
-      roll < 0.46 ? () => this.fetchHNStory() :
-      roll < 0.53 ? () => this.fetchWeatherForecast() :
+      roll < 0.10 ? () => this.fetchUselessFact() :
+      roll < 0.17 ? () => this.fetchAdviceSlip() :
+      roll < 0.24 ? () => this.fetchStoicQuote() :
+      roll < 0.30 ? () => this.fetchDesignQuote() :
+      roll < 0.36 ? () => this.fetchZenQuote() :
+      roll < 0.44 ? () => this.fetchHNStory() :
+      roll < 0.52 ? () => this.fetchRedditPost() :
+      roll < 0.58 ? () => this.fetchWeatherForecast() :
       null;
 
     if (externalFetcher) {
