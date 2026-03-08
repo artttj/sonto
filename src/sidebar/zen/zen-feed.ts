@@ -222,7 +222,7 @@ export class ZenFeed {
     if (result && isArtResult(result)) {
       if (!this.pastFacts.some((p) => p.slice(0, 60) === result.caption.slice(0, 60))) {
         this.hideLoader();
-        this.appendArtBubble(result.imageUrl, result.caption);
+        this.appendArtBubble(result.imageUrl, result.caption, result.link);
         this.pastFacts.push(result.caption);
         if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
         void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
@@ -335,7 +335,7 @@ export class ZenFeed {
     return bubble;
   }
 
-  private appendArtBubble(imageUrl: string, caption: string): HTMLElement {
+  private appendArtBubble(imageUrl: string, caption: string, link?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     const sep = caption.includes(' · ') ? ' · ' : ' — ';
@@ -343,7 +343,8 @@ export class ZenFeed {
     const title = sepIdx !== -1 ? caption.slice(0, sepIdx) : caption;
     const sub = sepIdx !== -1 ? caption.slice(sepIdx + sep.length) : '';
     const subHtml = sub ? `<span class="zen-art-caption">${escapeHtml(sub)}</span>` : '';
-    bubble.innerHTML = `<div class="zen-art"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /><span class="zen-art-title">${escapeHtml(title)}</span>${subHtml}</div>`;
+    const linkHtml = link ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>` : '';
+    bubble.innerHTML = `<div class="zen-art"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /><span class="zen-art-title">${escapeHtml(title)}${linkHtml}</span>${subHtml}</div>`;
     const img = bubble.querySelector<HTMLImageElement>('.zen-art-img');
     if (img) {
       img.addEventListener('load', () => img.classList.add('loaded'), { once: true });

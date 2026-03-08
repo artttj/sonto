@@ -29,7 +29,7 @@ function wrapQuotes(text: string): string {
 }
 
 export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string };
-export type ZenArtResult = { imageUrl: string; caption: string };
+export type ZenArtResult = { imageUrl: string; caption: string; link?: string };
 export type ZenFetchResult = ZenTextResult | ZenArtResult | null;
 
 export interface FetcherContext {
@@ -563,7 +563,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))];
         if (pick.imageUrl) {
-          return { imageUrl: pick.imageUrl, caption: pick.title };
+          return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
         }
         return { text: pick.title, link: pick.link };
       } catch {
@@ -651,7 +651,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * Math.min(items.length, 15))];
-        if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title };
+        if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
         return { text: pick.title, link: pick.link, icon: SVG_SMITHSONIAN };
       } catch {
         return null;
@@ -675,7 +675,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (pick.description) {
           const doc = new DOMParser().parseFromString(pick.description, 'text/html');
           const img = doc.querySelector('img');
-          if (img?.src) return { imageUrl: img.src, caption: pick.title };
+          if (img?.src) return { imageUrl: img.src, caption: pick.title, link: pick.link };
         }
         return { text: pick.title, link: pick.link, icon: SVG_ATLAS };
       } catch {
