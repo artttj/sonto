@@ -6,6 +6,8 @@ import {
   saveOpenAIKey,
   getGeminiKey,
   saveGeminiKey,
+  getDisabledSources,
+  saveDisabledSources,
 } from '../shared/storage';
 import { setLocale, applyI18n } from '../shared/i18n';
 import type { ProviderName } from '../shared/types';
@@ -147,6 +149,58 @@ async function init(): Promise<void> {
   const versionEl = document.getElementById('about-version');
   if (versionEl) {
     versionEl.textContent = chrome.runtime.getManifest().version;
+  }
+
+  // Zen Feed Sources
+  const ZEN_SOURCES: Array<{ id: string; label: string }> = [
+    { id: 'predefined',   label: 'Challenges, Affirmations & Quotes' },
+    { id: 'metArtwork',   label: 'Met Museum Artwork' },
+    { id: 'hnStory',      label: 'Hacker News' },
+    { id: 'reddit',       label: 'Reddit' },
+    { id: 'trivia',       label: 'Trivia (Art, Science, Books)' },
+    { id: 'uselessFacts', label: 'Random Facts' },
+    { id: 'stoicQuote',   label: 'Stoic Quotes' },
+    { id: 'designQuote',  label: 'Design Quotes' },
+    { id: 'zenQuote',     label: 'Zen Quotes' },
+    { id: 'affirmation',  label: 'Affirmations API' },
+    { id: 'adviceSlip',   label: 'Advice Slip' },
+    { id: 'weather',      label: 'Local Weather' },
+  ];
+
+  const disabledSources = new Set(await getDisabledSources());
+  const sourcesList = document.getElementById('zen-sources-list')!;
+
+  for (const source of ZEN_SOURCES) {
+    const row = document.createElement('div');
+    row.className = 'zen-source-row';
+
+    const label = document.createElement('span');
+    label.className = 'zen-source-label';
+    label.textContent = source.label;
+
+    const toggleLabel = document.createElement('label');
+    toggleLabel.className = 'toggle-switch';
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = !disabledSources.has(source.id);
+    input.addEventListener('change', async () => {
+      if (input.checked) {
+        disabledSources.delete(source.id);
+      } else {
+        disabledSources.add(source.id);
+      }
+      await saveDisabledSources([...disabledSources]);
+    });
+
+    const track = document.createElement('span');
+    track.className = 'toggle-track';
+
+    toggleLabel.appendChild(input);
+    toggleLabel.appendChild(track);
+    row.appendChild(label);
+    row.appendChild(toggleLabel);
+    sourcesList.appendChild(row);
   }
 
   const hasAnyKey = !!openaiKey || !!geminiKey;

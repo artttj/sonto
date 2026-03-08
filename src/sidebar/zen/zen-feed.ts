@@ -1,4 +1,5 @@
 import { MSG } from '../../shared/messages';
+import { getDisabledSources } from '../../shared/storage';
 import type { Snippet } from '../../shared/types';
 import {
   AI_PATTERNS,
@@ -39,6 +40,7 @@ export class ZenFeed {
   private language: string;
   private snippetsFn: () => Snippet[];
   private _starting = false;
+  private disabledSources = new Set<string>();
 
   constructor(
     private readonly feedEl: HTMLElement,
@@ -67,6 +69,11 @@ export class ZenFeed {
 
     this._starting = true;
     this.stop();
+
+    try {
+      const disabled = await getDisabledSources();
+      this.disabledSources = new Set(disabled);
+    } catch { /* use previous value */ }
 
     try {
       const hasBubbles = this.feedEl.querySelectorAll('.zen-bubble').length > 0;
@@ -194,7 +201,7 @@ export class ZenFeed {
   }
 
   private async addBubble(): Promise<void> {
-    const fetcher = pickFetcher(ZEN_FETCHERS);
+    const fetcher = pickFetcher(ZEN_FETCHERS, this.disabledSources);
     const ctx = {
       language: this.language,
       isValidFact: (t: string) => this.isValidFact(t),

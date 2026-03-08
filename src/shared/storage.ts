@@ -49,3 +49,14 @@ export async function getGeminiKey(): Promise<string> {
 export async function saveGeminiKey(key: string): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.GEMINI_KEY]: key });
 }
+
+const DISABLED_SOURCES_KEY = 'sonto_disabled_sources';
+
+export async function getDisabledSources(): Promise<string[]> {
+  const result = await chrome.storage.local.get(DISABLED_SOURCES_KEY);
+  return (result[DISABLED_SOURCES_KEY] as string[] | undefined) ?? [];
+}
+
+export async function saveDisabledSources(ids: string[]): Promise<void> {
+  await chrome.storage.local.set({ [DISABLED_SOURCES_KEY]: ids });
+}

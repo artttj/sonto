@@ -97,6 +97,19 @@
           <button id="btn-save-settings" class="btn btn-primary" type="button" data-i18n="general_save">Save Settings</button>
           <span id="settings-status" class="saved-msg hidden" data-i18n="general_saved">Saved</span>
         </div>
+
+        <details class="zen-sources-collapsible" id="zen-sources-details">
+          <summary>
+            <span>Zen Feed Sources</span>
+            <svg class="collapsible-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 6 L8 10 L12 6"/>
+            </svg>
+          </summary>
+          <div class="zen-sources-body">
+            <p class="zen-sources-desc">Choose which sources appear in your Zen feed. All are enabled by default.</p>
+            <div id="zen-sources-list"></div>
+          </div>
+        </details>
       </section>
 
       <!-- AI Connections -->

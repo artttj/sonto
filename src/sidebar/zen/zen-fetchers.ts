@@ -408,12 +408,14 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   },
 ];
 
-export function pickFetcher(fetchers: ZenFetcher[]): ZenFetcher {
-  const total = fetchers.reduce((sum, f) => sum + f.weight, 0);
+export function pickFetcher(fetchers: ZenFetcher[], disabledIds?: ReadonlySet<string>): ZenFetcher {
+  const pool = disabledIds ? fetchers.filter((f) => !disabledIds.has(f.id)) : fetchers;
+  const available = pool.length > 0 ? pool : fetchers;
+  const total = available.reduce((sum, f) => sum + f.weight, 0);
   let roll = Math.random() * total;
-  for (const f of fetchers) {
+  for (const f of available) {
     roll -= f.weight;
     if (roll <= 0) return f;
   }
-  return fetchers[fetchers.length - 1];
+  return available[available.length - 1];
 }
