@@ -307,7 +307,7 @@ class SpirographCanvas {
       this.stepsTotal = stepsPerFrame * frames;
 
       this.resize();
-      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 2.2;
+      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 1.6;
 
       this.ctx.globalCompositeOperation = 'screen';
       this.ctx.fillStyle = '#060410';
@@ -556,8 +556,9 @@ export class CosmosMode {
       if (this.stopped) return;
     }
 
-    // Wait, then draw spiro underneath — message stays on top throughout
-    const showMs = Math.max(this.intervalMs - SPIRO_MS - FADE_MS * 2, 1500);
+    // Wait, then draw spiro underneath — message stays on top throughout.
+    // Total after showMs: SPIRO_MS + 3×FADE_MS (spiro fade, msg out, msg in) = 4500ms.
+    const showMs = Math.max(this.intervalMs - SPIRO_MS - FADE_MS * 3, 1500);
 
     const nextResultPromise = new Promise<ZenFetchResult>((resolve) => {
       setTimeout(() => void this.fetchNext().then(resolve), Math.max(showMs - 2000, 0));

@@ -137,10 +137,10 @@ export class ZenFeed {
     if (!result) return 1;
     if (isArtResult(result)) return 1.2;
     if (isTextResult(result)) {
-      if (result.html?.includes('zen-trivia')) return 1.4;
-      if (/[\u201C\u201D]/.test(result.text) || / [\u2014\-]{1,2} /.test(result.text)) return 1.5;
-      if (result.text.length > 250) return 1.3;
       if (result.link && result.text.length < 120) return 0.85;
+      if (result.html?.includes('zen-trivia')) return 1.4;
+      if (/[\u201C\u201D]/.test(result.text) || / \u2014 /.test(result.text)) return 1.5;
+      if (result.text.length > 250) return 1.3;
     }
     return 1;
   }
