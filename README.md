@@ -2,9 +2,11 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![Google Chrome](https://img.shields.io/badge/Google%20Chrome-4285F4?style=for-the-badge&logo=GoogleChrome&logoColor=white)
 
-## A zen feed for your browser.
+## A calm sidebar for your browser
 
-Sonto turns your Chrome sidebar into a calm, rolling feed of art, quotes, science facts, and news. New content drips in at your pace. When you want more, save text from any page and chat with your browsing history using AI.
+Sonto turns your Chrome sidebar into a slow, quiet feed of art, quotes, science facts, and news. New items appear at the pace you choose.
+
+You can also save text from any page and ask questions about what you collected.
 
 No accounts. No servers. No tracking. Everything stays on your machine.
 
@@ -12,116 +14,171 @@ No accounts. No servers. No tracking. Everything stays on your machine.
 
 ## What you get
 
-- **Zen feed.** A quiet stream of content from 15+ sources: museum art, Mars rover photos, Hacker News, Reddit, trivia, quotes, and more. New items appear on a timer you control (5-60 seconds). Two display modes: scrolling feed or single-message cosmos with spirograph animation.
-- **Save anything.** Highlight text on any page, press `Alt+Shift+C` or right-click to save it. Browser history syncs automatically if you opt in.
-- **Ask questions.** Chat with your saved snippets in the sidebar. Sonto finds the best matches and sends them as context to your AI provider.
-- **Custom RSS.** Add your own feeds. Personal blogs, newsletters, niche news sites. They show up right in the zen stream.
-- **Your keys, your cost.** Bring your own OpenAI or Gemini API key. You pay the provider directly.
-- **Fully local.** Snippets and embeddings live in IndexedDB. Nothing leaves your browser except the API calls you choose to make.
+**Zen feed**
+A steady stream of content from 15+ sources. Museum art, Mars rover photos, Hacker News, Reddit, trivia, quotes, and more.
+New items appear every 5-60 seconds.
+
+Two display modes:
+
+* rolling feed
+* single-message "cosmos" view with a spirograph animation
+
+**Save anything**
+Highlight text on any page and press `Alt+Shift+C`, or use the right-click menu.
+If you want, Sonto can also index your browser history.
+
+**Ask questions**
+Chat with your saved snippets in the sidebar. Sonto finds the most relevant pieces and sends them as context to your AI provider.
+
+**Custom RSS**
+Add your own feeds. Blogs, newsletters, niche news. They appear directly in the zen stream.
+
+**Your keys, your cost**
+Bring your own OpenAI or Gemini API key. You pay the provider directly.
+
+**Local by default**
+Snippets and embeddings are stored in IndexedDB. Nothing leaves your browser except the API calls you choose to make.
 
 ---
 
-## Quick Start
+## Quick start
 
-1. **Clone and build:**
-   ```bash
-   git clone https://github.com/artttj/sonto.git && cd sonto
-   npm install && npm run build
-   ```
+### 1. Clone and build
 
-2. **Install:**
-   - Open `chrome://extensions`
-   - Turn on **Developer mode** (top right)
-   - Click **Load unpacked**
-   - Select the `dist/` folder
+```bash
+git clone https://github.com/artttj/sonto.git
+cd sonto
+npm install
+npm run build
+```
 
-3. **Add an API key (optional, for chat):**
-   - Click the Sonto icon to open the sidebar
-   - Click the gear icon, go to **AI**
-   - Add your OpenAI or Gemini key
+### 2. Install
+
+Open `chrome://extensions`
+
+Enable **Developer mode**
+
+Click **Load unpacked**
+
+Select the `dist/` folder
+
+### 3. Add an API key (optional)
+
+You only need a key if you want chat and embeddings.
+
+Open the Sonto sidebar
+Click the gear icon, go to **AI**
+Add your OpenAI or Gemini key
 
 | Provider | Get a key |
 | --- | --- |
-| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| Google Gemini | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| OpenAI | [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Google Gemini | [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
 
-The zen feed works without an API key. You only need one for saving snippets and chatting with them.
+The zen feed works without any API key.
 
 ---
 
-## The Sidebar
+## Sidebar modes
 
-Three modes, switch with the bottom tabs:
+Switch between modes using the tabs at the bottom.
 
-- **Zen** (default): Rolling feed of content from your enabled sources. Click any bubble to focus it. Configurable interval, display mode, and source toggles in settings.
-- **Browse**: View, filter, and manage saved snippets and history items.
-- **Chat**: Ask questions about your saved data. Sonto finds the top matches via vector search and sends them as context to your AI.
+**Zen**
+The main feed. Content from all enabled sources appears on a timer. Click any bubble to focus it. Feed interval, layout, and sources can be changed in settings.
 
-### Zen Feed Sources
+**Browse**
+View and manage saved snippets and indexed history.
+
+**Chat**
+Ask questions about your saved content. Sonto finds the closest matches using vector search and sends them to your AI model as context.
+
+---
+
+## Zen feed sources
 
 | Source | What shows up |
 | --- | --- |
-| Art from The Met (New York) | Public-domain paintings |
-| Art from Cleveland Museum | Artworks and did-you-know facts |
-| Art from Art Institute of Chicago | Public-domain artworks |
-| NASA Mars Rover Photos | Curiosity and Perseverance photos from this date in past years |
-| Hacker News Headlines | Top stories with links |
-| Reddit Top Posts | Hot posts from science, history, space, and other subs |
+| The Met Museum | Public domain paintings |
+| Cleveland Museum of Art | Artworks and facts |
+| Art Institute of Chicago | Public domain artworks |
+| NASA Mars Rover | Curiosity and Perseverance photos |
+| Hacker News | Top stories |
+| Reddit | Posts from science, history, space and more |
 | Trivia | Art, science, and book trivia |
-| Random Facts | Useless facts in your language |
+| Random Facts | Short facts in your language |
 | Stoic Quotes | Marcus Aurelius, Seneca, Epictetus |
-| Design Quotes | From designers and thinkers |
-| Zen Quotes | From zenquotes.io |
+| Design Quotes | Quotes from designers and thinkers |
+| Zen Quotes | Quotes from zenquotes.io |
 | Fun Quotes | Lighthearted quotes |
 | Quote of the Day | Daily quote from FavQs |
-| Daily Affirmations | Positive affirmations |
+| Daily Affirmations | Short affirmations |
 | Advice Slip | Random advice |
-| Custom RSS Feeds | Your own feeds |
+| Custom RSS | Your own feeds |
 
-Toggle any source on or off in Settings > Feed > Sources.
-
-### How search works
-
-1. **Capture**: Save text from any page via shortcut or context menu. History syncs every 30 minutes (opt-in).
-2. **Embed**: Each snippet becomes a vector via API (`text-embedding-3-small` for OpenAI, `text-embedding-004` for Gemini).
-3. **Store**: Vectors and text stay in IndexedDB on your device.
-4. **Search**: Your question is embedded and compared against stored vectors using cosine similarity.
-5. **Answer**: The top matches are sent as context to your chat model for a grounded response.
+You can enable or disable any source in **Settings > Feed > Sources**.
 
 ---
 
-## Keyboard Shortcuts
+## How search works
+
+1. **Capture**
+   Save text from any page using the shortcut or context menu.
+   Browser history can be indexed every 30 minutes if you enable it.
+
+2. **Embed**
+   Each snippet becomes a vector using your AI provider.
+
+3. **Store**
+   Vectors and text stay in IndexedDB on your device.
+
+4. **Search**
+   Your question is embedded and compared with stored vectors.
+
+5. **Answer**
+   The closest matches are sent to the chat model as context.
+
+---
+
+## Keyboard shortcuts
 
 | Action | Shortcut |
 | --- | --- |
-| **Open sidebar** | `Alt+Shift+S` |
-| **Save selection** | `Alt+Shift+C` |
+| Open sidebar | `Alt+Shift+S` |
+| Save selection | `Alt+Shift+C` |
 
 ---
 
 ## Languages
 
-English and German. Switch in Settings > Feed > Language.
+English and German.
+Change it in **Settings > Feed > Language**.
 
 ---
 
 ## Privacy
 
-- Everything stored locally. API keys in `chrome.storage.local`, data in IndexedDB. Nothing synced anywhere.
-- API calls go straight from your browser to OpenAI or Google. No middleman.
-- No analytics, no tracking, no accounts. Fully open source.
+Everything is stored locally.
 
-Provider privacy policies: [OpenAI](https://openai.com/policies/privacy-policy/) | [Google AI](https://ai.google.dev/gemini-api/terms)
+API keys are saved in `chrome.storage.local`.
+Data is stored in IndexedDB.
+
+API calls go directly from your browser to OpenAI or Google. No proxy, no middleman.
+
+No analytics. No tracking. No accounts.
+
+Provider policies:
+[OpenAI](https://openai.com/policies/privacy-policy/) |
+[Google AI](https://ai.google.dev/gemini-api/terms)
 
 ---
 
 ## Tech
 
-- TypeScript (strict mode)
-- Chrome Extension Manifest V3, Side Panel API
-- IndexedDB vector store with cosine similarity
-- esbuild
-- Zero runtime dependencies
+* TypeScript (strict mode)
+* Chrome Extension Manifest V3, Side Panel API
+* IndexedDB vector search with cosine similarity
+* esbuild
+* Zero runtime dependencies
 
 ---
 
