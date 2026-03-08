@@ -343,7 +343,7 @@ export class ZenFeed {
     const title = sepIdx !== -1 ? caption.slice(0, sepIdx) : caption;
     const sub = sepIdx !== -1 ? caption.slice(sepIdx + sep.length) : '';
     const subHtml = sub ? `<span class="zen-art-caption">${escapeHtml(sub)}</span>` : '';
-    bubble.innerHTML = `${SVG_BULB}<div class="zen-art"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /><span class="zen-art-title">${escapeHtml(title)}</span>${subHtml}</div>`;
+    bubble.innerHTML = `<div class="zen-art"><img class="zen-art-img" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" /><span class="zen-art-title">${escapeHtml(title)}</span>${subHtml}</div>`;
     const img = bubble.querySelector<HTMLImageElement>('.zen-art-img');
     if (img) {
       img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
