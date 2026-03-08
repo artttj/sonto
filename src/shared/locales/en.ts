@@ -82,6 +82,8 @@ const en: Record<string, string> = {
   privacy_history: 'Sonto reads your browser history (last 30 days) to automatically save page titles as searchable snippets. This data never leaves your browser except for the embedding API call. You can delete any history snippet from the sidebar at any time.',
   privacy_responsibility_heading: 'Your Responsibility',
   privacy_responsibility: 'You are responsible for the data you save and the API keys you provide. If you save sensitive content and then ask a question about it, that content will be sent to your chosen AI provider. Consider this before saving confidential information.',
+  privacy_content_heading: 'Third-Party Content',
+  privacy_content: 'The Zen feed displays content from public APIs (museums, news aggregators, quote services, NASA, and others). Sonto does not own, curate, or filter this content. The respective providers are responsible for the accuracy and appropriateness of their data. Use at your own discretion.',
   privacy_source: 'View source code on GitHub',
 
   // About tab

@@ -82,6 +82,8 @@ const de: Record<string, string> = {
   privacy_history: 'Sonto liest deinen Browserverlauf (letzte 30 Tage), um Seitentitel automatisch als durchsuchbare Snippets zu speichern. Diese Daten verlassen deinen Browser nur f\u00fcr den Embedding-API-Aufruf. Du kannst jedes Verlaufs-Snippet jederzeit aus der Seitenleiste l\u00f6schen.',
   privacy_responsibility_heading: 'Deine Verantwortung',
   privacy_responsibility: 'Du bist f\u00fcr die Daten verantwortlich, die du speicherst, und f\u00fcr die API-Schl\u00fcssel, die du angibst. Wenn du sensible Inhalte speicherst und dann eine Frage dazu stellst, werden diese Inhalte an deinen gew\u00e4hlten KI-Anbieter gesendet. Ber\u00fccksichtige dies, bevor du vertrauliche Informationen speicherst.',
+  privacy_content_heading: 'Inhalte Dritter',
+  privacy_content: 'Der Zen-Feed zeigt Inhalte aus \u00f6ffentlichen APIs (Museen, Nachrichtenaggregatoren, Zitatdiensten, NASA und anderen). Sonto besitzt, kuratiert oder filtert diese Inhalte nicht. Die jeweiligen Anbieter sind f\u00fcr die Richtigkeit und Angemessenheit ihrer Daten verantwortlich. Nutzung auf eigene Verantwortung.',
   privacy_source: 'Quellcode auf GitHub ansehen',
 
   // About tab

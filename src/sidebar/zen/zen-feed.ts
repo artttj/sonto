@@ -90,23 +90,14 @@ export class ZenFeed {
 
       if (raw.length > 0) {
         this.feedEl.innerHTML = '';
-        const seen = new Set<string>();
-        // Reverse so that the first item in cache ends up on top (newest = top)
-        for (const text of [...raw].reverse()) {
-          if (!text || seen.has(text)) continue;
-          seen.add(text);
-          this.appendBubbleElement(text);
+        // Show only the most recent cached item to avoid a burst of posts on open
+        const last = raw[raw.length - 1];
+        if (last) {
+          this.pastFacts.push(last);
+          this.appendBubbleElement(last);
         }
 
         void this.extractCategories(this.snippetsFn());
-
-        const missedCycles = lastDrip > 0 ? Math.floor((Date.now() - lastDrip) / this.dripIntervalMs) : 0;
-        const catchup = Math.min(missedCycles, ZEN_MAX_CATCHUP);
-        if (catchup > 0) {
-          for (let i = 0; i < catchup; i++) await this.addBubble();
-          void this.cacheZenFeed();
-        }
-
         this.scheduleDrip();
         return;
       }
