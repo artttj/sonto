@@ -16,7 +16,7 @@ No accounts. No servers. No tracking. Everything stays on your machine.
 
 **Zen feed**
 A steady stream of content from 15+ sources. Museum art, Mars rover photos, Hacker News, Reddit, trivia, quotes, and more.
-New items appear every 5-60 seconds.
+New items appear every 10-90 seconds.
 
 Two display modes:
 
@@ -102,6 +102,7 @@ Ask questions about your saved content. Sonto finds the closest matches using ve
 | Cleveland Museum of Art | Artworks and facts |
 | Art Institute of Chicago | Public domain artworks |
 | NASA Mars Rover | Curiosity and Perseverance photos |
+| NASA Mars Images | Surface photos from the NASA image library |
 | Hacker News | Top stories |
 | Reddit | Posts from science, history, space and more |
 | Trivia | Art, science, and book trivia |
