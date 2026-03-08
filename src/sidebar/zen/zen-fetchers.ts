@@ -5,10 +5,12 @@ import {
   QUOTES_PREDEFINED,
   SVG_AFFIRM,
   SVG_CHALLENGE,
+  SVG_HN,
   SVG_QUOTE,
+  escapeHtml,
 } from './zen-content';
 
-export type ZenTextResult = { text: string; link?: string; icon?: string };
+export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string };
 export type ZenArtResult = { imageUrl: string; caption: string };
 export type ZenFetchResult = ZenTextResult | ZenArtResult | null;
 
@@ -34,8 +36,14 @@ const REDDIT_SUBREDDITS = [
 ];
 
 const MET_HIGHLIGHTED_IDS = [
-  436535, 437329, 436121, 11417, 45734, 437984, 436527, 436532, 437980, 436528,
-  10481, 459055, 436524, 437331, 436533, 452658, 436529, 436534, 436530, 436526,
+  488660, 466105, 453351, 456949, 453183, 451023, 453336, 451725, 910555, 451268,
+  544502, 733808, 250939, 435641, 436573, 437769, 436440, 437900, 438814, 892627,
+  247009, 437971, 437326, 435853, 437455, 437609, 436323, 437891, 435851, 436244,
+  436851, 437447, 439933, 247008, 40055, 451270, 74813, 656430, 50486, 437329,
+  255275, 437826, 437549, 435728, 438754, 544442, 436964, 436840, 438605, 437175,
+  437879, 436658, 437423, 436918, 437869, 591855, 436105, 436106, 436792, 435802,
+  436121, 11417, 45734, 437984, 436527, 436532, 437980, 436528, 10481, 459055,
+  436524, 437331, 436533, 452658, 436529, 436534, 436530, 436526,
 ];
 
 let triviaCache: Array<{ question: string; answer: string }> = [];
@@ -198,7 +206,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const title = item.title?.replace(/<[^>]+>/g, '').trim() ?? '';
         if (title.length < 10 || AI_PATTERNS.some((p) => p.test(title))) return null;
         const link = item.url ?? `https://news.ycombinator.com/item?id=${id}`;
-        return { text: `HN: ${title}`, link };
+        return { text: title, link, icon: SVG_HN };
       } catch {
         return null;
       }
@@ -266,16 +274,20 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
 
       const item = triviaCache.splice(Math.floor(Math.random() * triviaCache.length), 1)[0];
       if (!item) return null;
-      const text = `${item.question} ${item.answer}.`;
-      if (text.length < 30) return null;
+      if ((item.question + item.answer).length < 20) return null;
       const query = encodeURIComponent(`${item.question} ${item.answer}`);
-      return { text, link: `https://www.google.com/search?q=${query}` };
+      const html = `<span class="zen-trivia-answer">${escapeHtml(item.answer)}</span><span class="zen-trivia-question">${escapeHtml(item.question)}</span>`;
+      return {
+        text: `${item.answer}. ${item.question}`,
+        link: `https://www.google.com/search?q=${query}`,
+        html,
+      };
     },
   },
   {
     id: 'metArtwork',
     label: 'Met Artwork',
-    weight: 12,
+    weight: 6,
     fetch: async (ctx) => {
       const fetchObject = async (objectId: number) => {
         const objRes = await fetch(
@@ -321,6 +333,93 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         }
         const fallbackId = MET_HIGHLIGHTED_IDS[Math.floor(Math.random() * MET_HIGHLIGHTED_IDS.length)];
         return await fetchObject(fallbackId);
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'marsRover',
+    label: 'Mars Rover Photos',
+    weight: 6,
+    fetch: async () => {
+      const today = new Date();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const currentYear = today.getFullYear();
+
+      const year = Math.floor(Math.random() * (currentYear - 2014)) + 2014;
+      const date = `${year}-${mm}-${dd}`;
+
+      const rovers: string[] = ['curiosity'];
+      if (year >= 2022) rovers.push('perseverance');
+
+      try {
+        const responses = await Promise.allSettled(
+          rovers.map((rover) =>
+            fetch(`https://rovers.nebulum.one/api/v1/rovers/${rover}/photos?earth_date=${date}`, {
+              signal: AbortSignal.timeout(9000),
+            }).then((r) => (r.ok ? r.json() : null)),
+          ),
+        );
+
+        const photos: Array<{ img_src: string; camera: { full_name: string }; rover: { name: string } }> = [];
+        for (const res of responses) {
+          if (res.status === 'fulfilled' && res.value) {
+            const data = res.value as { photos?: Array<{ img_src: string; camera: { full_name: string }; rover: { name: string } }> };
+            photos.push(...(data.photos ?? []));
+          }
+        }
+
+        if (photos.length === 0) return null;
+        const photo = photos[Math.floor(Math.random() * Math.min(photos.length, 20))];
+        return {
+          imageUrl: photo.img_src,
+          caption: `Mars · ${photo.rover.name} · ${photo.camera.full_name} · ${date}`,
+        };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'funQuote',
+    label: 'Fun Quotes',
+    weight: 4,
+    fetch: async (ctx) => {
+      if (ctx.language !== 'en') return null;
+      try {
+        const res = await fetch('https://abhi-api.vercel.app/api/fun/quotes', {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return null;
+        const data = await res.json() as { result?: { quote?: string; author?: string } };
+        const quote = data.result?.quote?.trim() ?? '';
+        const author = data.result?.author?.trim();
+        if (!ctx.isValidFact(quote)) return null;
+        return { text: author ? `${quote} — ${author}` : quote };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'favqsQotd',
+    label: 'Quote of the Day',
+    weight: 5,
+    fetch: async (ctx) => {
+      if (ctx.language !== 'en') return null;
+      try {
+        const res = await fetch('https://favqs.com/api/qotd', {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return null;
+        const data = await res.json() as { quote?: { body?: string; author?: string; url?: string } };
+        const text = data.quote?.body?.trim() ?? '';
+        const author = data.quote?.author?.trim();
+        const link = data.quote?.url;
+        if (!ctx.isValidFact(text)) return null;
+        return { text: author ? `${text} — ${author}` : text, link };
       } catch {
         return null;
       }

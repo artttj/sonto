@@ -8,7 +8,7 @@ export function escapeHtml(str: string): string {
 
 export const ZEN_INITIAL_BATCH = 1;
 export const ZEN_DRIP_BATCH = 1;
-export const ZEN_DRIP_MS = 5000;
+export const ZEN_DRIP_MS = 10000;
 export const ZEN_IDLE_MS = 5 * 60 * 1000;
 export const ZEN_MAX_CATCHUP = 6;
 export const ZEN_MAX_BUBBLES = 20;
@@ -33,6 +33,13 @@ export const SVG_AFFIRM = [
   '<path d="M8 14 V9"/>',
   '<path d="M8 12 C8 12 5 11 4.5 8 C7 7.5 8 10 8 12"/>',
   '<path d="M8 9 C8 9 11 8 11.5 5 C9 4.5 8 7 8 9"/>',
+  '</svg>',
+].join('');
+
+export const SVG_HN = [
+  '<svg class="zen-bulb zen-bulb--hn" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">',
+  '<rect width="16" height="16" fill="#ff6600" rx="1.5"/>',
+  '<text x="8" y="12" text-anchor="middle" fill="white" font-family="Verdana,Geneva,sans-serif" font-size="10.5" font-weight="bold">Y</text>',
   '</svg>',
 ].join('');
 

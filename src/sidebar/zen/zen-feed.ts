@@ -1,11 +1,10 @@
 import { MSG } from '../../shared/messages';
-import { getDisabledSources } from '../../shared/storage';
+import { getDripInterval, getDisabledSources } from '../../shared/storage';
 import type { Snippet } from '../../shared/types';
 import {
   AI_PATTERNS,
   BLOCKED_CATEGORY_PATTERNS,
   SVG_BULB,
-  ZEN_DRIP_MS,
   ZEN_IDLE_MS,
   ZEN_INITIAL_BATCH,
   ZEN_MAX_BUBBLES,
@@ -36,6 +35,7 @@ export class ZenFeed {
   private zenCategories: string[] = [];
   private zenCategoryQueue: string[] = [];
   private zenDripTimer: ReturnType<typeof setInterval> | null = null;
+  private dripIntervalMs = ZEN_DRIP_MS;
   private lastActivity = Date.now();
   private language: string;
   private snippetsFn: () => Snippet[];
@@ -71,14 +71,15 @@ export class ZenFeed {
     this.stop();
 
     try {
-      const disabled = await getDisabledSources();
+      const [disabled, intervalMs] = await Promise.all([getDisabledSources(), getDripInterval()]);
       this.disabledSources = new Set(disabled);
+      this.dripIntervalMs = intervalMs;
     } catch { /* use previous value */ }
 
     try {
       const hasBubbles = this.feedEl.querySelectorAll('.zen-bubble').length > 0;
       if (hasBubbles) {
-        this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
+        this.zenDripTimer = setInterval(() => void this.dripZen(), this.dripIntervalMs);
         return;
       }
 
@@ -98,14 +99,14 @@ export class ZenFeed {
 
         void this.extractCategories(this.snippetsFn());
 
-        const missedCycles = lastDrip > 0 ? Math.floor((Date.now() - lastDrip) / ZEN_DRIP_MS) : 0;
+        const missedCycles = lastDrip > 0 ? Math.floor((Date.now() - lastDrip) / this.dripIntervalMs) : 0;
         const catchup = Math.min(missedCycles, ZEN_MAX_CATCHUP);
         if (catchup > 0) {
           for (let i = 0; i < catchup; i++) await this.addBubble();
           void this.cacheZenFeed();
         }
 
-        this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
+        this.zenDripTimer = setInterval(() => void this.dripZen(), this.dripIntervalMs);
         return;
       }
 
@@ -114,7 +115,7 @@ export class ZenFeed {
       await this.extractCategories(this.snippetsFn());
       await this.loadInitialBubbles(ZEN_INITIAL_BATCH);
       this.hideLoader();
-      this.zenDripTimer = setInterval(() => void this.dripZen(), ZEN_DRIP_MS);
+      this.zenDripTimer = setInterval(() => void this.dripZen(), this.dripIntervalMs);
     } finally {
       this._starting = false;
     }
@@ -222,10 +223,10 @@ export class ZenFeed {
     }
 
     if (result && isTextResult(result)) {
-      const { text, link, icon } = result;
+      const { text, link, icon, html } = result;
       if (!this.pastFacts.some((p) => p.slice(0, 60) === text.slice(0, 60))) {
         this.hideLoader();
-        this.appendBubbleElement(text, link, icon);
+        this.appendBubbleElement(text, link, icon, html);
         this.pastFacts.push(text);
         if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
         void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});
@@ -302,13 +303,14 @@ export class ZenFeed {
     }).catch(() => {});
   }
 
-  private appendBubbleElement(text: string, link?: string, icon?: string): HTMLElement {
+  private appendBubbleElement(text: string, link?: string, icon?: string, html?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     const linkHtml = link
       ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>`
       : '';
-    bubble.innerHTML = `${icon ?? SVG_BULB}<span>${escapeHtml(text)}${linkHtml}</span>`;
+    const innerContent = html ?? escapeHtml(text);
+    bubble.innerHTML = `${icon ?? SVG_BULB}<span>${innerContent}${linkHtml}</span>`;
     const first = this.feedEl.firstChild;
     if (first) {
       this.feedEl.insertBefore(bubble, first);

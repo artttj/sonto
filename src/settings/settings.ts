@@ -8,6 +8,8 @@ import {
   saveGeminiKey,
   getDisabledSources,
   saveDisabledSources,
+  getDripInterval,
+  saveDripInterval,
 } from '../shared/storage';
 import { setLocale, applyI18n } from '../shared/i18n';
 import type { ProviderName } from '../shared/types';
@@ -151,10 +153,23 @@ async function init(): Promise<void> {
     versionEl.textContent = chrome.runtime.getManifest().version;
   }
 
+  // Drip interval slider
+  const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;
+  const dripValueEl = document.getElementById('drip-interval-value')!;
+  const storedInterval = await getDripInterval();
+  dripSlider.value = String(storedInterval / 1000);
+  dripValueEl.textContent = `${storedInterval / 1000}s`;
+  dripSlider.addEventListener('input', () => {
+    const seconds = parseInt(dripSlider.value, 10);
+    dripValueEl.textContent = `${seconds}s`;
+    void saveDripInterval(seconds * 1000);
+  });
+
   // Zen Feed Sources
   const ZEN_SOURCES: Array<{ id: string; label: string }> = [
     { id: 'predefined',   label: 'Challenges, Affirmations & Quotes' },
     { id: 'metArtwork',   label: 'Met Museum Artwork' },
+    { id: 'marsRover',    label: 'Mars Rover Photos' },
     { id: 'hnStory',      label: 'Hacker News' },
     { id: 'reddit',       label: 'Reddit' },
     { id: 'trivia',       label: 'Trivia (Art, Science, Books)' },
@@ -164,6 +179,8 @@ async function init(): Promise<void> {
     { id: 'zenQuote',     label: 'Zen Quotes' },
     { id: 'affirmation',  label: 'Affirmations API' },
     { id: 'adviceSlip',   label: 'Advice Slip' },
+    { id: 'funQuote',     label: 'Fun Quotes' },
+    { id: 'favqsQotd',    label: 'Quote of the Day (FavQs)' },
   ];
 
   const disabledSources = new Set(await getDisabledSources());

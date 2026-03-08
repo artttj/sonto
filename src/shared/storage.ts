@@ -51,6 +51,7 @@ export async function saveGeminiKey(key: string): Promise<void> {
 }
 
 const DISABLED_SOURCES_KEY = 'sonto_disabled_sources';
+const DRIP_INTERVAL_KEY = 'sonto_drip_interval_ms';
 
 export async function getDisabledSources(): Promise<string[]> {
   const result = await chrome.storage.local.get(DISABLED_SOURCES_KEY);
@@ -59,4 +60,13 @@ export async function getDisabledSources(): Promise<string[]> {
 
 export async function saveDisabledSources(ids: string[]): Promise<void> {
   await chrome.storage.local.set({ [DISABLED_SOURCES_KEY]: ids });
+}
+
+export async function getDripInterval(): Promise<number> {
+  const result = await chrome.storage.local.get(DRIP_INTERVAL_KEY);
+  return (result[DRIP_INTERVAL_KEY] as number | undefined) ?? 10000;
+}
+
+export async function saveDripInterval(ms: number): Promise<void> {
+  await chrome.storage.local.set({ [DRIP_INTERVAL_KEY]: ms });
 }

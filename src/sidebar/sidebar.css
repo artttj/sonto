@@ -218,6 +218,7 @@ html, body {
 .zen-bulb--challenge { color: #f97316; }
 .zen-bulb--affirm    { color: #2dd4bf; }
 .zen-bulb--quote     { color: #a78bfa; }
+.zen-bulb--hn        { border-radius: 2px; overflow: hidden; }
 
 .zen-bubble:first-child .zen-bulb {
   width: 18px;
@@ -321,6 +322,19 @@ html, body {
 }
 .zen-bubble:first-child .zen-art-img {
   max-height: 240px;
+}
+
+.zen-trivia-answer {
+  display: block;
+  font-weight: 600;
+}
+
+.zen-trivia-question {
+  display: block;
+  font-size: 0.72em;
+  opacity: 0.55;
+  text-align: right;
+  margin-top: 4px;
 }
 
 @keyframes lyricIn {

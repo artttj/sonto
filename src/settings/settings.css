@@ -1599,3 +1599,64 @@ body {
 .toggle-switch input:checked + .toggle-track::before {
   transform: translateX(16px);
 }
+
+.drip-interval-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 16px;
+}
+
+.drip-interval-label {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.7);
+  white-space: nowrap;
+}
+
+.drip-interval-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.drip-interval-value {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.5);
+  min-width: 28px;
+  text-align: right;
+}
+
+#drip-interval-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 140px;
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+#drip-interval-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #e8b931;
+  cursor: pointer;
+}
+
+#drip-interval-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #e8b931;
+  cursor: pointer;
+  border: none;
+}

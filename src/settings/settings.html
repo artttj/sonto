@@ -106,6 +106,13 @@
             </svg>
           </summary>
           <div class="zen-sources-body">
+            <div class="drip-interval-row">
+              <div class="drip-interval-label">Refresh interval</div>
+              <div class="drip-interval-control">
+                <input type="range" id="drip-interval-slider" min="5" max="60" step="5" value="10" />
+                <span id="drip-interval-value" class="drip-interval-value">10s</span>
+              </div>
+            </div>
             <p class="zen-sources-desc">Choose which sources appear in your Zen feed. All are enabled by default.</p>
             <div id="zen-sources-list"></div>
           </div>

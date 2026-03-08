@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Sonto",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Your local second brain. Capture highlights, search your browsing history with AI.",
   "author": "Artem Iagovdik (artyom.yagovdik@gmail.com)",
   "icons": {
@@ -40,8 +40,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content/content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
       "run_at": "document_idle"
     }
   ],

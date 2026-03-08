@@ -6,7 +6,7 @@
 
 Sonto is a Chrome extension that captures highlighted text from any webpage, stores it locally with vector embeddings, and lets you chat with your browsing history using your own API key. No accounts, no servers, no telemetry.
 
-- **Zen feed.** A lyrics-style scrolling feed of surprising facts and insights drawn from your interest categories. Refreshes every 30 seconds. Persists across panel opens.
+- **Zen feed.** A lyrics-style scrolling feed of facts, art, and discoveries. New bubbles drip in on a configurable interval (5–60 seconds). Persists across panel opens.
 - **Save anything.** Highlight text on any page, press `Alt+Shift+C` or right-click to save it. Browser history syncs automatically.
 - **Ask questions.** Chat with your saved snippets in the sidebar. Sonto finds the most relevant context and sends it to your AI provider. Responses render full markdown.
 - **Your keys, your cost.** Connect your own OpenAI or Gemini API key. You pay the provider directly.
@@ -45,18 +45,34 @@ Sonto is a Chrome extension that captures highlighted text from any webpage, sto
 
 The sidebar has three modes:
 
-- **Zen** (default): A lyrics-style feed of facts and insights based on your interest profile. Sonto analyses your browsing history and saved snippets to extract 15–20 specific interest categories, then generates surprising facts across those topics. New bubbles appear every 30 seconds. One in five comes from an external random facts API. One in ten is a verified statistic. All facts are filtered for quality and relevance before display.
+- **Zen** (default): A lyrics-style feed of facts, art, and curated discoveries. Sources rotate based on your interest profile. New bubbles drip in at a configurable interval (default 10 seconds). Click any bubble to spotlight it.
 - **Browse**: View, filter, and manage all saved snippets and synced history items.
 - **Chat**: Ask questions about your saved data. Sonto finds the most relevant snippets via vector search and sends them as context to your AI provider.
 
 ### Zen Feed
 
-1. On first load, Sonto samples up to 250 snippets and history titles and asks your LLM to extract 15–20 specific interest categories (e.g. "TypeScript generics", "espresso extraction", "sleep optimization").
-2. Categories are shuffled into a queue. Each bubble picks the next category from the queue, cycling through all before repeating.
-3. The LLM generates one striking, counterintuitive fact about that category — qualitative by default, numerical once every ten bubbles when a well-known statistic exists.
-4. 20% of bubbles are sourced from the [Useless Facts API](https://uselessfacts.jsph.pl) in your chosen language.
-5. Facts are filtered client-side: AI topics, adult content, mundane services, social media, and duplicates are dropped silently.
-6. The newest fact is displayed largest and brightest at the top, older ones fade progressively.
+The zen feed pulls from multiple content sources, weighted for variety:
+
+| Source | What it shows |
+| --- | --- |
+| Challenges, Affirmations & Quotes | 90 predefined messages with distinct icons |
+| Met Museum Artwork | Public-domain paintings from the Met collection |
+| Mars Rover Photos | Photos from Curiosity & Perseverance on this calendar date in past years |
+| Hacker News | Top story titles with direct links |
+| Reddit | Hot posts from curated subreddits (science, history, space, etc.) |
+| Trivia | Art, science, books trivia with answer highlighted, question as context |
+| Random Facts | Useless facts in your selected language |
+| Stoic Quotes | Quotes from stoic.tekloon.net |
+| Design Quotes | Quotes from designers and thinkers |
+| Zen Quotes | Quotes from zenquotes.io |
+| Fun Quotes | Quotes from abhi-api.vercel.app |
+| Quote of the Day | Daily quote from FavQs |
+| Affirmations API | Affirmations from affirmations.dev |
+| Advice Slip | Random advice |
+
+Facts are filtered client-side: AI topics, adult content, mundane services, and duplicates are dropped silently. The newest bubble appears largest and brightest at the top, older ones fade.
+
+**Settings → General → Zen Feed Sources** lets you toggle each source on or off and adjust the refresh interval (5–60 seconds).
 
 ### RAG (Browse & Chat)
 
