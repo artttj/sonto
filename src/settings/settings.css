@@ -1656,3 +1656,74 @@ body {
   cursor: pointer;
   border: none;
 }
+
+/* ═══ RSS FEEDS ═══════════════════════════════════════════════════════════ */
+.setting-body {
+  padding: 14px 20px;
+}
+
+.setting-hint {
+  font-size: 12px;
+  color: var(--c-text-3);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.rss-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rss-url-input {
+  flex: 1;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  color: var(--c-text);
+  font-size: 12px;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color var(--t) var(--ease);
+}
+
+.rss-url-input:focus {
+  border-color: var(--c-border-hi);
+}
+
+.rss-url-input::placeholder {
+  color: var(--c-text-3);
+}
+
+.rss-feed-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--c-border);
+  font-size: 12px;
+}
+
+.rss-feed-url {
+  color: var(--c-text-2);
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+  margin-right: 8px;
+}
+
+.rss-remove {
+  flex-shrink: 0;
+  color: var(--c-text-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: var(--r-sm);
+  transition: color var(--t) var(--ease);
+}
+
+.rss-remove:hover {
+  color: var(--c-error);
+}

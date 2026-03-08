@@ -6,6 +6,8 @@ import {
   SVG_HN,
   escapeHtml,
 } from './zen-content';
+import { getCustomFeeds } from '../../shared/storage';
+import { parseFeed } from '../../shared/rss-parser';
 
 // Wrap text in smart quotes unless it already starts with one.
 // Splits on em-dash attribution so the author stays outside the quotes:
@@ -506,6 +508,27 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (creator) parts.push(creator);
         if (date) parts.push(date);
         return { imageUrl: pick.images!.web!.url!, caption: parts.join(' — ') };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'customRss',
+    label: 'Custom RSS Feeds',
+    weight: 8,
+    fetch: async (ctx) => {
+      const feeds = await getCustomFeeds();
+      if (feeds.length === 0) return null;
+      const feed = feeds[Math.floor(Math.random() * feeds.length)];
+      try {
+        const res = await fetch(feed.url, { signal: AbortSignal.timeout(9000) });
+        if (!res.ok) return null;
+        const xml = await res.text();
+        const items = parseFeed(xml).filter((it) => ctx.isValidFact(it.title));
+        if (items.length === 0) return null;
+        const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))];
+        return { text: pick.title, link: pick.link };
       } catch {
         return null;
       }

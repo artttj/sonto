@@ -12,7 +12,10 @@ import {
   saveDripInterval,
   getZenDisplay,
   saveZenDisplay,
+  getCustomFeeds,
+  saveCustomFeeds,
 } from '../shared/storage';
+import { parseFeed } from '../shared/rss-parser';
 import { setLocale, applyI18n } from '../shared/i18n';
 import type { ProviderName } from '../shared/types';
 
@@ -190,6 +193,7 @@ async function init(): Promise<void> {
     { id: 'adviceSlip',   label: 'Advice Slip' },
     { id: 'funQuote',     label: 'Fun Quotes' },
     { id: 'favqsQotd',    label: 'Quote of the Day (FavQs)' },
+    { id: 'customRss',    label: 'Custom RSS Feeds' },
   ];
 
   const disabledSources = new Set(await getDisabledSources());
@@ -231,6 +235,73 @@ async function init(): Promise<void> {
   const hasAnyKey = !!openaiKey || !!geminiKey;
   const navWarning = document.getElementById('nav-ai-warning');
   if (navWarning && !hasAnyKey) navWarning.classList.remove('hidden');
+
+  await initRssFeeds();
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function initRssFeeds(): Promise<void> {
+  const list = document.getElementById('rss-feeds-list')!;
+  const input = document.getElementById('rss-url-input') as HTMLInputElement;
+  const addBtn = document.getElementById('rss-add-btn')!;
+  const errorEl = document.getElementById('rss-feed-error')!;
+
+  const render = async () => {
+    const feeds = await getCustomFeeds();
+    list.innerHTML = '';
+    if (feeds.length === 0) {
+      list.innerHTML = '<p class="setting-hint">No feeds added yet.</p>';
+      return;
+    }
+    feeds.forEach((feed, i) => {
+      const row = document.createElement('div');
+      row.className = 'rss-feed-row';
+      row.innerHTML = `<span class="rss-feed-url">${escapeHtml(feed.label || feed.url)}</span>
+        <button class="rss-remove" data-i="${i}" title="Remove">✕</button>`;
+      row.querySelector('.rss-remove')!.addEventListener('click', async () => {
+        const current = await getCustomFeeds();
+        await saveCustomFeeds(current.filter((_, j) => j !== i));
+        await render();
+      });
+      list.appendChild(row);
+    });
+  };
+
+  addBtn.addEventListener('click', async () => {
+    const url = input.value.trim();
+    errorEl.style.display = 'none';
+    if (!url.startsWith('http')) {
+      errorEl.textContent = 'Enter a valid http/https URL';
+      errorEl.style.display = '';
+      return;
+    }
+    const feeds = await getCustomFeeds();
+    if (feeds.some((f) => f.url === url)) {
+      errorEl.textContent = 'Feed already added';
+      errorEl.style.display = '';
+      return;
+    }
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(9000) });
+      if (!res.ok) throw new Error('bad response');
+      const xml = await res.text();
+      const items = parseFeed(xml);
+      if (items.length === 0) throw new Error('no items');
+    } catch {
+      errorEl.textContent = 'Could not load or parse feed. Check the URL.';
+      errorEl.style.display = '';
+      return;
+    }
+    const label = new URL(url).hostname;
+    await saveCustomFeeds([...feeds, { url, label }]);
+    input.value = '';
+    await render();
+  });
+
+  await render();
 }
 
 void init();

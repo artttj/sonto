@@ -133,6 +133,18 @@
           </div>
         </details>
 
+        <div class="setting-group">
+          <div class="setting-group-header">Custom RSS Feeds</div>
+          <div class="setting-body">
+            <div id="rss-feeds-list"></div>
+            <div class="rss-add-row">
+              <input id="rss-url-input" type="url" placeholder="https://example.com/feed.xml" class="rss-url-input" />
+              <button id="rss-add-btn" class="btn btn-primary btn-sm" type="button">Add Feed</button>
+            </div>
+            <p class="setting-hint rss-feed-error" id="rss-feed-error" style="display:none;color:var(--c-error)"></p>
+          </div>
+        </div>
+
         <div class="panel-actions">
           <button id="btn-save-settings" class="btn btn-primary" type="button" data-i18n="general_save">Save Settings</button>
           <span id="settings-status" class="saved-msg hidden" data-i18n="general_saved">Saved</span>

@@ -71,6 +71,19 @@ export async function saveDripInterval(ms: number): Promise<void> {
   await chrome.storage.local.set({ [DRIP_INTERVAL_KEY]: ms });
 }
 
+const CUSTOM_FEEDS_KEY = 'sonto_custom_feeds';
+
+export type CustomFeed = { url: string; label: string };
+
+export async function getCustomFeeds(): Promise<CustomFeed[]> {
+  const result = await chrome.storage.local.get(CUSTOM_FEEDS_KEY);
+  return (result[CUSTOM_FEEDS_KEY] as CustomFeed[] | undefined) ?? [];
+}
+
+export async function saveCustomFeeds(feeds: CustomFeed[]): Promise<void> {
+  await chrome.storage.local.set({ [CUSTOM_FEEDS_KEY]: feeds });
+}
+
 const ZEN_DISPLAY_KEY = 'sonto_zen_display';
 
 export async function getZenDisplay(): Promise<'feed' | 'cosmos'> {
