@@ -43,6 +43,18 @@ export const SVG_HN = [
   '</svg>',
 ].join('');
 
+export const SVG_REDDIT = [
+  '<svg class="zen-bulb zen-bulb--reddit" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">',
+  '<rect width="16" height="16" fill="#ff4500" rx="1.5"/>',
+  '<circle cx="8" cy="8.5" r="4" fill="white"/>',
+  '<ellipse cx="6.5" cy="7.8" rx="0.7" ry="0.8" fill="#ff4500"/>',
+  '<ellipse cx="9.5" cy="7.8" rx="0.7" ry="0.8" fill="#ff4500"/>',
+  '<path d="M6 9.8 C6.5 10.5 7.2 10.8 8 10.8 C8.8 10.8 9.5 10.5 10 9.8" fill="none" stroke="#ff4500" stroke-width="0.6" stroke-linecap="round"/>',
+  '<circle cx="12" cy="5.5" r="1" fill="white"/>',
+  '<path d="M10.5 4 L12 5.5" stroke="white" stroke-width="0.6"/>',
+  '</svg>',
+].join('');
+
 export const SVG_QUOTE = [
   '<svg class="zen-bulb zen-bulb--quote" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">',
   '<path d="M3.5 10 C3.5 10 2 8 3 6 C3.5 6 5 6 5 7.5 C5 9 3.5 9.5 3.5 10"/>',

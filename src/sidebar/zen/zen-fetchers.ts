@@ -4,6 +4,7 @@ import {
   CHALLENGES,
   QUOTES_PREDEFINED,
   SVG_HN,
+  SVG_REDDIT,
   escapeHtml,
 } from './zen-content';
 import { getCustomFeeds } from '../../shared/storage';
@@ -255,6 +256,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         return {
           text: `r/${sub}: ${pick.title}`,
           link: `https://www.reddit.com${pick.permalink}`,
+          icon: SVG_REDDIT,
         };
       } catch {
         return null;
