@@ -628,6 +628,57 @@ class SontoSidebar {
     }
   }
 
+  private triviaCache: Array<{ question: string; answer: string }> = [];
+
+  private readonly TRIVIA_CATEGORIES = [9, 10, 17, 18, 25]; // General Knowledge, Books, Science & Nature, Computers, Art
+
+  private decodeHtml(str: string): string {
+    return new DOMParser().parseFromString(str, 'text/html').body.textContent ?? str;
+  }
+
+  private async fetchTriviaFact(): Promise<string | null> {
+    if (this.triviaCache.length === 0) {
+      try {
+        const cat = this.TRIVIA_CATEGORIES[Math.floor(Math.random() * this.TRIVIA_CATEGORIES.length)];
+        const res = await fetch(
+          `https://opentdb.com/api.php?amount=10&category=${cat}&difficulty=hard&type=multiple`,
+          { signal: AbortSignal.timeout(8000) }
+        );
+        if (!res.ok) return null;
+        const data = await res.json() as {
+          response_code: number;
+          results: Array<{ question: string; correct_answer: string }>;
+        };
+        if (data.response_code !== 0 || !data.results?.length) return null;
+        this.triviaCache = data.results.map((r) => ({
+          question: this.decodeHtml(r.question),
+          answer: this.decodeHtml(r.correct_answer),
+        }));
+      } catch {
+        return null;
+      }
+    }
+
+    const item = this.triviaCache.splice(Math.floor(Math.random() * this.triviaCache.length), 1)[0];
+    if (!item) return null;
+    const text = `${item.question} ${item.answer}.`;
+    return text.length >= 30 ? text : null;
+  }
+
+  private async fetchAffirmation(): Promise<string | null> {
+    if (this.language !== 'en') return null;
+    try {
+      const res = await fetch('https://www.affirmations.dev/', {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json() as { affirmation?: string };
+      return data.affirmation?.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
   private readonly REDDIT_SUBREDDITS = [
     'todayilearned', 'science', 'Futurology', 'space', 'history',
     'technology', 'programming', 'entrepreneur', 'interestingasfuck', 'philosophy',
@@ -781,14 +832,16 @@ class SontoSidebar {
 
     type TextResult = string | { text: string; link?: string } | null;
     const externalFetcher: (() => Promise<TextResult>) | null =
-      roll < 0.10 ? () => this.fetchUselessFact() :
-      roll < 0.17 ? () => this.fetchAdviceSlip() :
-      roll < 0.24 ? () => this.fetchStoicQuote() :
-      roll < 0.30 ? () => this.fetchDesignQuote() :
-      roll < 0.36 ? () => this.fetchZenQuote() :
+      roll < 0.08 ? () => this.fetchUselessFact() :
+      roll < 0.14 ? () => this.fetchAdviceSlip() :
+      roll < 0.20 ? () => this.fetchStoicQuote() :
+      roll < 0.25 ? () => this.fetchDesignQuote() :
+      roll < 0.30 ? () => this.fetchZenQuote() :
+      roll < 0.36 ? () => this.fetchAffirmation() :
       roll < 0.44 ? () => this.fetchHNStory() :
       roll < 0.52 ? () => this.fetchRedditPost() :
-      roll < 0.58 ? () => this.fetchWeatherForecast() :
+      roll < 0.59 ? () => this.fetchTriviaFact() :
+      roll < 0.64 ? () => this.fetchWeatherForecast() :
       null;
 
     if (externalFetcher) {
