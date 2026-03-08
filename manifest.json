@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Sonto",
   "version": "1.4.0",
-  "description": "A calm new tab feed of art, quotes, science, and news. Save highlights and chat with your browsing history using AI.",
+  "description": "A calm sidebar feed of art, quotes, science, and news. Save highlights and chat with your browsing history using AI.",
   "author": "Artem Iagovdik (artyom.yagovdik@gmail.com)",
   "icons": {
     "16": "icons/icon16.png",
