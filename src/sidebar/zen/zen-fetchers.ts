@@ -534,46 +534,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
-    id: 'artInstituteChicago',
-    label: 'Art Institute of Chicago',
-    weight: 6,
-    fetch: async () => {
-      try {
-        const page = Math.floor(Math.random() * 50) + 1;
-        const res = await fetch(
-          `https://api.artic.edu/api/v1/artworks/search?query[term][is_public_domain]=true&fields=id,title,artist_display,date_display,image_id&limit=20&page=${page}`,
-          { signal: AbortSignal.timeout(10000) },
-        );
-        if (!res.ok) return null;
-        const data = await res.json() as {
-          config?: { iiif_url?: string };
-          data?: Array<{
-            id?: number;
-            title?: string;
-            artist_display?: string;
-            date_display?: string;
-            image_id?: string;
-          }>;
-        };
-        const iiifBase = data.config?.iiif_url;
-        if (!iiifBase) return null;
-        const artworks = (data.data ?? []).filter((a) => a.image_id);
-        if (artworks.length === 0) return null;
-        const pick = artworks[Math.floor(Math.random() * artworks.length)];
-        const imageUrl = `${iiifBase}/${pick.image_id}/full/843,/0/default.jpg`;
-        const title = pick.title?.trim() || 'Untitled';
-        const artist = pick.artist_display?.split('\n')[0]?.trim();
-        const date = pick.date_display?.trim();
-        const parts = [title];
-        if (artist) parts.push(artist);
-        if (date) parts.push(date);
-        return { imageUrl, caption: parts.join(' · ') };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
     id: 'customRss',
     label: 'Custom RSS Feeds',
     weight: 8,

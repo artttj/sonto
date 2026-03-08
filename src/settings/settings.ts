@@ -92,7 +92,6 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'predefined',          label: 'Challenges, Affirmations & Quotes' },
   { id: 'metArtwork',          label: 'Art from The Met (New York)' },
   { id: 'clevelandArtwork',    label: 'Art from Cleveland Museum' },
-  { id: 'artInstituteChicago', label: 'Art from Art Institute of Chicago' },
   { id: 'marsRover',           label: 'NASA Mars Rover Photos' },
   { id: 'hnStory',             label: 'Hacker News Headlines' },
   { id: 'reddit',              label: 'Reddit Top Posts' },
@@ -156,8 +155,13 @@ async function init(): Promise<void> {
   setZenDisplay(storedZenDisplay);
 
   const dripSlider = document.getElementById('drip-interval-slider') as HTMLInputElement;
+  const dripCurrentValue = document.getElementById('drip-current-value')!;
   const storedInterval = await getDripInterval();
   dripSlider.value = String(storedInterval / 1000);
+  dripCurrentValue.textContent = `${dripSlider.value}s`;
+  dripSlider.addEventListener('input', () => {
+    dripCurrentValue.textContent = `${dripSlider.value}s`;
+  });
   dripSlider.addEventListener('change', () => {
     void saveDripInterval(parseInt(dripSlider.value, 10) * 1000);
   });

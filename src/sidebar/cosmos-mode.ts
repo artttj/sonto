@@ -1,5 +1,17 @@
+import { MSG } from '../shared/messages';
 import { getDripInterval, getDisabledSources } from '../shared/storage';
+import type { Snippet } from '../shared/types';
+import { AI_PATTERNS, BLOCKED_CATEGORY_PATTERNS } from './zen/zen-content';
 import { type ZenArtResult, type ZenFetchResult, type ZenTextResult, ZEN_FETCHERS, pickFetcher } from './zen/zen-fetchers';
+
+const JUNK_PATTERNS = [
+  /\bcookies?\b.*\b(consent|policy|notice|settings|preferences)\b/i,
+  /\bprivacy policy\b/i,
+  /\bterms (of service|of use|and conditions)\b/i,
+  /\baccept all\b.*\bcookies?\b/i,
+  /\bwe use cookies?\b/i,
+  /^(home|about|contact|menu|navigation|search|log ?in|sign in|sign up|register|subscribe)\s*$/i,
+];
 
 const AM = Math.PI / 180;
 
@@ -289,7 +301,7 @@ class SpirographCanvas {
       this.drawn = 0;
 
       // Low alpha — spiro is a background element, text must stay readable on top
-      this.alpha = this.style === 'dense' ? 0.35 : this.style === 'open' ? 0.40 : 0.35;
+      this.alpha = this.style === 'dense' ? 0.38 : this.style === 'open' ? 0.42 : 0.38;
 
       // drawMs caps the active drawing phase; the rest of durationMs is a silent hold.
       const DRAW_MS = Math.min(durationMs, 3000);
@@ -307,7 +319,7 @@ class SpirographCanvas {
       this.stepsTotal = stepsPerFrame * frames;
 
       this.resize();
-      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 1.6;
+      const scale = Math.min(this.canvas.width, this.canvas.height) / SpirographCanvas.REF / 1.35;
 
       this.ctx.globalCompositeOperation = 'screen';
       this.ctx.fillStyle = '#060410';
@@ -406,8 +418,12 @@ export class CosmosMode {
   private stopped = false;
   private spiro: SpirographCanvas | null = null;
   private pastKeys = new Set<string>();
+  private pastFacts: string[] = [];
   private disabledSources = new Set<string>();
   private intervalMs = 15000;
+  private zenCategories: string[] = [];
+  private zenCategoryQueue: string[] = [];
+  private snippetsFn: () => Snippet[] = () => [];
 
   private readonly canvasWrap: HTMLElement;
   private readonly msgEl: HTMLElement;
@@ -431,8 +447,9 @@ export class CosmosMode {
     this.spiro?.stop();
   }
 
-  refresh(language: string): void {
+  refresh(snippets: Snippet[], language: string): void {
     this.language = language;
+    this.snippetsFn = () => snippets;
   }
 
   async start(): Promise<void> {
@@ -443,7 +460,56 @@ export class CosmosMode {
       this.intervalMs = ms;
     } catch { /* use defaults */ }
 
+    void this.extractCategories(this.snippetsFn());
     void this.runLoop();
+  }
+
+  private pickCategory(): string | null {
+    if (this.zenCategories.length === 0) return null;
+    if (this.zenCategoryQueue.length === 0) {
+      this.zenCategoryQueue = [...this.zenCategories]
+        .filter((c) => !BLOCKED_CATEGORY_PATTERNS.some((p) => p.test(c)))
+        .sort(() => Math.random() - 0.5);
+    }
+    if (this.zenCategoryQueue.length === 0) return null;
+    return this.zenCategoryQueue.pop()!;
+  }
+
+  private async extractCategories(snippets: Snippet[]): Promise<void> {
+    if (this.zenCategories.length > 0) return;
+
+    try {
+      const cached = await chrome.storage.session.get('sonto_zen_categories');
+      if (Array.isArray(cached?.sonto_zen_categories) && (cached.sonto_zen_categories as unknown[]).length > 0) {
+        this.zenCategories = cached.sonto_zen_categories as string[];
+        return;
+      }
+    } catch {}
+
+    if (snippets.length === 0) return;
+
+    const valid = snippets.filter((s) => !JUNK_PATTERNS.some((p) => p.test(`${s.title} ${s.text}`)));
+    const manual = valid.filter((s) => s.source !== 'history');
+    const history = valid.filter((s) => s.source === 'history').sort(() => Math.random() - 0.5).slice(0, 200);
+    const sample = [...manual, ...history].slice(0, 250).map((s) => ({
+      text: s.text.slice(0, 300),
+      title: s.title || '',
+      source: s.source ?? 'manual',
+    }));
+
+    if (sample.length === 0) return;
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: MSG.EXTRACT_CATEGORIES,
+        snippets: sample,
+      }) as { ok: boolean; categories?: string[] };
+
+      if (response?.ok && response.categories?.length) {
+        this.zenCategories = response.categories;
+        void chrome.storage.session.set({ sonto_zen_categories: this.zenCategories }).catch(() => {});
+      }
+    } catch {}
   }
 
   private async fetchNext(): Promise<ZenFetchResult> {
@@ -457,7 +523,7 @@ export class CosmosMode {
             if (this.pastKeys.has(text.slice(0, 80))) return false;
             return true;
           },
-          pickCategory: () => null,
+          pickCategory: () => this.pickCategory(),
         });
         if (result) {
           const key = isTextResult(result) ? result.text.slice(0, 80) : result.imageUrl;
@@ -472,6 +538,34 @@ export class CosmosMode {
         }
       } catch { /* try next */ }
     }
+
+    // Fallback: generate an LLM fact based on user history categories
+    const category = this.pickCategory();
+    if (category) {
+      try {
+        const useStat = Math.random() < 0.1;
+        const response = await chrome.runtime.sendMessage({
+          type: useStat ? MSG.GENERATE_ZEN_STAT : MSG.GENERATE_ZEN_FACT,
+          category,
+          previousFacts: this.pastFacts.slice(-20),
+          language: this.language,
+        }) as { ok: boolean; fact?: string };
+
+        if (
+          response?.ok && response.fact &&
+          !response.fact.includes('[NULL]') &&
+          response.fact.trim().length >= 50 &&
+          !AI_PATTERNS.some((p) => p.test(response.fact!)) &&
+          !this.pastKeys.has(response.fact.slice(0, 80))
+        ) {
+          this.pastKeys.add(response.fact.slice(0, 80));
+          this.pastFacts.push(response.fact);
+          if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
+          return { text: response.fact };
+        }
+      } catch {}
+    }
+
     return null;
   }
 
@@ -496,6 +590,7 @@ export class CosmosMode {
       img.className = 'cosmos-art-img';
       img.src = result.imageUrl;
       img.alt = result.caption;
+      img.addEventListener('error', () => img.remove(), { once: true });
 
       const titleEl = document.createElement('div');
       titleEl.className = 'cosmos-art-title';

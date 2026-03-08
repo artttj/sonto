@@ -99,21 +99,15 @@
 
           <div class="setting-row setting-row--refresh">
             <div class="setting-label">
-              <div class="setting-title" data-i18n="zen_refresh_title">Refresh interval</div>
-              <div class="setting-desc" data-i18n="zen_refresh_desc">How often the message changes</div>
+              <div class="setting-title" data-i18n="zen_refresh_title">Speed</div>
+              <div class="setting-desc" data-i18n="zen_refresh_desc">Seconds between each new item in the feed</div>
             </div>
             <div class="drip-interval-control">
-              <input type="range" id="drip-interval-slider" min="10" max="90" step="10" value="30" />
-              <div class="drip-ticks">
-                <span class="drip-tick"></span>
-                <span class="drip-tick"></span>
-                <span class="drip-tick"></span>
-                <span class="drip-tick"></span>
-                <span class="drip-tick"></span>
-                <span class="drip-tick"></span>
-                <span class="drip-tick"></span>
-                <span class="drip-tick"></span>
-                <span class="drip-tick"></span>
+              <input type="range" id="drip-interval-slider" min="5" max="100" step="5" value="30" />
+              <div class="drip-labels">
+                <span>5s</span>
+                <span id="drip-current-value">30s</span>
+                <span>100s</span>
               </div>
             </div>
           </div>

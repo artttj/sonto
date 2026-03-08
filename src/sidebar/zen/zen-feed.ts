@@ -356,6 +356,7 @@ export class ZenFeed {
     const img = bubble.querySelector<HTMLImageElement>('.zen-art-img');
     if (img) {
       img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
+      img.addEventListener('error', () => img.remove(), { once: true });
     }
     const first = this.feedEl.firstChild;
     if (first) {

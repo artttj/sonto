@@ -111,6 +111,7 @@ class SontoSidebar {
     this.snippets = this.browseManager.getSnippets();
 
     if (this.zenDisplay === 'cosmos') {
+      this.cosmosMode!.refresh(this.snippets, this.language);
       void this.cosmosMode!.start();
     } else {
       void this.zenFeed!.start();

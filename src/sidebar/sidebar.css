@@ -188,6 +188,8 @@ html, body {
   flex-direction: column;
   gap: 0;
   min-height: 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ═══ COSMOS VIEW ══════════════════════════════════════════════════════════ */
@@ -198,6 +200,8 @@ html, body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .cosmos-view.hidden { display: none; }

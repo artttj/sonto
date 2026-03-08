@@ -25,8 +25,8 @@ const en: Record<string, string> = {
   // Zen display & refresh
   zen_display_title: 'Zen display',
   zen_display_desc: 'Feed scrolls continuously. Cosmos shows one message with spirograph animation in between.',
-  zen_refresh_title: 'Refresh interval',
-  zen_refresh_desc: 'How often the Zen feed or Cosmos message updates',
+  zen_refresh_title: 'Speed',
+  zen_refresh_desc: 'Seconds between each new item in the feed',
   zen_sources_title: 'Zen Feed Sources',
   zen_sources_desc: 'Choose which sources appear in your Zen feed. All are enabled by default.',
 

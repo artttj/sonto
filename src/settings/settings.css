@@ -1594,17 +1594,21 @@ body {
   gap: 0;
 }
 
-.drip-ticks {
+.drip-labels {
   display: flex;
   justify-content: space-between;
-  padding: 0 6px;
   margin-top: 4px;
+  padding: 0 2px;
 }
 
-.drip-tick {
-  width: 1px;
-  height: 6px;
-  background: rgba(255,255,255,0.2);
+.drip-labels span {
+  font-size: 9px;
+  color: rgba(255,255,255,0.3);
+}
+
+#drip-current-value {
+  color: rgba(255,255,255,0.6);
+  font-weight: 500;
 }
 
 #drip-interval-slider {
