@@ -1,11 +1,13 @@
 import {
   AI_PATTERNS,
   OBLIQUE_STRATEGIES,
+  SVG_ATLAS,
   SVG_HAIKU,
   SVG_HN,
   SVG_OBLIQUE,
   SVG_PHILOSOPHY,
   SVG_REDDIT,
+  SVG_SMITHSONIAN,
   escapeHtml,
 } from './zen-content';
 import { getCustomFeeds } from '../../shared/storage';
@@ -631,6 +633,72 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * items.length)];
         return { text: pick.title, link: pick.link, icon: SVG_PHILOSOPHY };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'smithsonianNews',
+    label: 'Smithsonian Smart News',
+    weight: 6,
+    fetch: async (ctx) => {
+      if (ctx.language !== 'en') return null;
+      try {
+        const res = await fetch('https://www.smithsonianmag.com/rss/smart-news/', {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return null;
+        const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
+        if (items.length === 0) return null;
+        const pick = items[Math.floor(Math.random() * Math.min(items.length, 15))];
+        if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title };
+        return { text: pick.title, link: pick.link, icon: SVG_SMITHSONIAN };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'smithsonianPhoto',
+    label: 'Smithsonian Photos',
+    weight: 5,
+    fetch: async (ctx) => {
+      if (ctx.language !== 'en') return null;
+      try {
+        const res = await fetch('https://www.smithsonianmag.com/rss/multimedia/', {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return null;
+        const items = parseFeed(await res.text()).filter((it) => it.imageUrl);
+        if (items.length === 0) return null;
+        const pick = items[Math.floor(Math.random() * Math.min(items.length, 15))];
+        return { imageUrl: pick.imageUrl!, caption: pick.title };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'atlasObscura',
+    label: 'Atlas Obscura',
+    weight: 6,
+    fetch: async (ctx) => {
+      if (ctx.language !== 'en') return null;
+      try {
+        const res = await fetch('https://www.atlasobscura.com/feeds/latest', {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return null;
+        const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
+        if (items.length === 0) return null;
+        const pick = items[Math.floor(Math.random() * Math.min(items.length, 15))];
+        if (pick.description) {
+          const doc = new DOMParser().parseFromString(pick.description, 'text/html');
+          const img = doc.querySelector('img');
+          if (img?.src) return { imageUrl: img.src, caption: pick.title };
+        }
+        return { text: pick.title, link: pick.link, icon: SVG_ATLAS };
       } catch {
         return null;
       }
