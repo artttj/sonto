@@ -97,6 +97,7 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'metArtwork',          label: 'Art from The Met (New York)' },
   { id: 'clevelandArtwork',    label: 'Art from Cleveland Museum' },
   { id: 'gettyArtwork',        label: 'Getty Museum Art' },
+  { id: 'rijksmuseumArtwork',  label: 'Rijksmuseum (Amsterdam)' },
   { id: 'marsRover',           label: 'Perseverance Rover Photos' },
   { id: 'smithsonianNews',     label: 'Smithsonian Smart News' },
   { id: 'atlasObscura',        label: 'Atlas Obscura' },

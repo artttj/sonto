@@ -48,6 +48,10 @@ let metIdCache: number[] = [];
 const GETTY_MAX_PAGE = 42498;
 let gettyUuidCache: string[] = [];
 
+const RIJKS_ID_MIN = 25000;
+const RIJKS_ID_MAX = 900000;
+let rijksIdCache: string[] = [];
+
 let kotowazaQueue: Array<unknown> = [];
 let obliqueQueue: string[] = [];
 let haikuQueue: string[] = [];
@@ -465,6 +469,98 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const pick = atlasCache.pop()!;
         if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
         return { text: pick.title, link: pick.link, icon: SVG_ATLAS };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
+    id: 'rijksmuseumArtwork',
+    label: 'Rijksmuseum',
+    weight: 6,
+    fetch: async () => {
+      const timeout = AbortSignal.timeout(12000);
+      const headers = { Accept: 'application/ld+json' };
+
+      try {
+        if (rijksIdCache.length === 0) {
+          const rand = Math.floor(Math.random() * (RIJKS_ID_MAX - RIJKS_ID_MIN)) + RIJKS_ID_MIN;
+          const token = btoa(JSON.stringify({ token: `https://id.rijksmuseum.nl/200${rand}` }));
+          const res = await fetch(
+            `https://data.rijksmuseum.nl/search/collection?type=painting&imageAvailable=true&pageToken=${token}`,
+            { signal: timeout },
+          );
+          if (!res.ok) return null;
+          const page = await res.json() as {
+            orderedItems?: Array<{ id?: string }>;
+          };
+          const ids = (page.orderedItems ?? [])
+            .map((it) => it.id)
+            .filter((id): id is string => !!id);
+          if (ids.length === 0) return null;
+          rijksIdCache.push(...ids.sort(() => Math.random() - 0.5));
+        }
+
+        const objectUrl = rijksIdCache.pop();
+        if (!objectUrl) return null;
+
+        const objRes = await fetch(objectUrl, { signal: timeout, headers });
+        if (!objRes.ok) return null;
+        const obj = await objRes.json() as {
+          identified_by?: Array<{ type?: string; content?: string; language?: Array<{ id?: string }> }>;
+          produced_by?: {
+            part?: Array<{
+              referred_to_by?: Array<{
+                classified_as?: Array<{ id?: string }>;
+                content?: string;
+                language?: Array<{ id?: string }>;
+              }>;
+            }>;
+          };
+          subject_of?: Array<{
+            digitally_carried_by?: Array<{ access_point?: Array<{ id?: string }> }>;
+          }>;
+        };
+
+        const enLang = '300388277';
+        const titleEntry = obj.identified_by?.find(
+          (e) => e.type === 'Name' && e.language?.some((l) => l.id?.includes(enLang)),
+        ) ?? obj.identified_by?.find((e) => e.type === 'Name');
+        const title = titleEntry?.content?.trim() || 'Untitled';
+
+        let artist = '';
+        for (const part of obj.produced_by?.part ?? []) {
+          for (const ref of part.referred_to_by ?? []) {
+            if (ref.classified_as?.some((c) => c.id?.includes('300435417')) &&
+                ref.language?.some((l) => l.id?.includes(enLang))) {
+              artist = ref.content?.trim() ?? '';
+            }
+          }
+        }
+
+        const webLink = obj.subject_of?.[0]?.digitally_carried_by?.[0]?.access_point?.[0]?.id;
+        const link = webLink ?? `https://www.rijksmuseum.nl`;
+
+        const visualId = objectUrl.replace('/200', '/202');
+        const visRes = await fetch(visualId, { signal: timeout, headers });
+        if (!visRes.ok) return null;
+        const vis = await visRes.json() as {
+          digitally_shown_by?: Array<{ id?: string }>;
+        };
+        const digitalUrl = vis.digitally_shown_by?.[0]?.id;
+        if (!digitalUrl) return null;
+
+        const digRes = await fetch(digitalUrl, { signal: timeout, headers });
+        if (!digRes.ok) return null;
+        const dig = await digRes.json() as {
+          access_point?: Array<{ id?: string }>;
+        };
+        const imageUrl = dig.access_point?.[0]?.id;
+        if (!imageUrl) return null;
+
+        const sized = imageUrl.replace('/full/max/', '/full/800,/');
+        const caption = artist ? `${title} — ${artist}` : title;
+        return { imageUrl: sized, caption, link };
       } catch {
         return null;
       }
