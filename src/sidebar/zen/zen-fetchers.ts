@@ -4,9 +4,7 @@ import {
   SVG_ATLAS,
   SVG_HAIKU,
   SVG_HN,
-  SVG_PHILOSOPHY,
   SVG_REDDIT,
-  SVG_SMITHSONIAN,
   escapeHtml,
 } from './zen-content';
 import { getCustomFeeds, getCustomJsonSources } from '../../shared/storage';
@@ -122,7 +120,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'reddit',
     label: 'Reddit',
-    weight: 7,
+    weight: 6,
     fetch: async () => {
       try {
         const sub = REDDIT_SUBREDDITS[Math.floor(Math.random() * REDDIT_SUBREDDITS.length)];
@@ -155,7 +153,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'metArtwork',
     label: 'Met Artwork',
-    weight: 10,
+    weight: 7,
     fetch: async (ctx) => {
       const fetchObject = async (objectId: number) => {
         const objRes = await fetch(
@@ -209,7 +207,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'marsRover',
     label: 'Perseverance Rover',
-    weight: 7,
+    weight: 5,
     fetch: async () => {
       const today = new Date();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -245,7 +243,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'clevelandArtwork',
     label: 'Cleveland Museum of Art',
-    weight: 8,
+    weight: 6,
     fetch: async (ctx) => {
       try {
         const skip = Math.floor(Math.random() * 3000);
@@ -288,7 +286,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'customRss',
     label: 'Custom RSS Feeds',
-    weight: 8,
+    weight: 4,
     fetch: async (ctx) => {
       const feeds = await getCustomFeeds();
       if (feeds.length === 0) return null;
@@ -312,7 +310,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'kotowaza',
     label: 'Japanese Proverbs',
-    weight: 4,
+    weight: 7,
     fetch: async (ctx) => {
       if (kotowazaQueue.length === 0) {
         kotowazaQueue = [...kotowazaData].sort(() => Math.random() - 0.5);
@@ -329,7 +327,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'obliqueStrategies',
     label: 'Oblique Strategies',
-    weight: 3,
+    weight: 6,
     fetch: async () => {
       if (obliqueQueue.length === 0) {
         obliqueQueue = [...OBLIQUE_STRATEGIES].sort(() => Math.random() - 0.5);
@@ -342,7 +340,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'haiku',
     label: 'Haiku',
-    weight: 4,
+    weight: 7,
     fetch: async () => {
       if (haikuQueue.length === 0) {
         haikuQueue = [...haikuData].sort(() => Math.random() - 0.5);
@@ -357,7 +355,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'philosophyEssay',
     label: '1000-Word Philosophy',
-    weight: 8,
+    weight: 7,
     fetch: async (ctx) => {
       if (ctx.language !== 'en') return null;
       try {
@@ -369,7 +367,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const items = parseFeed(xml).filter((it) => ctx.isValidFact(it.title));
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * items.length)];
-        return { text: pick.title, link: pick.link, icon: SVG_PHILOSOPHY };
+        return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://1000wordphilosophy.com/wp-content/uploads/2024/09/1000-word-philosophy-square-logo.jpg" alt="1000-Word Philosophy" />' };
       } catch {
         return null;
       }
@@ -378,7 +376,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'gettyArtwork',
     label: 'Getty Museum Art',
-    weight: 8,
+    weight: 6,
     fetch: async () => {
       try {
         if (gettyUuidCache.length === 0) {
@@ -422,7 +420,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'smithsonianNews',
     label: 'Smithsonian Smart News',
-    weight: 9,
+    weight: 8,
     fetch: async (ctx) => {
       if (ctx.language !== 'en') return null;
       try {
@@ -434,7 +432,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         if (items.length === 0) return null;
         const pick = items[Math.floor(Math.random() * Math.min(items.length, 15))];
         if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
-        return { text: pick.title, link: pick.link, icon: SVG_SMITHSONIAN };
+        return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://www.teachingforchange.org/wp-content/uploads/2022/04/smithsonian-magazine-logo-vector.png" alt="Smithsonian Magazine" />' };
       } catch {
         return null;
       }
@@ -443,7 +441,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'atlasObscura',
     label: 'Atlas Obscura',
-    weight: 9,
+    weight: 8,
     fetch: async (ctx) => {
       if (ctx.language !== 'en') return null;
       try {
@@ -468,7 +466,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'customJson',
     label: 'Custom API',
-    weight: 8,
+    weight: 4,
     fetch: async (ctx) => {
       const sources = await getCustomJsonSources();
       if (sources.length === 0) return null;
