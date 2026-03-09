@@ -141,6 +141,10 @@ export class ZenFeed {
     this.snippetsFn = () => snippets;
   }
 
+  setDripInterval(ms: number): void {
+    this.dripIntervalMs = ms;
+  }
+
   async restorePastFacts(): Promise<void> {
     try {
       const stored = await chrome.storage.session.get('sonto_past_facts');

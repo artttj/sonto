@@ -521,7 +521,7 @@ export class CosmosMode {
     } catch {}
   }
 
-  private async fetchNext(): Promise<ZenFetchResult> {
+  private async fetchNext(): Promise<[ZenFetchResult, string | null]> {
     for (let attempt = 0; attempt < 5; attempt++) {
       const fetcher = pickFetcher(ZEN_FETCHERS, this.disabledSources);
       try {
@@ -542,7 +542,7 @@ export class CosmosMode {
               const first = this.pastKeys.values().next().value;
               if (first) this.pastKeys.delete(first);
             }
-            return result;
+            return [result, fetcher.label];
           }
         }
       } catch { /* try next */ }
@@ -570,15 +570,15 @@ export class CosmosMode {
           this.pastKeys.add(response.fact.slice(0, 80));
           this.pastFacts.push(response.fact);
           if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
-          return { text: response.fact };
+          return [{ text: response.fact }, null];
         }
       } catch {}
     }
 
-    return null;
+    return [null, null];
   }
 
-  private renderResult(result: ZenFetchResult): void {
+  private renderResult(result: ZenFetchResult, source: string | null): void {
     this.msgEl.innerHTML = '';
 
     if (!result) {
@@ -644,6 +644,13 @@ export class CosmosMode {
         this.msgEl.appendChild(link);
       }
     }
+
+    if (source) {
+      const srcEl = document.createElement('div');
+      srcEl.className = 'cosmos-source';
+      srcEl.textContent = source;
+      this.msgEl.appendChild(srcEl);
+    }
   }
 
   private async runLoop(): Promise<void> {
@@ -656,10 +663,10 @@ export class CosmosMode {
     this.spiro = new SpirographCanvas(this.canvasWrap);
     const spiroPromise = this.spiro.start(this.intervalMs);
 
-    const result = await this.fetchNext();
+    const [result, source] = await this.fetchNext();
     if (this.stopped) { this.spiro.stop(); return; }
 
-    this.renderResult(result);
+    this.renderResult(result, source);
     await fadeEl(this.msgEl, 0, 1, FADE_MS);
     if (this.stopped) { this.spiro.stop(); return; }
 

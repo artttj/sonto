@@ -75,6 +75,10 @@ class SontoSidebar {
           void this.switchZenDisplay(newMode);
         }
       }
+      if (area === 'local' && changes.sonto_drip_interval_ms) {
+        const ms = changes.sonto_drip_interval_ms.newValue as number;
+        this.zenFeed?.setDripInterval(ms);
+      }
     });
 
     qs<HTMLButtonElement>('#btn-clear-all').addEventListener('click', () => void this.browseManager.clearAll());
