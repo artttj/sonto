@@ -140,7 +140,7 @@ export class ChatManager {
 
       this.appendMessage('assistant', reply);
       this.sessionMessages.push({ role: 'assistant', content: reply });
-      void this.saveCurrentSession(query);
+      await this.saveCurrentSession(query);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong.';
       this.appendMessage('error', msg);

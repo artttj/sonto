@@ -491,8 +491,15 @@ export class CosmosMode {
 
   setIntervalMs(ms: number): void {
     this.intervalMs = ms;
-    // restart the current cycle so the new interval takes effect
+    this.stopped = true;
     this.spiro?.stop();
+    void this.restartLoop();
+  }
+
+  private async restartLoop(): Promise<void> {
+    await new Promise((r) => setTimeout(r, 50));
+    this.stopped = false;
+    void this.runLoop();
   }
 
   async start(): Promise<void> {

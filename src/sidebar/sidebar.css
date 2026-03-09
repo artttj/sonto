@@ -1152,7 +1152,7 @@ html, body {
 }
 [data-theme="light"] .cosmos-text {
   color: #000;
-  text-shadow: 0 0 20px rgba(255,255,255,0.8), 0 1px 4px rgba(255,255,255,0.6);
+  text-shadow: 0 1px 8px rgba(240,237,232,0.9);
 }
 [data-theme="light"] .cosmos-art-title {
   color: #000;
