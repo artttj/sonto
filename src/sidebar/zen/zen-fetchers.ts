@@ -51,7 +51,7 @@ const REDDIT_SUBREDDITS = [
 const MET_SEARCH_TERMS = ['painting', 'sculpture', 'portrait', 'landscape', 'still life'];
 let metIdCache: number[] = [];
 
-const GETTY_PAGES = [1000,1500,2000,3500,4000,4500,6500,7000,7500,9000,9500,12000,12500,13000,14000,14500,15000,17000,17500,18000,19000,19500,20000,20500,21000,21500,22000,22500,23000,23500,24000,24500,25000,26500,27000,27500,28500,29000,29500,30500,31000,31500,32000,32500,33500,34000,34500,35000,35500,36000,36500,37000,37500,38500,39500,40000,40500,41000,41500];
+const GETTY_MAX_PAGE = 42498;
 let gettyUuidCache: string[] = [];
 
 let kotowazaQueue: Array<unknown> = [];
@@ -375,7 +375,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     fetch: async () => {
       try {
         if (gettyUuidCache.length === 0) {
-          const page = GETTY_PAGES[Math.floor(Math.random() * GETTY_PAGES.length)];
+          const page = Math.floor(Math.random() * GETTY_MAX_PAGE) + 1;
           const res = await fetch(
             `https://data.getty.edu/museum/collection/activity-stream/page/${page}`,
             { signal: AbortSignal.timeout(7000) },
