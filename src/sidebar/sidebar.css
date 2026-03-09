@@ -12,6 +12,27 @@
   font-display: swap;
   src: url('../fonts/playfair-display-italic.woff2') format('woff2');
 }
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url('../fonts/dm-sans-regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/dm-sans-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/space-mono-regular.woff2') format('woff2');
+}
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -77,8 +98,9 @@
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.48), var(--glass-gloss);
   --shadow-md: 0 4px 24px rgba(0,0,0,0.56), var(--glass-gloss);
 
-  --font: system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", monospace;
+  --font: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
 }
 
 html, body {
@@ -273,7 +295,7 @@ html, body {
 }
 
 .cosmos-text {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 22px;
   font-weight: 400;
   line-height: 1.45;
@@ -283,7 +305,7 @@ html, body {
 }
 
 .cosmos-art-title {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 18px;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.6);
@@ -322,8 +344,10 @@ html, body {
 }
 
 .cosmos-source {
+  font-family: var(--font);
   font-size: 9px;
-  letter-spacing: 0.07em;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.25);
   margin-top: 14px;
@@ -350,13 +374,21 @@ html, body {
 .zen-bubble-body {
   flex: 1;
   min-width: 0;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-serif);
+}
+.zen-bubble:has(.zen-bulb--hn) .zen-bubble-body,
+.zen-bubble:has(.zen-bulb--reddit) .zen-bubble-body,
+.zen-bubble:has(.zen-icon-img) .zen-bubble-body,
+.zen-bubble.zen-resurface .zen-bubble-body {
+  font-family: var(--font);
 }
 
 .zen-source {
   display: block;
+  font-family: var(--font);
   font-size: 9px;
-  letter-spacing: 0.06em;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   opacity: 0.4;
   margin-top: 6px;
@@ -565,7 +597,7 @@ html, body {
 
 .zen-oblique {
   display: block;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-mono);
   font-weight: 700;
   font-size: 14px;
   text-transform: uppercase;

@@ -171,7 +171,7 @@ class SontoSidebar {
     }
 
     void this.checkDigest();
-    void this.checkReadingAssistant();
+    this.initReadingAssistant();
   }
 
   private initExportDropdown(): void {
@@ -273,35 +273,48 @@ class SontoSidebar {
     }, { once: true });
   }
 
-  private async checkReadingAssistant(): Promise<void> {
+  private initReadingAssistant(): void {
     const bar = document.getElementById('reading-assistant-bar')!;
     const textEl = document.getElementById('reading-assistant-text')!;
 
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab?.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) return;
+    document.getElementById('btn-view-related')!.addEventListener('click', () => {
+      bar.classList.add('hidden');
+      this.setMode('browse');
+    });
 
-      const response = await chrome.runtime.sendMessage({
-        type: MSG.GET_SNIPPETS_FOR_TAB,
-        url: tab.url,
-        title: tab.title ?? '',
-      }) as { ok: boolean; snippets?: Snippet[] };
+    document.getElementById('btn-dismiss-ra')!.addEventListener('click', () => {
+      bar.classList.add('hidden');
+    });
 
-      if (!response?.ok || !response.snippets?.length) return;
+    const refresh = async () => {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
+          bar.classList.add('hidden');
+          return;
+        }
 
-      const count = response.snippets.length;
-      textEl.textContent = `${count} related save${count > 1 ? 's' : ''} for this page`;
-      bar.classList.remove('hidden');
+        const response = await chrome.runtime.sendMessage({
+          type: MSG.GET_SNIPPETS_FOR_TAB,
+          url: tab.url,
+          title: tab.title ?? '',
+        }) as { ok: boolean; snippets?: Snippet[] };
 
-      document.getElementById('btn-view-related')!.addEventListener('click', () => {
+        if (!response?.ok || !response.snippets?.length) {
+          bar.classList.add('hidden');
+          return;
+        }
+
+        const count = response.snippets.length;
+        textEl.textContent = `${count} related save${count > 1 ? 's' : ''} for this page`;
+        bar.classList.remove('hidden');
+      } catch {
         bar.classList.add('hidden');
-        this.setMode('browse');
-      }, { once: true });
+      }
+    };
 
-      document.getElementById('btn-dismiss-ra')!.addEventListener('click', () => {
-        bar.classList.add('hidden');
-      }, { once: true });
-    } catch {}
+    void refresh();
+    chrome.tabs.onActivated.addListener(() => void refresh());
   }
 
   private async toggleTheme(): Promise<void> {
