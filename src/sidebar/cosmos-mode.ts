@@ -183,6 +183,8 @@ class SpirographCanvas {
   private rafId = 0;
   private running = false;
   private resizeTimer = 0;
+  private drawTimer = 0;
+  private resolveStart: (() => void) | null = null;
 
   private style: 'dense' | 'open' | 'geometric' = 'dense';
   private stepsTotal = 0;
@@ -297,6 +299,8 @@ class SpirographCanvas {
 
   start(durationMs: number): Promise<void> {
     return new Promise((resolve) => {
+      this.resolveStart = resolve;
+
       const roll = Math.random();
       this.style = roll < 0.34 ? 'dense' : roll < 0.67 ? 'open' : 'geometric';
       this.params = this.style === 'dense'
@@ -309,10 +313,8 @@ class SpirographCanvas {
       this.Crot = 0;
       this.drawn = 0;
 
-      // Low alpha — spiro is a background element, text must stay readable on top
       this.alpha = this.style === 'dense' ? 0.38 : this.style === 'open' ? 0.42 : 0.38;
 
-      // drawMs caps the active drawing phase; the rest of durationMs is a silent hold.
       const DRAW_MS = Math.min(durationMs, 3000);
       const fps = 30;
       const frames = Math.round(DRAW_MS / 1000 * fps);
@@ -336,16 +338,24 @@ class SpirographCanvas {
       this.ctx.lineWidth = this.style === 'dense' ? 0.6 : 0.8;
 
       this.running = true;
-      const endAt = Date.now() + durationMs;
       let prevPt: { fx: number; fy: number } | null = null;
 
-      const tick = () => {
-        if (!this.running) { resolve(); return; }
-        // Only stop when the pattern is fully drawn AND the display time has elapsed.
-        // Checking time alone would cut the spirograph short on throttled or slow frames.
-        if (this.drawn >= this.stepsTotal && Date.now() >= endAt) { this.running = false; resolve(); return; }
+      // Resolve via setTimeout — immune to RAF throttling in background/inactive panels
+      this.drawTimer = window.setTimeout(() => {
+        this.running = false;
+        const res = this.resolveStart;
+        this.resolveStart = null;
+        res?.();
+      }, durationMs);
 
-        // Draw steps until stepsTotal reached, then just hold the completed pattern
+      const tick = () => {
+        if (!this.running) {
+          const res = this.resolveStart;
+          this.resolveStart = null;
+          res?.();
+          return;
+        }
+
         for (let i = 0; i < stepsPerFrame && this.drawn < this.stepsTotal; i++) {
           this.Lrot = (this.Lrot + this.params.Lrota + 360) % 360;
           this.Rrot = (this.Rrot + this.params.Rrota + 360) % 360;
@@ -399,6 +409,10 @@ class SpirographCanvas {
   stop(): void {
     this.running = false;
     cancelAnimationFrame(this.rafId);
+    clearTimeout(this.drawTimer);
+    const res = this.resolveStart;
+    this.resolveStart = null;
+    res?.();
   }
 
   remove(): void {
