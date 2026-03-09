@@ -5,7 +5,6 @@ import {
   SVG_HAIKU,
   SVG_HN,
   SVG_PHILOSOPHY,
-  SVG_QUOTE,
   SVG_REDDIT,
   SVG_SMITHSONIAN,
   escapeHtml,
@@ -14,7 +13,6 @@ import { getCustomFeeds } from '../../shared/storage';
 import { parseFeed } from '../../shared/rss-parser';
 import kotowazaData from '../../../node_modules/kotowaza/data/kotowaza.json';
 import haikuData from './haiku-data.json';
-import quotesData from './quotes-data.json';
 
 // Wrap text in smart quotes unless it already starts with one.
 // Splits on em-dash attribution so the author stays outside the quotes:
@@ -47,12 +45,9 @@ export type ZenFetcher = {
   fetch: (ctx: FetcherContext) => Promise<ZenFetchResult>;
 };
 
-const TRIVIA_CATEGORIES = [9, 10, 17, 18, 25];
-
 const REDDIT_SUBREDDITS = [
-  'todayilearned', 'science', 'Futurology', 'space', 'history',
-  'technology', 'programming', 'entrepreneur', 'interestingasfuck', 'philosophy',
-  'business', 'AskScience', 'dataisbeautiful',
+  'science', 'Futurology', 'space', 'history',
+  'philosophy', 'AskScience', 'dataisbeautiful',
 ];
 
 const MET_HIGHLIGHTED_IDS = [
@@ -69,11 +64,9 @@ const MET_HIGHLIGHTED_IDS = [
 const GETTY_PAGES = [1000,1500,2000,3500,4000,4500,6500,7000,7500,9000,9500,12000,12500,13000,14000,14500,15000,17000,17500,18000,19000,19500,20000,20500,21000,21500,22000,22500,23000,23500,24000,24500,25000,26500,27000,27500,28500,29000,29500,30500,31000,31500,32000,32500,33500,34000,34500,35000,35500,36000,36500,37000,37500,38500,39500,40000,40500,41000,41500];
 let gettyUuidCache: string[] = [];
 
-let triviaCache: Array<{ question: string; answer: string }> = [];
 let kotowazaQueue: Array<unknown> = [];
 let obliqueQueue: string[] = [];
 let haikuQueue: string[] = [];
-let quotesQueue: string[] = [];
 
 function decodeHtml(str: string): string {
   return new DOMParser().parseFromString(str, 'text/html').body.textContent ?? str;
@@ -91,144 +84,11 @@ function isValidRedditPost(post: { stickied: boolean; over_18: boolean; score: n
   return !post.stickied && !post.over_18 && post.score > 50 && post.title.length >= 20 && !containsAiContent(post.title);
 }
 
-const MULTIPLE_CHOICE_RE = /which of (the following|these|those)|all of the following|none of the following|which one of|which statement|following\s+(is|are|was|were)\s+(not\s+)?(true|false|correct|incorrect)/i;
-
-function isMultipleChoiceTrivia(question: string): boolean {
-  return MULTIPLE_CHOICE_RE.test(question);
-}
-
 export const ZEN_FETCHERS: ZenFetcher[] = [
-  {
-    id: 'uselessFacts',
-    label: 'Random Facts',
-    weight: 7,
-    fetch: async (ctx) => {
-      try {
-        const res = await fetch(
-          `https://uselessfacts.jsph.pl/api/v2/facts/random?language=${ctx.language}`,
-          { signal: AbortSignal.timeout(8000) },
-        );
-        if (!res.ok) return null;
-        const data = await res.json() as { text?: string };
-        const text = data.text?.trim() ?? '';
-        return ctx.isValidFact(text) ? { text: stripWrappingQuotes(text) } : null;
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
-    id: 'adviceSlip',
-    label: 'Advice Slip',
-    weight: 5,
-    fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
-      try {
-        const res = await fetch('https://api.adviceslip.com/advice', {
-          signal: AbortSignal.timeout(8000),
-          cache: 'no-cache',
-        });
-        if (!res.ok) return null;
-        const data = await res.json() as { slip?: { advice: string } };
-        const text = data.slip?.advice.trim() ?? '';
-        return ctx.isValidFact(text) ? { text: stripWrappingQuotes(text) } : null;
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
-    id: 'stoicQuote',
-    label: 'Stoic Quotes',
-    weight: 5,
-    fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
-      try {
-        const res = await fetch('https://stoic.tekloon.net/stoic-quote', {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!res.ok) return null;
-        const data = await res.json() as { data?: { quote?: string; author?: string } };
-        const quote = data.data?.quote?.trim() ?? '';
-        const author = data.data?.author?.trim();
-        if (!ctx.isValidFact(quote)) return null;
-        const full = author ? `${quote} — ${author}` : quote;
-        return { text: wrapQuotes(full) };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
-    id: 'designQuote',
-    label: 'Design Quotes',
-    weight: 4,
-    fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
-      try {
-        const res = await fetch(
-          `https://quotesondesign.com/wp-json/custom/v1/random-post?nocache=${Date.now()}`,
-          { signal: AbortSignal.timeout(8000) },
-        );
-        if (!res.ok) return null;
-        const data = await res.json() as { title?: string; content?: string };
-        const decoded = new DOMParser().parseFromString(data.content ?? '', 'text/html').body.textContent ?? '';
-        const raw = decoded.trim();
-        const author = data.title?.trim();
-        if (!ctx.isValidFact(raw)) return null;
-        const full = author ? `${raw} — ${author}` : raw;
-        return { text: wrapQuotes(full) };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
-    id: 'zenQuote',
-    label: 'Zen Quotes',
-    weight: 5,
-    fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
-      try {
-        const res = await fetch('https://zenquotes.io/api/random', {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!res.ok) return null;
-        const data = await res.json() as Array<{ q?: string; a?: string }>;
-        const item = data[0];
-        const quote = item?.q?.trim() ?? '';
-        const author = item?.a?.trim();
-        if (!ctx.isValidFact(quote)) return null;
-        const full = author ? `${quote} — ${author}` : quote;
-        return { text: wrapQuotes(full) };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
-    id: 'affirmation',
-    label: 'Affirmations',
-    weight: 5,
-    fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
-      try {
-        const res = await fetch('https://www.affirmations.dev/', {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!res.ok) return null;
-        const data = await res.json() as { affirmation?: string };
-        const text = data.affirmation?.trim() ?? '';
-        return text ? { text: wrapQuotes(text) } : null;
-      } catch {
-        return null;
-      }
-    },
-  },
   {
     id: 'hnStory',
     label: 'Hacker News',
-    weight: 8,
+    weight: 5,
     fetch: async () => {
       try {
         const listRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json', {
@@ -262,7 +122,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'reddit',
     label: 'Reddit',
-    weight: 8,
+    weight: 7,
     fetch: async () => {
       try {
         const sub = REDDIT_SUBREDDITS[Math.floor(Math.random() * REDDIT_SUBREDDITS.length)];
@@ -293,50 +153,9 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
-    id: 'trivia',
-    label: 'Trivia',
-    weight: 7,
-    fetch: async () => {
-      if (triviaCache.length === 0) {
-        try {
-          const cat = TRIVIA_CATEGORIES[Math.floor(Math.random() * TRIVIA_CATEGORIES.length)];
-          const difficulty = Math.random() < 0.5 ? 'hard' : 'medium';
-          const res = await fetch(
-            `https://opentdb.com/api.php?amount=10&category=${cat}&difficulty=${difficulty}&type=multiple`,
-            { signal: AbortSignal.timeout(8000) },
-          );
-          if (!res.ok) return null;
-          const data = await res.json() as {
-            response_code: number;
-            results: Array<{ question: string; correct_answer: string }>;
-          };
-          if (data.response_code !== 0 || !data.results?.length) return null;
-          triviaCache = data.results.map((r) => ({
-            question: decodeHtml(r.question),
-            answer: decodeHtml(r.correct_answer),
-          }));
-        } catch {
-          return null;
-        }
-      }
-
-      const item = triviaCache.splice(Math.floor(Math.random() * triviaCache.length), 1)[0];
-      if (!item) return null;
-      if ((item.question + item.answer).length < 20) return null;
-      if (isMultipleChoiceTrivia(item.question)) return null;
-      const query = encodeURIComponent(`${item.question} ${item.answer}`);
-      const html = `<span class="zen-trivia-answer">${escapeHtml(item.answer)}</span><span class="zen-trivia-question">${escapeHtml(item.question)}</span>`;
-      return {
-        text: `${item.answer}. ${item.question}`,
-        link: `https://www.google.com/search?q=${query}`,
-        html,
-      };
-    },
-  },
-  {
     id: 'metArtwork',
     label: 'Met Artwork',
-    weight: 4,
+    weight: 10,
     fetch: async (ctx) => {
       const fetchObject = async (objectId: number) => {
         const objRes = await fetch(
@@ -388,51 +207,9 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
-    id: 'nasaMarsImage',
-    label: 'NASA Mars Images',
-    weight: 2,
-    fetch: async () => {
-      try {
-        const page = Math.floor(Math.random() * 33) + 1;
-        const res = await fetch(
-          `https://images-api.nasa.gov/search?q=mars+surface&media_type=image&page_size=100&page=${page}`,
-          { signal: AbortSignal.timeout(10000) },
-        );
-        if (!res.ok) return null;
-        const data = await res.json() as {
-          collection?: {
-            items?: Array<{
-              data?: Array<{ title?: string; date_created?: string; description?: string }>;
-              links?: Array<{ href?: string; render?: string }>;
-            }>;
-          };
-        };
-        const items = (data.collection?.items ?? []).filter((it) => {
-          if (!it.links?.some((l) => l.render === 'image' && l.href)) return false;
-          const title = it.data?.[0]?.title?.trim() ?? '';
-          // Skip archive catalog codes like "KSC-05pd-0823" — no spaces, contains dashes
-          if (title && !title.includes(' ') && title.includes('-')) return false;
-          return true;
-        });
-        if (items.length === 0) return null;
-        const pick = items[Math.floor(Math.random() * items.length)];
-        const meta = pick.data?.[0];
-        const href = pick.links?.find((l) => l.render === 'image')?.href ?? '';
-        // Prefer ~small.jpg over ~thumb.jpg for better resolution
-        const imageUrl = href.replace('~thumb.jpg', '~small.jpg');
-        const title = meta?.title?.trim() || 'Mars';
-        const year = meta?.date_created ? new Date(meta.date_created).getFullYear() : '';
-        const caption = year ? `${title} · NASA · ${year}` : `${title} · NASA`;
-        return { imageUrl, caption };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
     id: 'marsRover',
     label: 'Perseverance Rover',
-    weight: 2,
+    weight: 7,
     fetch: async () => {
       const today = new Date();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -466,54 +243,9 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
-    id: 'funQuote',
-    label: 'Fun Quotes',
-    weight: 4,
-    fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
-      try {
-        const res = await fetch('https://abhi-api.vercel.app/api/fun/quotes', {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!res.ok) return null;
-        const data = await res.json() as { result?: { quote?: string; author?: string } };
-        const quote = data.result?.quote?.trim() ?? '';
-        const author = data.result?.author?.trim();
-        if (!ctx.isValidFact(quote)) return null;
-        const full = author ? `${quote} — ${author}` : quote;
-        return { text: wrapQuotes(full) };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
-    id: 'favqsQotd',
-    label: 'Quote of the Day',
-    weight: 5,
-    fetch: async (ctx) => {
-      if (ctx.language !== 'en') return null;
-      try {
-        const res = await fetch('https://favqs.com/api/qotd', {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!res.ok) return null;
-        const data = await res.json() as { quote?: { body?: string; author?: string; url?: string } };
-        const text = data.quote?.body?.trim() ?? '';
-        const author = data.quote?.author?.trim();
-        const link = data.quote?.url;
-        if (!ctx.isValidFact(text)) return null;
-        const full = author ? `${text} — ${author}` : text;
-        return { text: wrapQuotes(full) };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
     id: 'clevelandArtwork',
     label: 'Cleveland Museum of Art',
-    weight: 4,
+    weight: 8,
     fetch: async (ctx) => {
       try {
         const skip = Math.floor(Math.random() * 3000);
@@ -597,7 +329,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'obliqueStrategies',
     label: 'Oblique Strategies',
-    weight: 5,
+    weight: 3,
     fetch: async () => {
       if (obliqueQueue.length === 0) {
         obliqueQueue = [...OBLIQUE_STRATEGIES].sort(() => Math.random() - 0.5);
@@ -610,7 +342,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'haiku',
     label: 'Haiku',
-    weight: 6,
+    weight: 4,
     fetch: async () => {
       if (haikuQueue.length === 0) {
         haikuQueue = [...haikuData].sort(() => Math.random() - 0.5);
@@ -623,22 +355,9 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
-    id: 'quotesLibrary',
-    label: 'Quotes Library',
-    weight: 8,
-    fetch: async (ctx) => {
-      if (quotesQueue.length === 0) {
-        quotesQueue = [...quotesData].sort(() => Math.random() - 0.5);
-      }
-      const raw = quotesQueue.pop();
-      if (!raw || !ctx.isValidFact(raw)) return null;
-      return { text: wrapQuotes(raw), icon: SVG_QUOTE };
-    },
-  },
-  {
     id: 'philosophyEssay',
     label: '1000-Word Philosophy',
-    weight: 5,
+    weight: 8,
     fetch: async (ctx) => {
       if (ctx.language !== 'en') return null;
       try {
@@ -659,7 +378,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'gettyArtwork',
     label: 'Getty Museum Art',
-    weight: 5,
+    weight: 8,
     fetch: async () => {
       try {
         if (gettyUuidCache.length === 0) {
@@ -703,7 +422,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'smithsonianNews',
     label: 'Smithsonian Smart News',
-    weight: 6,
+    weight: 9,
     fetch: async (ctx) => {
       if (ctx.language !== 'en') return null;
       try {
@@ -724,7 +443,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
   {
     id: 'atlasObscura',
     label: 'Atlas Obscura',
-    weight: 6,
+    weight: 9,
     fetch: async (ctx) => {
       if (ctx.language !== 'en') return null;
       try {
