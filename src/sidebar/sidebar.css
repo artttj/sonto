@@ -1,16 +1,16 @@
 @font-face {
-  font-family: 'Instrument Serif';
+  font-family: 'Playfair Display';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 600;
   font-display: swap;
-  src: url('../fonts/instrument-serif-regular.woff2') format('woff2');
+  src: url('../fonts/playfair-display-regular.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Instrument Serif';
+  font-family: 'Playfair Display';
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url('../fonts/instrument-serif-italic.woff2') format('woff2');
+  src: url('../fonts/playfair-display-italic.woff2') format('woff2');
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -273,7 +273,7 @@ html, body {
 }
 
 .cosmos-text {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 22px;
   font-weight: 400;
   line-height: 1.45;
@@ -283,7 +283,7 @@ html, body {
 }
 
 .cosmos-art-title {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 18px;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.6);
@@ -350,7 +350,7 @@ html, body {
 .zen-bubble-body {
   flex: 1;
   min-width: 0;
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'Playfair Display', Georgia, serif;
 }
 
 .zen-source {
