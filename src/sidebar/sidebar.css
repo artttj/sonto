@@ -1,5 +1,13 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:focus-visible {
+  outline: 2px solid #5b9fd6;
+  outline-offset: 2px;
+}
+[data-theme="light"] :focus-visible {
+  outline-color: #2563eb;
+}
+
 :root {
   --c-bg:       #0d0d0d;
   --c-surface:  rgba(255,255,255,0.055);
@@ -124,8 +132,8 @@ html, body {
 }
 
 .mode-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,8 +156,8 @@ html, body {
 }
 
 .icon-btn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1061,7 +1069,7 @@ html, body {
 
   --c-text:   rgba(10,10,10,0.92);
   --c-text-2: rgba(30,30,30,0.72);
-  --c-text-3: #777;
+  --c-text-3: #595959;
 
   --c-success: #1a9e60;
   --c-error:   #c0392b;

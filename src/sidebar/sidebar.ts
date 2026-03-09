@@ -376,6 +376,9 @@ class SontoSidebar {
     this.zenBtn.classList.toggle('active', mode === 'zen');
     this.browseBtn.classList.toggle('active', mode === 'browse');
     this.chatBtn.classList.toggle('active', mode === 'chat');
+    this.zenBtn.setAttribute('aria-selected', String(mode === 'zen'));
+    this.browseBtn.setAttribute('aria-selected', String(mode === 'browse'));
+    this.chatBtn.setAttribute('aria-selected', String(mode === 'chat'));
     this.viewZen.classList.toggle('hidden', mode !== 'zen');
     this.viewBrowse.classList.toggle('hidden', mode !== 'browse');
     this.viewChat.classList.toggle('hidden', mode !== 'chat');

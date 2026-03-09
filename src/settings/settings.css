@@ -1,5 +1,13 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:focus-visible {
+  outline: 2px solid #5b9fd6;
+  outline-offset: 2px;
+}
+[data-theme="light"] :focus-visible {
+  outline-color: #2563eb;
+}
+
 :root {
   --c-bg:        #111;
   --c-surface:   #191919;
@@ -13,7 +21,7 @@
 
   --c-text:   #e0e0e0;
   --c-text-2: #999;
-  --c-text-3: #666;
+  --c-text-3: #8a8a8a;
 
   --c-success:   #6ec87a;
   --c-warn:      #c89050;
@@ -1602,12 +1610,12 @@ body {
 }
 
 .drip-labels span {
-  font-size: 9px;
-  color: rgba(255,255,255,0.3);
+  font-size: 10px;
+  color: var(--c-text-3);
 }
 
 #drip-current-value {
-  color: rgba(255,255,255,0.6);
+  color: var(--c-text-2);
   font-weight: 500;
 }
 
@@ -1786,8 +1794,8 @@ body {
   --c-btn-text: #f5f5f5;
 
   --c-text:   #111;
-  --c-text-2: #555;
-  --c-text-3: #888;
+  --c-text-2: #444;
+  --c-text-3: #595959;
 
   --c-success:   #1a8a50;
   --c-warn:      #b07830;
@@ -1833,12 +1841,6 @@ body {
   background: rgba(0,0,0,0.14);
 }
 
-[data-theme="light"] .drip-labels span {
-  color: rgba(0,0,0,0.35);
-}
-[data-theme="light"] #drip-current-value {
-  color: rgba(0,0,0,0.65);
-}
 [data-theme="light"] #drip-interval-slider {
   background: rgba(0,0,0,0.12);
 }
