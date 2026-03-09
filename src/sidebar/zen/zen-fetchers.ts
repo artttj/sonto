@@ -49,8 +49,8 @@ const REDDIT_SUBREDDITS = [
 ];
 
 const MET_HIGHLIGHTED_IDS = [
-  488660, 466105, 453351, 456949, 453183, 451023, 453336, 451725, 910555, 451268,
-  544502, 733808, 250939, 435641, 436573, 437769, 436440, 437900, 438814, 892627,
+  466105, 453351, 456949, 453183, 451023, 453336, 451725, 910555, 451268,
+  544502, 250939, 435641, 436573, 437769, 436440, 437900, 438814,
   247009, 437971, 437326, 435853, 437455, 437609, 436323, 437891, 435851, 436244,
   436851, 437447, 439933, 247008, 40055, 451270, 74813, 656430, 50486, 437329,
   255275, 437826, 437549, 435728, 438754, 544442, 436964, 436840, 438605, 437175,
@@ -167,13 +167,14 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           artistDisplayName?: string;
           objectDate?: string;
           isPublicDomain?: boolean;
+          objectURL?: string;
         };
         if (!obj.primaryImageSmall || !obj.isPublicDomain) return null;
         const title = obj.title?.trim() || 'Untitled';
         const parts = [title];
         if (obj.artistDisplayName?.trim()) parts.push(obj.artistDisplayName.trim());
         if (obj.objectDate?.trim()) parts.push(obj.objectDate.trim());
-        return { imageUrl: obj.primaryImageSmall, caption: parts.join(' — ') };
+        return { imageUrl: obj.primaryImageSmall, caption: parts.join(' — '), link: obj.objectURL };
       };
 
       try {
