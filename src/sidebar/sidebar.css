@@ -1143,14 +1143,14 @@ html, body {
   color: rgba(0,0,0,0.5);
 }
 [data-theme="light"] .cosmos-text {
-  color: rgba(0,0,0,0.92);
+  color: #000;
   text-shadow: 0 0 20px rgba(255,255,255,0.8), 0 1px 4px rgba(255,255,255,0.6);
 }
 [data-theme="light"] .cosmos-art-title {
-  color: rgba(0,0,0,0.78);
+  color: #000;
 }
 [data-theme="light"] .cosmos-art-caption {
-  color: rgba(0,0,0,0.58);
+  color: rgba(0,0,0,0.7);
 }
 [data-theme="light"] .cosmos-link {
   color: rgba(0,0,0,0.6);

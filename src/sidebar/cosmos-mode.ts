@@ -615,13 +615,9 @@ export class CosmosMode {
   private renderResult(result: ZenFetchResult, source: string | null): void {
     this.msgEl.innerHTML = '';
 
-    if (!result) {
-      const el = document.createElement('div');
-      el.className = 'cosmos-text';
-      el.textContent = '✦';
-      this.msgEl.appendChild(el);
-      return;
-    }
+    if (!result) return;
+
+    if (isTextResult(result) && !result.text?.trim() && !result.html?.trim()) return;
 
     if (isArtResult(result)) {
       const sep = result.caption.includes(' · ') ? ' · ' : ' — ';
