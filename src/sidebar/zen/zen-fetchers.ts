@@ -51,6 +51,9 @@ let gettyUuidCache: string[] = [];
 let kotowazaQueue: Array<unknown> = [];
 let obliqueQueue: string[] = [];
 let haikuQueue: string[] = [];
+let atlasCache: Array<{ title: string; link?: string; imageUrl?: string }> = [];
+let smithsonianCache: Array<{ title: string; link?: string; imageUrl?: string }> = [];
+let philosophyCache: Array<{ title: string; link?: string }> = [];
 
 function containsAiContent(text: string): boolean {
   return AI_PATTERNS.some((p) => p.test(text));
@@ -345,14 +348,19 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     fetch: async (ctx) => {
       if (ctx.language !== 'en') return null;
       try {
-        const res = await fetch('https://1000wordphilosophy.com/feed/', {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!res.ok) return null;
-        const xml = await res.text();
-        const items = parseFeed(xml).filter((it) => ctx.isValidFact(it.title));
-        if (items.length === 0) return null;
-        const pick = items[Math.floor(Math.random() * items.length)];
+        if (philosophyCache.length === 0) {
+          const res = await fetch('https://1000wordphilosophy.com/feed/', {
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!res.ok) return null;
+          const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
+          for (const it of items) {
+            philosophyCache.push({ title: it.title, link: it.link });
+          }
+          philosophyCache.sort(() => Math.random() - 0.5);
+        }
+        if (philosophyCache.length === 0) return null;
+        const pick = philosophyCache.pop()!;
         return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://1000wordphilosophy.com/wp-content/uploads/2024/09/1000-word-philosophy-square-logo.jpg" alt="1000-Word Philosophy" />', hideLabel: true };
       } catch {
         return null;
@@ -410,13 +418,19 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     fetch: async (ctx) => {
       if (ctx.language !== 'en') return null;
       try {
-        const res = await fetch('https://www.smithsonianmag.com/rss/smart-news/', {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!res.ok) return null;
-        const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
-        if (items.length === 0) return null;
-        const pick = items[Math.floor(Math.random() * Math.min(items.length, 15))];
+        if (smithsonianCache.length === 0) {
+          const res = await fetch('https://www.smithsonianmag.com/rss/smart-news/', {
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!res.ok) return null;
+          const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
+          for (const it of items) {
+            smithsonianCache.push({ title: it.title, link: it.link, imageUrl: it.imageUrl });
+          }
+          smithsonianCache.sort(() => Math.random() - 0.5);
+        }
+        if (smithsonianCache.length === 0) return null;
+        const pick = smithsonianCache.pop()!;
         if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
         return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://www.teachingforchange.org/wp-content/uploads/2022/04/smithsonian-magazine-logo-vector.png" alt="Smithsonian Magazine" />', hideLabel: true };
       } catch {
@@ -431,18 +445,25 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     fetch: async (ctx) => {
       if (ctx.language !== 'en') return null;
       try {
-        const res = await fetch('https://www.atlasobscura.com/feeds/latest', {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!res.ok) return null;
-        const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
-        if (items.length === 0) return null;
-        const pick = items[Math.floor(Math.random() * Math.min(items.length, 15))];
-        if (pick.description) {
-          const doc = new DOMParser().parseFromString(pick.description, 'text/html');
-          const img = doc.querySelector('img');
-          if (img?.src) return { imageUrl: img.src, caption: pick.title, link: pick.link };
+        if (atlasCache.length === 0) {
+          const res = await fetch('https://www.atlasobscura.com/feeds/latest', {
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!res.ok) return null;
+          const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
+          for (const it of items) {
+            let imageUrl: string | undefined;
+            if (it.description) {
+              const doc = new DOMParser().parseFromString(it.description, 'text/html');
+              imageUrl = doc.querySelector('img')?.src;
+            }
+            atlasCache.push({ title: it.title, link: it.link, imageUrl });
+          }
+          atlasCache.sort(() => Math.random() - 0.5);
         }
+        if (atlasCache.length === 0) return null;
+        const pick = atlasCache.pop()!;
+        if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
         return { text: pick.title, link: pick.link, icon: SVG_ATLAS };
       } catch {
         return null;
