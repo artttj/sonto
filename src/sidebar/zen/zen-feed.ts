@@ -295,7 +295,8 @@ export class ZenFeed {
       const { text, link, icon, html } = result;
       if (!this.pastFacts.some((p) => p.slice(0, 60) === text.slice(0, 60))) {
         this.hideLoader();
-        this.appendBubbleElement(text, link, icon, html, icon?.startsWith('<img') ? undefined : fetcher.label);
+        const logoIcon = icon?.startsWith('<img') || icon?.includes('bulb--reddit') || icon?.includes('bulb--hn');
+        this.appendBubbleElement(text, link, icon, html, logoIcon ? undefined : fetcher.label);
         this.pastFacts.push(text);
         if (this.pastFacts.length > 30) this.pastFacts = this.pastFacts.slice(-30);
         void chrome.storage.session.set({ sonto_past_facts: this.pastFacts }).catch(() => {});

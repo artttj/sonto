@@ -701,8 +701,8 @@ export class CosmosMode {
       }
     }
 
-    const hasImgIcon = isTextResult(result) && result.icon?.startsWith('<img');
-    if (source && !hasImgIcon) {
+    const logoIcon = isTextResult(result) && (result.icon?.startsWith('<img') || result.icon?.includes('bulb--reddit') || result.icon?.includes('bulb--hn'));
+    if (source && !logoIcon) {
       const srcEl = document.createElement('div');
       srcEl.className = 'cosmos-source';
       srcEl.textContent = source;
