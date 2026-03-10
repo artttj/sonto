@@ -61,6 +61,11 @@ For chat and embeddings, add your key in **Settings > AI**.
 
 Toggle sources in **Settings > Feed > Sources**.
 
+## LANGUAGES
+
+- English
+- German (Deutsch)
+
 ## SHORTCUTS
 
 | Action | Keys |
