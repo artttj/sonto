@@ -82,8 +82,8 @@ No proxy, no analytics, no tracking.
 
 Feed content comes from public third-party APIs. Sonto does not own or filter it.
 
-OpenAI Privacy: https://openai.com/policies/privacy-policy/
-Google Gemini Terms: https://ai.google.dev/gemini-api/terms
+- OpenAI Privacy: https://openai.com/policies/privacy-policy/
+- Google Gemini Terms: https://ai.google.dev/gemini-api/terms
 
 ## TECH
 
