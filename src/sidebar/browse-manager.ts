@@ -95,9 +95,12 @@ export class BrowseManager {
   }
 
   render(): void {
-    const manual = this.snippets.filter((s) => (s.source ?? 'manual') === 'manual').length;
-    const history = this.snippets.filter((s) => s.source === 'history').length;
-    const pinned = this.snippets.filter((s) => s.pinned).length;
+    let manual = 0, history = 0, pinned = 0;
+    for (const s of this.snippets) {
+      if ((s.source ?? 'manual') === 'manual') manual++;
+      if (s.source === 'history') history++;
+      if (s.pinned) pinned++;
+    }
     this.onCountsChange?.(this.snippets.length, manual, history, pinned);
 
     const filtered = this.getFiltered();

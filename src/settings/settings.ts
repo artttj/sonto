@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import { PROVIDER_MODELS } from '../shared/constants';
+import { escapeHtml } from '../shared/utils';
 import {
   getSettings,
   saveSettings,
@@ -92,9 +93,6 @@ function initSegmented(
   };
 }
 
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'philosophyEssay',     label: '1000-Word Philosophy' },

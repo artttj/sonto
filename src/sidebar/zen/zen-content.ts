@@ -1,13 +1,7 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-export function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+export { escapeHtml } from '../../shared/utils';
 
 export const ZEN_INITIAL_BATCH = 1;
 export const ZEN_DRIP_BATCH = 1;
