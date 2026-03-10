@@ -405,13 +405,14 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           _label?: string;
           representation?: Array<{ id?: string }>;
           produced_by?: { carried_out_by?: Array<{ _label?: string }> };
+          subject_of?: Array<{ id?: string }>;
         };
         const imageUrl = obj.representation?.[0]?.id?.replace('/full/full/', '/full/!900,700/');
         if (!imageUrl) return null;
         const title = obj._label?.replace(/\s*\([^)]+\)\s*$/, '').trim() ?? '';
         const artist = obj.produced_by?.carried_out_by?.[0]?._label?.trim() ?? '';
         const caption = artist ? `${title} — ${artist}` : title;
-        const link = `https://www.getty.edu/art/collection/object/${uuid}`;
+        const link = obj.subject_of?.[0]?.id ?? null;
         return { imageUrl, caption, link };
       } catch {
         return null;
