@@ -31,17 +31,17 @@ For chat and embeddings, add your key in **Settings > AI**.
 
 ## FEATURES
 
-- **ZEN FEED** — A slow, thoughtful feed that shows one thing at a time  
-- **RICH SOURCES** — Museum art, Mars rover photos, Science news, Atlas Obscura stories, quotes, trivia, and more  
-- **TWO MODES** — Scrolling feed or Cosmos mode with procedural spirograph animations  
-- **THEMES** — Dark and light themes with WCAG 2.1 AA contrast compliance  
-- **SAVE ANYTHING** — Highlight text anywhere and press `Alt+Shift+C` or right-click to save  
-- **CHAT WITH YOUR HISTORY** — Ask questions about saved snippets using RAG with OpenAI or Gemini  
-- **RELATED PAGES** — Semantic search surfaces related pages from your browsing history  
-- **BACKUP & RESTORE** — Export and import all data as JSON  
-- **CUSTOM SOURCES** — Add your own RSS feeds or JSON API endpoints  
-- **WEEKLY DIGEST** — Optional summary of your saved content  
-- **BYOK** — Bring your own API key and pay the provider directly
+- **ZEN FEED**: A slow, thoughtful feed that shows one thing at a time  
+- **RICH SOURCES**: Museum art, Mars rover photos, Science news, Atlas Obscura stories, quotes, trivia, and more  
+- **TWO MODES**: Scrolling feed or Cosmos mode with procedural spirograph animations  
+- **THEMES**: Dark and light themes with WCAG 2.1 AA contrast compliance  
+- **SAVE ANYTHING**: Highlight text anywhere and press `Alt+Shift+C` or right-click to save  
+- **CHAT WITH YOUR HISTORY**: Ask questions about saved snippets using RAG with OpenAI or Gemini  
+- **RELATED PAGES**: Semantic search surfaces related pages from your browsing history  
+- **BACKUP & RESTORE**: Export and import all data as JSON  
+- **CUSTOM SOURCES**: Add your own RSS feeds or JSON API endpoints  
+- **WEEKLY DIGEST**: Optional summary of your saved content  
+- **BYOK**: Bring your own API key and pay the provider directly
 
 ---
 
@@ -94,11 +94,11 @@ Google Gemini Terms: https://ai.google.dev/gemini-api/terms
 
 ## TECH
 
-TypeScript  
-Chrome Extension Manifest V3  
-Side Panel API  
-IndexedDB with cosine similarity search  
-esbuild bundling
+* TypeScript  
+* Chrome Extension Manifest V3  
+* Side Panel API  
+* IndexedDB with cosine similarity search  
+* esbuild bundling
 
 Zero runtime dependencies.
 
