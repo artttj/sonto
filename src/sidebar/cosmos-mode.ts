@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { MSG } from '../shared/messages';
 import { getDripInterval, getDisabledSources, getTheme } from '../shared/storage';
 import type { Snippet } from '../shared/types';

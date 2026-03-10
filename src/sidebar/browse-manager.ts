@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { MSG } from '../shared/messages';
 import type { QueryResult, Snippet } from '../shared/types';
 import { escapeHtml } from './zen/zen-content';

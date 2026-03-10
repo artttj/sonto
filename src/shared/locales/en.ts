@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 const en: Record<string, string> = {
   // Sidebar nav
   nav_general: 'General',

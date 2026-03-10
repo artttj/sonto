@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { MSG, type RuntimeMessage } from '../shared/messages';
 import { embed, embedBatch } from '../shared/embeddings/engine';
 import {

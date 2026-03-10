@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { getAllSnippets, addSnippet, clearAllSnippets } from './embeddings/vector-store';
 import {
   getSettings,

@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { MSG } from '../shared/messages';
 import { getSettings, getOpenAIKey, getGeminiKey, getChatSessions, saveChatSessions } from '../shared/storage';
 import { getProviderStrategy } from '../shared/providers';

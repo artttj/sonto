@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';

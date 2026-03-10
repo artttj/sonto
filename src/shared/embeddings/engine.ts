@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { getOpenAIKey, getGeminiKey } from '../storage';
 
 async function embedViaOpenAI(text: string, apiKey: string): Promise<number[]> {

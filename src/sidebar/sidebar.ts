@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { MSG } from '../shared/messages';
 import {
   getSettings,
@@ -33,7 +36,6 @@ class SontoSidebar {
   private zenDisplay: 'feed' | 'cosmos' = 'feed';
   private theme: 'dark' | 'light' = 'dark';
 
-  private readonly zenBtn = qs<HTMLButtonElement>('#btn-zen');
   private readonly browseBtn = qs<HTMLButtonElement>('#btn-browse');
   private readonly chatBtn = qs<HTMLButtonElement>('#btn-chat');
   private readonly themeBtn = qs<HTMLButtonElement>('#btn-theme');
@@ -81,7 +83,6 @@ class SontoSidebar {
       }
     });
 
-    this.zenBtn.addEventListener('click', () => this.setMode('zen'));
     this.browseBtn.addEventListener('click', () => this.setMode('browse'));
     this.chatBtn.addEventListener('click', () => this.setMode('chat'));
 
@@ -91,7 +92,9 @@ class SontoSidebar {
     zdtEl.querySelectorAll<HTMLButtonElement>('.zdt-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const display = btn.dataset.display as 'feed' | 'cosmos';
-        if (display && display !== this.zenDisplay) void saveZenDisplay(display);
+        if (!display) return;
+        if (this.mode !== 'zen') this.setMode('zen');
+        if (display !== this.zenDisplay) void saveZenDisplay(display);
       });
     });
 
@@ -405,10 +408,8 @@ class SontoSidebar {
 
   private setMode(mode: ViewMode): void {
     this.mode = mode;
-    this.zenBtn.classList.toggle('active', mode === 'zen');
     this.browseBtn.classList.toggle('active', mode === 'browse');
     this.chatBtn.classList.toggle('active', mode === 'chat');
-    this.zenBtn.setAttribute('aria-selected', String(mode === 'zen'));
     this.browseBtn.setAttribute('aria-selected', String(mode === 'browse'));
     this.chatBtn.setAttribute('aria-selected', String(mode === 'chat'));
     this.viewZen.classList.toggle('hidden', mode !== 'zen');

@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { DB_NAME, DB_VERSION, STORE_NAME } from '../constants';
 import type { QueryResult, Snippet } from '../types';
 

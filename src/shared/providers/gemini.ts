@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import type { ChatMessage, ProviderStrategy } from '../types';
 import { ProviderBadResponseError, ProviderHttpError } from './errors';
 

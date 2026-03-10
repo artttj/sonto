@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 export type FeedItem = { title: string; link: string; description?: string; imageUrl?: string };
 
 function findImage(el: Element): string | undefined {

@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { PROVIDER_MODELS } from '../shared/constants';
 import {
   getSettings,

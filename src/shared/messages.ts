@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import type { QueryResult, ReadLaterItem, Snippet } from './types';
 
 export const MSG = {

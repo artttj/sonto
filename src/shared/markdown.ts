@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 const CODE_PLACEHOLDER = '\uE000';
 
 function stripLeadingNumber(s: string): string {

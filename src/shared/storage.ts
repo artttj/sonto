@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from './constants';
 import type { AppLanguage, AppSettings, ChatSession, ProviderName, ReadLaterItem } from './types';
 

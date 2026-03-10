@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 export type ProviderName = 'openai' | 'gemini';
 
 export type AppLanguage = 'en' | 'de';

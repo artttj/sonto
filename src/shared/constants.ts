@@ -1,3 +1,6 @@
+// Copyright (c) Artem Iagovdik. All rights reserved.
+// Licensed under the MIT License.
+
 import type { AppSettings } from './types';
 
 export const STORAGE_KEYS = {
