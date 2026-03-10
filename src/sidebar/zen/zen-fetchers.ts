@@ -541,8 +541,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           }
         }
 
-        const webLink = obj.subject_of?.[0]?.digitally_carried_by?.[0]?.access_point?.[0]?.id;
-        const link = webLink ?? `https://www.rijksmuseum.nl`;
+        const link = obj.subject_of?.[0]?.digitally_carried_by?.[0]?.access_point?.[0]?.id;
 
         const visualId = objectUrl.replace('/200', '/202');
         const visRes = await fetch(visualId, { signal: timeout, headers });
