@@ -290,11 +290,9 @@ export class ZenFeed {
       const { text, link, icon, html } = result;
       if (!this.isDuplicate(text)) {
         const translated = await translateText(text, this.language);
-        const translatedHtml = html && translated !== text
-          ? html.replace(escapeHtml(text), escapeHtml(translated))
-          : html;
+        const useHtml = translated === text ? html : undefined;
         this.hideLoader();
-        this.appendBubbleElement(translated, link, icon, translatedHtml, result.hideLabel ? undefined : fetcher.label);
+        this.appendBubbleElement(translated, link, icon, useHtml, result.hideLabel ? undefined : fetcher.label);
         this.trackFact(text);
         return this.durationMultiplier(result);
       }
