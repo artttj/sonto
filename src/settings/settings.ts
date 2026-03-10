@@ -256,10 +256,6 @@ async function init(): Promise<void> {
 
   addSourceRows(ZEN_SOURCES);
 
-  const divider = document.createElement('div');
-  divider.className = 'zen-source-divider';
-  sourcesList.appendChild(divider);
-
   addSourceRows(ZEN_CUSTOM_SOURCES);
 
   const hasAnyKey = !!openaiKey || !!geminiKey;
