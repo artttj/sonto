@@ -420,6 +420,8 @@ export class ZenFeed {
   private appendBubbleElement(text: string, link?: string, icon?: string, html?: string, source?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
+    if (html?.includes('zen-oblique')) bubble.classList.add('zen-bubble--oblique');
+    if (!html && !link && !source && / [\u2014-] /.test(text)) bubble.classList.add('zen-bubble--quote');
     const linkHtml = link
       ? ` <a class="zen-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">↗</a>`
       : '';

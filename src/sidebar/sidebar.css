@@ -636,7 +636,25 @@ html, body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   line-height: 1.5;
-  color: #fff !important;
+  color: currentColor;
+}
+
+.zen-bubble--oblique {
+  opacity: 0.78;
+}
+
+.zen-bubble--quote {
+  opacity: 0.82;
+}
+
+.zen-bubble:first-child.zen-bubble--oblique,
+.zen-bubble.spotlight.zen-bubble--oblique {
+  opacity: 0.84;
+}
+
+.zen-bubble:first-child.zen-bubble--quote,
+.zen-bubble.spotlight.zen-bubble--quote {
+  opacity: 0.88;
 }
 
 .zen-haiku-line {
@@ -1246,7 +1264,7 @@ html, body {
   background: transparent;
 }
 [data-theme="light"] .zen-oblique {
-  color: #111 !important;
+  color: currentColor;
 }
 
 [data-theme="light"] .cosmos-view {
