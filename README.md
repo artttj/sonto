@@ -9,7 +9,7 @@ A calm Chrome sidebar that surfaces a slow drip of art, quotes, science, and new
 <table>
   <tr>
     <td><img src="docs/screenshots/webstore_00001.png" alt="Sonto screenshot 1" width="420" /></td>
-    <td><img src="docs/screenshots/webstore_00002.png" alt="Sonto screenshot 2" width="420" /></td>
+    <td><img src="docs/screenshots/webstore_new.png" alt="Sonto screenshot 2" width="420" /></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/webstore_00004.png" alt="Sonto screenshot 3" width="420" /></td>
@@ -42,6 +42,7 @@ For chat and embeddings, add your key in **Settings > AI**.
 
 - **Zen feed**: A slow, thoughtful feed that shows one thing at a time
 - **Rich sources**: Museum art, Mars rover photos, Science news, Atlas Obscura stories, quotes, trivia, and more
+- **Album of a Day**: A rare daily album card with cover art and titles from a curated 700-album list via MusicBrainz
 - **Two modes**: Scrolling feed or Cosmos mode with procedural spirograph animations
 - **Themes**: Dark and light themes with WCAG 2.1 AA contrast compliance
 - **Save anything**: Highlight text anywhere and press `Alt+Shift+C` or right-click to save
@@ -58,6 +59,7 @@ For chat and embeddings, add your key in **Settings > AI**.
 |---|---|
 | 1000-Word Philosophy | Philosophy essays |
 | Atlas Obscura | Curious places and stories |
+| Album of a Day | A rare daily pick from 200 Pitchfork and 500 Rolling Stone albums |
 | Cleveland Museum of Art | Artworks and facts |
 | Getty Museum | Paintings and sculptures |
 | Haiku | Japanese haiku poems |

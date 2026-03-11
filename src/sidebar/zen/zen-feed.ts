@@ -427,7 +427,7 @@ export class ZenFeed {
       : '';
     const innerContent = html ?? escapeHtml(text);
     const sourceHtml = source ? `<span class="zen-source">${escapeHtml(source)}</span>` : '';
-    bubble.innerHTML = `${icon ?? SVG_BULB}<div class="zen-bubble-body"><span>${innerContent}${linkHtml}</span>${sourceHtml}</div>`;
+    bubble.innerHTML = `${icon ?? SVG_BULB}<div class="zen-bubble-body"><div class="zen-bubble-text">${innerContent}${linkHtml}</div>${sourceHtml}</div>`;
     this.attachCopyButton(bubble, text);
     this.attachPinButton(bubble, text, link);
     const first = this.feedEl.firstChild;

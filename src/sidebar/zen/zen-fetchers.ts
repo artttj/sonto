@@ -14,6 +14,7 @@ import { getCustomFeeds, getCustomJsonSources } from '../../shared/storage';
 import { parseFeed } from '../../shared/rss-parser';
 import kotowazaData from '../../../node_modules/kotowaza/data/kotowaza.json';
 import haikuData from './haiku-data.json';
+import albumOfDayAlbums from './album-of-a-day.json';
 
 export type ZenTextResult = { text: string; link?: string; icon?: string; html?: string; hideLabel?: boolean };
 export type ZenArtResult = { imageUrl: string; caption: string; link?: string };
@@ -40,6 +41,44 @@ export type ZenFetcher = {
   fetch: (ctx: FetcherContext) => Promise<ZenFetchResult>;
 };
 
+type AlbumOfDaySeed = {
+  title: string;
+  artist: string;
+  year?: number;
+  list: 'pitchfork' | 'rollingStone';
+};
+
+type MusicBrainzReleaseGroup = {
+  id: string;
+  title?: string;
+  score?: number | string;
+  'primary-type'?: string;
+  'secondary-types'?: string[];
+  'first-release-date'?: string;
+  'artist-credit'?: Array<{ name?: string; artist?: { name?: string } }>;
+};
+
+type MusicBrainzRelease = {
+  id: string;
+  title?: string;
+  score?: number | string;
+  date?: string;
+  'artist-credit'?: Array<{ name?: string; artist?: { name?: string } }>;
+};
+
+type CoverArtImage = {
+  image?: string;
+  front?: boolean;
+  types?: string[];
+  thumbnails?: {
+    '250'?: string;
+    '500'?: string;
+    '1200'?: string;
+    small?: string;
+    large?: string;
+  };
+};
+
 const REDDIT_SUBREDDITS = [
   'science', 'Futurology', 'space', 'history',
   'philosophy', 'AskScience', 'dataisbeautiful',
@@ -61,6 +100,9 @@ let haikuQueue: string[] = [];
 let atlasCache: Array<{ title: string; link?: string; imageUrl?: string }> = [];
 let smithsonianCache: Array<{ title: string; link?: string; imageUrl?: string }> = [];
 let philosophyCache: Array<{ title: string; link?: string }> = [];
+const albumOfDayList = albumOfDayAlbums as AlbumOfDaySeed[];
+const albumOfDayCache = new Map<string, ZenArtResult | null>();
+const albumOfDayResultCache = new Map<string, ZenArtResult | null>();
 
 function containsAiContent(text: string): boolean {
   return AI_PATTERNS.some((p) => p.test(text));
@@ -75,6 +117,31 @@ function isValidRedditPost(post: { stickied: boolean; over_18: boolean; score: n
 }
 
 export const ZEN_FETCHERS: ZenFetcher[] = [
+  {
+    id: 'albumOfDay',
+    label: 'Album of a Day',
+    weight: 1,
+    fetch: async () => {
+      const dayKey = getAlbumDayKey();
+      if (albumOfDayResultCache.has(dayKey)) {
+        return albumOfDayResultCache.get(dayKey) ?? null;
+      }
+
+      const startIndex = hashString(dayKey) % albumOfDayList.length;
+      const attempts = Math.min(albumOfDayList.length, 24);
+      for (let i = 0; i < attempts; i++) {
+        const album = albumOfDayList[(startIndex + i) % albumOfDayList.length];
+        const result = await resolveAlbumOfDay(album);
+        if (result) {
+          albumOfDayResultCache.set(dayKey, result);
+          return result;
+        }
+      }
+
+      albumOfDayResultCache.set(dayKey, null);
+      return null;
+    },
+  },
   {
     id: 'hnStory',
     label: 'Hacker News',
@@ -621,4 +688,161 @@ export function pickFetcher(fetchers: ZenFetcher[], disabledIds?: ReadonlySet<st
     if (roll <= 0) return f;
   }
   return available[available.length - 1];
+}
+
+async function resolveAlbumOfDay(album: AlbumOfDaySeed): Promise<ZenArtResult | null> {
+  const cacheKey = `${album.artist}::${album.title}`.toLowerCase();
+  if (albumOfDayCache.has(cacheKey)) {
+    return albumOfDayCache.get(cacheKey) ?? null;
+  }
+
+  try {
+    const query = [
+      `releasegroup:"${escapeMusicBrainzQuery(album.title)}"`,
+      `artist:"${escapeMusicBrainzQuery(album.artist)}"`,
+      'primarytype:album',
+    ].join(' AND ');
+
+    const searchRes = await fetch(
+      `https://musicbrainz.org/ws/2/release-group?fmt=json&limit=5&query=${encodeURIComponent(query)}`,
+      { signal: AbortSignal.timeout(10000) },
+    );
+    if (!searchRes.ok) {
+      albumOfDayCache.set(cacheKey, null);
+      return null;
+    }
+
+    const data = await searchRes.json() as { 'release-groups'?: MusicBrainzReleaseGroup[] };
+    const groups = (data['release-groups'] ?? [])
+      .filter((group) => group.id)
+      .sort((a, b) => Number(b.score ?? 0) - Number(a.score ?? 0));
+
+    for (const group of groups) {
+      const cover = await fetchReleaseGroupCover(group.id);
+      const resolvedCover = cover ?? await fetchReleaseCoverForGroup(group.id, album);
+      if (!resolvedCover) continue;
+
+      const artist = readArtistCredit(group['artist-credit']) || album.artist;
+      const title = group.title?.trim() || album.title;
+      const year = group['first-release-date']?.slice(0, 4) || (album.year ? String(album.year) : '');
+      const caption = [title, artist, year].filter(Boolean).join(' · ');
+      const result: ZenArtResult = {
+        imageUrl: resolvedCover,
+        caption,
+        link: `https://musicbrainz.org/release-group/${group.id}`,
+      };
+      albumOfDayCache.set(cacheKey, result);
+      return result;
+    }
+  } catch {
+    albumOfDayCache.set(cacheKey, null);
+    return null;
+  }
+
+  albumOfDayCache.set(cacheKey, null);
+  return null;
+}
+
+async function fetchReleaseGroupCover(releaseGroupId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://coverartarchive.org/release-group/${releaseGroupId}`, {
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json() as { images?: CoverArtImage[] };
+    const images = data.images ?? [];
+    const front = images.find((image) => image.front)
+      ?? images.find((image) => image.types?.includes('Front'))
+      ?? images[0];
+    if (!front) return null;
+
+    return front.thumbnails?.['500']
+      ?? front.thumbnails?.large
+      ?? front.thumbnails?.['250']
+      ?? front.image
+      ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchReleaseCoverForGroup(releaseGroupId: string, album: AlbumOfDaySeed): Promise<string | null> {
+  try {
+    const query = [
+      `rgid:${releaseGroupId}`,
+      `release:"${escapeMusicBrainzQuery(album.title)}"`,
+      `artist:"${escapeMusicBrainzQuery(album.artist)}"`,
+    ].join(' AND ');
+    const res = await fetch(
+      `https://musicbrainz.org/ws/2/release?fmt=json&limit=5&query=${encodeURIComponent(query)}`,
+      { signal: AbortSignal.timeout(10000) },
+    );
+    if (!res.ok) return null;
+
+    const data = await res.json() as { releases?: MusicBrainzRelease[] };
+    const releases = (data.releases ?? [])
+      .filter((release) => release.id)
+      .sort((a, b) => Number(b.score ?? 0) - Number(a.score ?? 0));
+
+    for (const release of releases) {
+      const cover = await fetchReleaseCover(release.id);
+      if (cover) return cover;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchReleaseCover(releaseId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://coverartarchive.org/release/${releaseId}`, {
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json() as { images?: CoverArtImage[] };
+    const images = data.images ?? [];
+    const front = images.find((image) => image.front)
+      ?? images.find((image) => image.types?.includes('Front'))
+      ?? images[0];
+    if (!front) return null;
+
+    return front.thumbnails?.['500']
+      ?? front.thumbnails?.large
+      ?? front.thumbnails?.['250']
+      ?? front.image
+      ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function readArtistCredit(credits?: MusicBrainzReleaseGroup['artist-credit']): string {
+  return (credits ?? [])
+    .map((credit) => credit.name?.trim() || credit.artist?.name?.trim() || '')
+    .join('')
+    .trim();
+}
+
+function escapeMusicBrainzQuery(value: string): string {
+  return value.replace(/["\\]/g, '\\$&');
+}
+
+function getAlbumDayKey(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function hashString(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) >>> 0;
+  }
+  return hash;
 }

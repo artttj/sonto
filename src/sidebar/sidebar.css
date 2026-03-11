@@ -414,6 +414,10 @@ html, body {
   font-family: var(--font);
 }
 
+.zen-bubble-text {
+  display: block;
+}
+
 .zen-source {
   display: block;
   font-family: var(--font);
@@ -1321,7 +1325,7 @@ html, body {
 .zen-pin.zen-pinned,
 .zen-bubble.zen-pinned .zen-pin { opacity: 0.85 !important; pointer-events: auto; color: #e8b931; }
 
-.zen-resurface .zen-bubble-body span {
+.zen-resurface .zen-bubble-text {
   font-style: normal;
 }
 .zen-resurface .zen-source {
