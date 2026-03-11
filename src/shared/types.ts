@@ -12,6 +12,12 @@ export interface AppSettings {
   language: AppLanguage;
 }
 
+export interface HistoryDomainRules {
+  mode: 'all' | 'allowlist';
+  blocked: string[];
+  allowed: string[];
+}
+
 export type SnippetSource = 'manual' | 'history' | 'pinned' | 'bookmark';
 
 export interface Snippet {

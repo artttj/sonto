@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from './constants';
-import type { AppLanguage, AppSettings, ChatSession, ProviderName, ReadLaterItem } from './types';
+import type { AppLanguage, AppSettings, ChatSession, HistoryDomainRules, ProviderName, ReadLaterItem } from './types';
 
 function isProviderName(value: string): value is ProviderName {
   return value === 'openai' || value === 'gemini';
@@ -89,6 +89,8 @@ export async function saveCustomFeeds(feeds: CustomFeed[]): Promise<void> {
 
 const HISTORY_ENABLED_KEY = 'sonto_history_enabled';
 const ONBOARDING_DONE_KEY = 'sonto_onboarding_done';
+const HISTORY_DOMAIN_RULES_KEY = 'sonto_history_domain_rules';
+const ZEN_SOURCE_SIGNALS_KEY = 'sonto_zen_source_signals';
 
 export async function isHistoryEnabled(): Promise<boolean> {
   const result = await chrome.storage.local.get(HISTORY_ENABLED_KEY);
@@ -97,6 +99,38 @@ export async function isHistoryEnabled(): Promise<boolean> {
 
 export async function setHistoryEnabled(enabled: boolean): Promise<void> {
   await chrome.storage.local.set({ [HISTORY_ENABLED_KEY]: enabled });
+}
+
+export async function getHistoryDomainRules(): Promise<HistoryDomainRules> {
+  const result = await chrome.storage.local.get(HISTORY_DOMAIN_RULES_KEY);
+  const raw = (result[HISTORY_DOMAIN_RULES_KEY] as Partial<HistoryDomainRules> | undefined) ?? {};
+
+  return {
+    mode: raw.mode === 'allowlist' ? 'allowlist' : 'all',
+    blocked: Array.isArray(raw.blocked) ? raw.blocked.filter((domain): domain is string => typeof domain === 'string') : [],
+    allowed: Array.isArray(raw.allowed) ? raw.allowed.filter((domain): domain is string => typeof domain === 'string') : [],
+  };
+}
+
+export async function saveHistoryDomainRules(rules: HistoryDomainRules): Promise<void> {
+  await chrome.storage.local.set({ [HISTORY_DOMAIN_RULES_KEY]: rules });
+}
+
+export async function getZenSourceSignals(): Promise<Record<string, number>> {
+  const result = await chrome.storage.local.get(ZEN_SOURCE_SIGNALS_KEY);
+  const raw = result[ZEN_SOURCE_SIGNALS_KEY] as Record<string, unknown> | undefined;
+  if (!raw) return {};
+
+  return Object.fromEntries(
+    Object.entries(raw).filter((entry): entry is [string, number] => typeof entry[1] === 'number'),
+  );
+}
+
+export async function bumpZenSourceSignal(sourceId: string, amount: number): Promise<void> {
+  if (!sourceId || !Number.isFinite(amount) || amount === 0) return;
+  const current = await getZenSourceSignals();
+  current[sourceId] = Math.max(0, Math.min(50, (current[sourceId] ?? 0) + amount));
+  await chrome.storage.local.set({ [ZEN_SOURCE_SIGNALS_KEY]: current });
 }
 
 export async function isOnboardingDone(): Promise<boolean> {

@@ -54,6 +54,7 @@ function buildPrompt(query: string, results: QueryResult[]): ChatMessage[] {
         `Use the provided context to answer questions. The context includes both manually saved text snippets and page titles from browsing history. ` +
         `For history entries, the page title and URL are the main signals — use them to infer what the user was reading about. ` +
         `When the context is thin (just page titles), summarize what topics the user browsed and connect them to the question. ` +
+        `Separate what is directly supported by the context from what is your best inference. ` +
         `If you genuinely cannot answer from the context, say so. Be concise but helpful.`,
     },
     {
@@ -141,7 +142,7 @@ export class ChatManager {
       const strategy = getProviderStrategy(settings.llmProvider);
       const reply = await strategy.chat({ apiKey: key, model, messages, signal });
 
-      this.appendMessage('assistant', reply);
+      this.appendAssistantMessage(reply, queryResponse.results, query);
       this.sessionMessages.push({ role: 'assistant', content: reply });
       await this.saveCurrentSession(query);
     } catch (err: unknown) {
@@ -224,6 +225,16 @@ export class ChatManager {
     }
   }
 
+  draftQuestion(text: string, sendNow = false): void {
+    this.showingHistory = false;
+    this.inputEl.value = text;
+    this.inputEl.focus();
+    this.inputEl.setSelectionRange(this.inputEl.value.length, this.inputEl.value.length);
+    if (sendNow) {
+      void this.sendMessage();
+    }
+  }
+
   appendMessage(role: 'user' | 'assistant' | 'error', text: string): HTMLElement {
     const icons: Record<string, string> = {
       user: SVG_USER,
@@ -243,10 +254,102 @@ export class ChatManager {
     return div;
   }
 
+  private appendAssistantMessage(text: string, results: QueryResult[], query: string): HTMLElement {
+    const div = this.appendMessage('assistant', text);
+    const body = div.querySelector<HTMLElement>('.chat-msg-body');
+    if (!body) return div;
+
+    const note = document.createElement('div');
+    note.className = 'chat-grounding-note';
+    note.textContent = `Grounded in ${results.length} saved item${results.length === 1 ? '' : 's'}. Chips are direct sources. Inference may go beyond exact saved text.`;
+    body.appendChild(note);
+
+    const sources = document.createElement('div');
+    sources.className = 'chat-citations';
+    results.forEach((result, index) => {
+      const chip = document.createElement('a');
+      chip.className = 'chat-citation-chip';
+      chip.href = result.snippet.url;
+      chip.target = '_blank';
+      chip.rel = 'noopener noreferrer';
+      chip.textContent = `${index + 1}. ${result.snippet.title || truncateText(result.snippet.text, 36)}`;
+      chip.title = result.snippet.url;
+      sources.appendChild(chip);
+    });
+    body.appendChild(sources);
+
+    const actions = document.createElement('div');
+    actions.className = 'chat-followups';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'chat-followup-btn chat-followup-btn--primary';
+    saveBtn.textContent = 'Save answer';
+    saveBtn.addEventListener('click', () => {
+      void this.saveAnswer(query, text, results, saveBtn);
+    });
+    actions.appendChild(saveBtn);
+
+    for (const suggestion of buildFollowUps(query, results)) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chat-followup-btn';
+      btn.textContent = suggestion;
+      btn.addEventListener('click', () => this.draftQuestion(suggestion, true));
+      actions.appendChild(btn);
+    }
+
+    body.appendChild(actions);
+    return div;
+  }
+
+  private async saveAnswer(
+    query: string,
+    answer: string,
+    results: QueryResult[],
+    button: HTMLButtonElement,
+  ): Promise<void> {
+    button.disabled = true;
+    const context = results
+      .map((result, index) => `[${index + 1}] ${result.snippet.title || result.snippet.url}`)
+      .join(' | ');
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: MSG.CAPTURE_SNIPPET,
+        text: answer,
+        url: results[0]?.snippet.url ?? location.href,
+        title: `Chat answer: ${query.slice(0, 60)}`,
+        context,
+        tags: ['chat-answer', 'grounded'],
+      });
+      button.textContent = 'Saved';
+    } finally {
+      setTimeout(() => {
+        button.disabled = false;
+        button.textContent = 'Save answer';
+      }, 1800);
+    }
+  }
+
   clear(): void {
     this.messagesEl.innerHTML = '';
     this.sessionMessages = [];
     this.currentSessionId = generateSessionId();
     this.showingHistory = false;
   }
+}
+
+function buildFollowUps(query: string, results: QueryResult[]): string[] {
+  const top = results[0]?.snippet;
+  const title = top?.title || 'this';
+  return [
+    `What in my saves best supports this answer?`,
+    `What should I revisit next about ${title}?`,
+    `Give me a short summary I can save.`,
+  ];
+}
+
+function truncateText(text: string, length: number): string {
+  return text.length <= length ? text : `${text.slice(0, Math.max(0, length - 1)).trimEnd()}…`;
 }

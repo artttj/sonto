@@ -53,6 +53,7 @@ class SontoSidebar {
   private readonly browseManager = new BrowseManager(
     this.snippetListEl,
     (all, manual, history, pinned) => this.updateCounts(all, manual, history, pinned),
+    (snippet) => this.keepThreadGoingFromSnippet(snippet),
   );
 
   private zenFeed: ZenFeed | null = null;
@@ -296,6 +297,21 @@ class SontoSidebar {
       this.setMode('browse');
     });
 
+    document.getElementById('btn-ask-related')!.addEventListener('click', async () => {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.url) return;
+        const response = await chrome.runtime.sendMessage({
+          type: MSG.GET_SNIPPETS_FOR_TAB,
+          url: tab.url,
+          title: tab.title ?? '',
+        }) as { ok: boolean; snippets?: Snippet[] };
+        if (!response?.ok || !response.snippets?.length) return;
+        const prompt = `What have I already saved that matters for ${tab.title || 'this page'}? Focus on the related items for ${tab.url}.`;
+        this.keepThreadGoing(prompt);
+      } catch {}
+    });
+
     document.getElementById('btn-dismiss-ra')!.addEventListener('click', () => {
       bar.classList.add('hidden');
     });
@@ -427,6 +443,17 @@ class SontoSidebar {
       this.zenFeed?.stop();
       this.cosmosMode?.stop();
     }
+  }
+
+  private keepThreadGoingFromSnippet(snippet: Snippet): void {
+    const label = snippet.title || snippet.text.slice(0, 80) || 'this saved snippet';
+    const prompt = `Keep this thread going from my saved snippet about "${label}".`;
+    this.keepThreadGoing(prompt);
+  }
+
+  private keepThreadGoing(prompt: string): void {
+    this.setMode('chat');
+    this.chatManager.draftQuestion(prompt);
   }
 
   private updateCounts(all: number, manual: number, history: number, pinned: number): void {

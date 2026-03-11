@@ -20,6 +20,7 @@ import {
   getOpenAIKey,
   getGeminiKey,
   isHistoryEnabled,
+  getHistoryDomainRules,
   isOnboardingDone,
   getReadLater,
   saveReadLater,
@@ -45,7 +46,10 @@ async function captureSnippet(
   pinned?: boolean,
 ): Promise<void> {
   const trimmed = text.slice(0, MAX_CAPTURE_CHARS);
+  if (!trimmed.trim()) throw new Error('Nothing to save.');
+  if (await isDuplicateSnippet(trimmed, url)) throw new Error('Already saved from this page.');
   const embedding = await embed(trimmed);
+  const autoTags = buildAutoTags(trimmed, title, url, tags, source, pinned);
   const snippet: Snippet = {
     id: generateId(),
     text: trimmed,
@@ -55,7 +59,7 @@ async function captureSnippet(
     embedding,
     source,
     ...(context ? { context: context.slice(0, 500) } : {}),
-    ...(tags?.length ? { tags } : {}),
+    ...(autoTags.length ? { tags: autoTags } : {}),
     ...(pinned ? { pinned } : {}),
   };
   await addSnippet(snippet);
@@ -244,6 +248,7 @@ async function syncHistory(startTime?: number): Promise<void> {
   const [onboardingDone, historyEnabled] = await Promise.all([isOnboardingDone(), isHistoryEnabled()]);
   if (!onboardingDone || !historyEnabled) return;
   if (!await hasApiKey()) return;
+  const rules = await getHistoryDomainRules();
 
   const msPerDay = 86400000;
   const defaultStart = Date.now() - HISTORY_INITIAL_DAYS * msPerDay;
@@ -259,6 +264,7 @@ async function syncHistory(startTime?: number): Promise<void> {
     const title = item.title ?? '';
     if (!url || !title.trim()) continue;
     if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) continue;
+    if (!shouldSyncHistoryUrl(url, rules)) continue;
     if (await hasSnippetForUrl(url)) continue;
     const embedText = `${title.trim()} — ${url}`;
     pending.push({ text: embedText, url, title });
@@ -289,6 +295,68 @@ async function syncHistory(startTime?: number): Promise<void> {
       console.error('[Sonto] history batch failed:', err);
       break;
     }
+  }
+}
+
+async function isDuplicateSnippet(text: string, url: string): Promise<boolean> {
+  const normalized = normalizeText(text);
+  const snippets = await getAllSnippets();
+  return snippets.some((snippet) => snippet.url === url && normalizeText(snippet.text) === normalized);
+}
+
+function buildAutoTags(
+  text: string,
+  title: string,
+  url: string,
+  tags: string[] | undefined,
+  source: Snippet['source'],
+  pinned: boolean | undefined,
+): string[] {
+  const merged = new Set((tags ?? []).map((tag) => normalizeTag(tag)).filter(Boolean));
+
+  if (source === 'history') merged.add('history');
+  if (pinned) merged.add('pinned');
+
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, '');
+    const main = hostname.split('.').slice(0, -1).join(' ').trim();
+    if (main) merged.add(normalizeTag(main));
+  } catch {}
+
+  extractTitleKeywords(title).forEach((keyword) => merged.add(keyword));
+
+  return [...merged].slice(0, 6);
+}
+
+function extractTitleKeywords(title: string): string[] {
+  const stopWords = new Set(['the', 'and', 'for', 'with', 'from', 'into', 'your', 'this', 'that', 'about', 'what', 'when', 'where', 'have', 'will']);
+  return title
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length >= 4 && !stopWords.has(word))
+    .slice(0, 3)
+    .map((word) => normalizeTag(word));
+}
+
+function normalizeTag(tag: string): string {
+  return tag.trim().toLowerCase().replace(/\s+/g, '-').slice(0, 32);
+}
+
+function normalizeText(text: string): string {
+  return text.replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function shouldSyncHistoryUrl(url: string, rules: Awaited<ReturnType<typeof getHistoryDomainRules>>): boolean {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+    const inBlocked = rules.blocked.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
+    if (inBlocked) return false;
+    if (rules.mode === 'allowlist') {
+      return rules.allowed.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
+    }
+    return true;
+  } catch {
+    return false;
   }
 }
 

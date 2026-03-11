@@ -64,6 +64,7 @@ export class BrowseManager {
   constructor(
     private readonly listEl: HTMLElement,
     private readonly onCountsChange?: (all: number, manual: number, history: number, pinned: number) => void,
+    private readonly onKeepThreadGoing?: (snippet: Snippet) => void,
   ) {}
 
   async load(): Promise<void> {
@@ -184,6 +185,12 @@ export class BrowseManager {
               <path d="M4 4.5L6.5 7M11.5 4.5L9.5 7M8 10v2.5"/>
             </svg>
           </button>
+          <button class="btn-thread" type="button" title="Keep this thread going" data-id="${snippet.id}">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 8h7"/>
+              <path d="M7 4l4 4-4 4"/>
+            </svg>
+          </button>
           <button class="btn-delete" type="button" title="Delete snippet" data-id="${snippet.id}">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M5 5l10 10M15 5L5 15"/>
@@ -201,6 +208,11 @@ export class BrowseManager {
     card.querySelector<HTMLButtonElement>('.btn-related')!.addEventListener('click', (e) => {
       e.stopPropagation();
       void this.toggleRelated(snippet.id, card);
+    });
+
+    card.querySelector<HTMLButtonElement>('.btn-thread')!.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onKeepThreadGoing?.(snippet);
     });
 
     card.querySelector<HTMLButtonElement>('.btn-delete')!.addEventListener('click', (e) => {

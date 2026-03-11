@@ -752,15 +752,28 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
 ];
 
 export function pickFetcher(fetchers: ZenFetcher[], disabledIds?: ReadonlySet<string>): ZenFetcher {
+  return pickFetcherWithSignals(fetchers, {}, disabledIds);
+}
+
+export function pickFetcherWithSignals(
+  fetchers: ZenFetcher[],
+  signals: Record<string, number>,
+  disabledIds?: ReadonlySet<string>,
+): ZenFetcher {
   const pool = disabledIds ? fetchers.filter((f) => !disabledIds.has(f.id)) : fetchers;
   const available = pool.length > 0 ? pool : fetchers;
-  const total = available.reduce((sum, f) => sum + f.weight, 0);
+  const total = available.reduce((sum, f) => sum + getWeightedScore(f.id, f.weight, signals), 0);
   let roll = Math.random() * total;
   for (const f of available) {
-    roll -= f.weight;
+    roll -= getWeightedScore(f.id, f.weight, signals);
     if (roll <= 0) return f;
   }
   return available[available.length - 1];
+}
+
+function getWeightedScore(sourceId: string, baseWeight: number, signals: Record<string, number>): number {
+  const signal = Math.max(0, signals[sourceId] ?? 0);
+  return baseWeight * (1 + Math.min(signal, 12) * 0.15);
 }
 
 async function resolveAlbumOfDay(album: AlbumOfDaySeed): Promise<ZenArtResult | null> {

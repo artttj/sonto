@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Sonto",
-  "version": "1.7.3",
+  "version": "1.7.4",
   "description": "A calm sidebar feed of art, quotes, science, and news. Save highlights and chat with your browsing history using AI.",
   "author": "Artem Iagovdik (artyom.yagovdik@gmail.com)",
   "icons": {

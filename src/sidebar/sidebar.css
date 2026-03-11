@@ -1019,6 +1019,68 @@ html, body {
   font-weight: 600;
 }
 
+.chat-grounding-note {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--c-text-3);
+  line-height: 1.5;
+}
+
+.chat-citations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chat-citation-chip {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid var(--c-border-hi);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--c-text-2);
+  text-decoration: none;
+}
+
+.chat-citation-chip:hover {
+  color: var(--c-text);
+  background: var(--c-elevated);
+}
+
+.chat-followups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.chat-followup-btn {
+  border: 1px solid var(--c-border);
+  background: transparent;
+  color: var(--c-text-2);
+  font-size: 11px;
+  font-family: var(--font);
+  padding: 4px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-followup-btn:hover {
+  color: var(--c-text);
+  background: var(--c-elevated);
+}
+
+.chat-followup-btn--primary {
+  color: var(--c-text);
+  border-color: var(--c-border-hi);
+}
+
 .chat-status-msg {
   display: flex;
   align-items: center;
@@ -1367,7 +1429,8 @@ html, body {
 }
 
 .btn-pin,
-.btn-related {
+.btn-related,
+.btn-thread {
   width: 22px;
   height: 22px;
   display: flex;
@@ -1381,12 +1444,14 @@ html, body {
   opacity: 0;
   transition: opacity var(--t) var(--ease), color var(--t) var(--ease), background var(--t) var(--ease);
 }
-.btn-pin svg, .btn-related svg { width: 12px; height: 12px; }
+.btn-pin svg, .btn-related svg, .btn-thread svg { width: 12px; height: 12px; }
 .snippet-card:hover .btn-pin,
-.snippet-card:hover .btn-related { opacity: 1; }
+.snippet-card:hover .btn-related,
+.snippet-card:hover .btn-thread { opacity: 1; }
 .btn-pin:hover { color: #e8b931; }
 .btn-pin.pinned { opacity: 1 !important; color: #e8b931; }
 .btn-related:hover { color: var(--c-text-2); background: var(--c-elevated); }
+.btn-thread:hover { color: var(--c-text); background: var(--c-elevated); }
 
 .source-badge.pinned {
   background: rgba(232,185,49,0.12);
@@ -1581,6 +1646,10 @@ html, body {
   transition: background var(--t) var(--ease);
 }
 .ra-btn:hover { background: var(--c-history); }
+
+.ra-btn-secondary {
+  margin-left: 0;
+}
 
 .ra-dismiss {
   background: none;

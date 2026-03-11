@@ -20,6 +20,8 @@ import {
   saveCustomFeeds,
   isHistoryEnabled,
   setHistoryEnabled,
+  getHistoryDomainRules,
+  saveHistoryDomainRules,
   getCustomJsonSources,
   saveCustomJsonSources,
   getTheme,
@@ -274,6 +276,116 @@ async function initHistoryToggle(): Promise<void> {
   if (!toggle) return;
   toggle.checked = await isHistoryEnabled();
   toggle.addEventListener('change', () => void setHistoryEnabled(toggle.checked));
+
+   await initHistoryDomainRules();
+}
+
+async function initHistoryDomainRules(): Promise<void> {
+  const modeStatusEl = document.getElementById('history-domain-status');
+  const errorEl = document.getElementById('history-domain-error') as HTMLElement | null;
+  const blockedList = document.getElementById('history-blocked-list');
+  const allowedList = document.getElementById('history-allowed-list');
+  const blockedInput = document.getElementById('history-blocked-input') as HTMLInputElement | null;
+  const allowedInput = document.getElementById('history-allowed-input') as HTMLInputElement | null;
+  const blockedAddBtn = document.getElementById('history-blocked-add-btn');
+  const allowedAddBtn = document.getElementById('history-allowed-add-btn');
+  if (!modeStatusEl || !blockedList || !allowedList || !blockedInput || !allowedInput || !blockedAddBtn || !allowedAddBtn) return;
+
+  let rules = await getHistoryDomainRules();
+
+  const setMode = initSegmented('history-domain-mode-segmented', (value) => {
+    rules.mode = value === 'allowlist' ? 'allowlist' : 'all';
+    void saveHistoryDomainRules(rules).then(render);
+  });
+
+  const renderDomainList = (
+    container: HTMLElement,
+    domains: string[],
+    emptyLabel: string,
+    badgeLabel: string,
+    remove: (domain: string) => Promise<void>,
+  ) => {
+    container.innerHTML = '';
+    if (domains.length === 0) {
+      container.innerHTML = `<div class="history-domain-empty">${emptyLabel}</div>`;
+      return;
+    }
+
+    domains.forEach((domain) => {
+      const row = document.createElement('div');
+      row.className = 'history-domain-row';
+      row.innerHTML = `
+        <span class="history-domain-name">${escapeHtml(domain)}</span>
+        <div class="history-domain-meta">
+          <span class="history-domain-badge">${escapeHtml(badgeLabel)}</span>
+          <button class="history-domain-remove" type="button" aria-label="Remove ${escapeHtml(domain)}">✕</button>
+        </div>
+      `;
+      row.querySelector('button')!.addEventListener('click', () => void remove(domain));
+      container.appendChild(row);
+    });
+  };
+
+  const render = () => {
+    setMode(rules.mode);
+    renderDomainList(blockedList, rules.blocked, 'No blocked domains yet.', 'Excluded', async (domain) => {
+      rules = { ...rules, blocked: rules.blocked.filter((entry) => entry !== domain) };
+      await saveHistoryDomainRules(rules);
+      render();
+    });
+    renderDomainList(allowedList, rules.allowed, 'No allowed domains yet.', 'Included', async (domain) => {
+      rules = { ...rules, allowed: rules.allowed.filter((entry) => entry !== domain) };
+      await saveHistoryDomainRules(rules);
+      render();
+    });
+
+    modeStatusEl.textContent = rules.mode === 'allowlist'
+      ? `Status: only ${rules.allowed.length} allowed domain${rules.allowed.length === 1 ? '' : 's'} sync into memory.`
+      : `Status: all domains sync except ${rules.blocked.length} blocked domain${rules.blocked.length === 1 ? '' : 's'}.`;
+  };
+
+  const addDomain = async (kind: 'blocked' | 'allowed', input: HTMLInputElement) => {
+    const normalized = normalizeDomain(input.value);
+    if (errorEl) errorEl.style.display = 'none';
+    if (!normalized) {
+      if (errorEl) {
+        errorEl.textContent = 'Enter a valid domain like example.com';
+        errorEl.style.display = '';
+      }
+      return;
+    }
+
+    const values = new Set(rules[kind]);
+    values.add(normalized);
+    rules = { ...rules, [kind]: [...values].sort() };
+    await saveHistoryDomainRules(rules);
+    input.value = '';
+    render();
+  };
+
+  blockedAddBtn.addEventListener('click', () => void addDomain('blocked', blockedInput));
+  allowedAddBtn.addEventListener('click', () => void addDomain('allowed', allowedInput));
+  blockedInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void addDomain('blocked', blockedInput);
+    }
+  });
+  allowedInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void addDomain('allowed', allowedInput);
+    }
+  });
+
+  render();
+}
+
+function normalizeDomain(value: string): string {
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return '';
+  const withoutProtocol = trimmed.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
+  return /^[a-z0-9.-]+\.[a-z]{2,}$/.test(withoutProtocol) ? withoutProtocol : '';
 }
 
 async function initRssFeeds(): Promise<void> {

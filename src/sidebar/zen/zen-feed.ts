@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 import { MSG } from '../../shared/messages';
-import { getDripInterval, getDisabledSources } from '../../shared/storage';
+import { bumpZenSourceSignal, getDripInterval, getDisabledSources, getZenSourceSignals } from '../../shared/storage';
 import type { Snippet } from '../../shared/types';
 import {
   AI_PATTERNS,
@@ -14,7 +14,7 @@ import {
   ZEN_MAX_BUBBLES,
   escapeHtml,
 } from './zen-content';
-import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetcher } from './zen-fetchers';
+import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetcherWithSignals } from './zen-fetchers';
 import { translateText } from './translator';
 import { JUNK_PATTERNS } from './zen-shared';
 
@@ -49,6 +49,7 @@ export class ZenFeed {
   private _starting = false;
   private disabledSources = new Set<string>();
   private dripCount = 0;
+  private sourceSignals: Record<string, number> = {};
 
   constructor(
     private readonly feedEl: HTMLElement,
@@ -79,9 +80,10 @@ export class ZenFeed {
     this.stop();
 
     try {
-      const [disabled, intervalMs] = await Promise.all([getDisabledSources(), getDripInterval()]);
+      const [disabled, intervalMs, sourceSignals] = await Promise.all([getDisabledSources(), getDripInterval(), getZenSourceSignals()]);
       this.disabledSources = new Set(disabled);
       this.dripIntervalMs = intervalMs;
+      this.sourceSignals = sourceSignals;
     } catch { /* use previous value */ }
 
     try {
@@ -251,6 +253,7 @@ export class ZenFeed {
       snippet.url,
       SVG_RESURFACE,
       undefined,
+      undefined,
       `From your saves · ${timeLabel}`,
     );
     bubble.classList.add('zen-resurface');
@@ -267,7 +270,7 @@ export class ZenFeed {
       if (resurfaced > 1) return resurfaced;
     }
 
-    const fetcher = pickFetcher(ZEN_FETCHERS, this.disabledSources);
+      const fetcher = pickFetcherWithSignals(ZEN_FETCHERS, this.sourceSignals, this.disabledSources);
     const ctx = {
       language: this.language,
       isValidFact: (t: string) => this.isValidFact(t),
@@ -280,7 +283,7 @@ export class ZenFeed {
       if (!this.isDuplicate(result.caption)) {
         const caption = await translateText(result.caption, this.language);
         this.hideLoader();
-        this.appendArtBubble(result.imageUrl, caption, result.link, fetcher.label);
+        this.appendArtBubble(result.imageUrl, caption, result.link, fetcher.id, fetcher.label);
         this.trackFact(result.caption);
         return this.durationMultiplier(result);
       }
@@ -292,7 +295,7 @@ export class ZenFeed {
         const translated = await translateText(text, this.language);
         const useHtml = translated === text ? html : undefined;
         this.hideLoader();
-        this.appendBubbleElement(translated, link, icon, useHtml, result.hideLabel ? undefined : fetcher.label);
+        this.appendBubbleElement(translated, link, icon, useHtml, fetcher.id, result.hideLabel ? undefined : fetcher.label);
         this.trackFact(text);
         return this.durationMultiplier(result);
       }
@@ -375,7 +378,7 @@ export class ZenFeed {
     }).catch(() => {});
   }
 
-  private attachCopyButton(bubble: HTMLElement, text: string): void {
+  private attachCopyButton(bubble: HTMLElement, text: string, sourceId?: string): void {
     const btn = document.createElement('button');
     btn.className = 'zen-copy';
     btn.title = 'Copy';
@@ -383,6 +386,7 @@ export class ZenFeed {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       void navigator.clipboard.writeText(text).then(() => {
+        if (sourceId) this.trackSourceSignal(sourceId, 2);
         btn.innerHTML = '✓';
         setTimeout(() => {
           btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
@@ -392,7 +396,7 @@ export class ZenFeed {
     bubble.appendChild(btn);
   }
 
-  private attachPinButton(bubble: HTMLElement, text: string, url?: string): void {
+  private attachPinButton(bubble: HTMLElement, text: string, url?: string, sourceId?: string): void {
     const btn = document.createElement('button');
     btn.className = 'zen-pin';
     btn.title = 'Pin to favorites';
@@ -412,12 +416,13 @@ export class ZenFeed {
         title: 'Pinned from Zen feed',
         pinned: true,
       }).catch(() => {});
+      if (sourceId) this.trackSourceSignal(sourceId, 3);
     });
 
     bubble.appendChild(btn);
   }
 
-  private appendBubbleElement(text: string, link?: string, icon?: string, html?: string, source?: string): HTMLElement {
+  private appendBubbleElement(text: string, link?: string, icon?: string, html?: string, sourceId?: string, source?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     if (html?.includes('zen-oblique')) bubble.classList.add('zen-bubble--oblique');
@@ -428,8 +433,9 @@ export class ZenFeed {
     const innerContent = html ?? escapeHtml(text);
     const sourceHtml = source ? `<span class="zen-source">${escapeHtml(source)}</span>` : '';
     bubble.innerHTML = `${icon ?? SVG_BULB}<div class="zen-bubble-body"><div class="zen-bubble-text">${innerContent}${linkHtml}</div>${sourceHtml}</div>`;
-    this.attachCopyButton(bubble, text);
-    this.attachPinButton(bubble, text, link);
+    this.attachCopyButton(bubble, text, sourceId);
+    this.attachPinButton(bubble, text, link, sourceId);
+    this.attachSourceInteractions(bubble, sourceId);
     const first = this.feedEl.firstChild;
     if (first) {
       this.feedEl.insertBefore(bubble, first);
@@ -439,7 +445,7 @@ export class ZenFeed {
     return bubble;
   }
 
-  private appendArtBubble(imageUrl: string, caption: string, link?: string, source?: string): HTMLElement {
+  private appendArtBubble(imageUrl: string, caption: string, link?: string, sourceId?: string, source?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
     const sep = caption.includes(' · ') ? ' · ' : ' — ';
@@ -458,8 +464,9 @@ export class ZenFeed {
       img.addEventListener('load', () => img.classList.add('loaded'), { once: true });
       img.addEventListener('error', () => (img.closest('.zen-art-img-link') ?? img).remove(), { once: true });
     }
-    this.attachCopyButton(bubble, caption);
-    this.attachPinButton(bubble, caption, link);
+    this.attachCopyButton(bubble, caption, sourceId);
+    this.attachPinButton(bubble, caption, link, sourceId);
+    this.attachSourceInteractions(bubble, sourceId);
     const first = this.feedEl.firstChild;
     if (first) {
       this.feedEl.insertBefore(bubble, first);
@@ -487,5 +494,18 @@ export class ZenFeed {
     this.zenCategories = [];
     this.zenCategoryQueue = [];
     void chrome.storage.session.remove('sonto_zen_categories').catch(() => {});
+  }
+
+  private attachSourceInteractions(bubble: HTMLElement, sourceId?: string): void {
+    if (!sourceId) return;
+    bubble.addEventListener('click', () => this.trackSourceSignal(sourceId, 1));
+    bubble.querySelectorAll<HTMLAnchorElement>('a').forEach((link) => {
+      link.addEventListener('click', () => this.trackSourceSignal(sourceId, 2));
+    });
+  }
+
+  private trackSourceSignal(sourceId: string, amount: number): void {
+    this.sourceSignals[sourceId] = (this.sourceSignals[sourceId] ?? 0) + amount;
+    void bumpZenSourceSignal(sourceId, amount).catch(() => {});
   }
 }
