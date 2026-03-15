@@ -60,6 +60,7 @@ export class BrowseManager {
   private snippets: Snippet[] = [];
   private filter: FilterMode = 'all';
   private expandedRelated: string | null = null;
+  private searchResults: QueryResult[] | null = null;
 
   constructor(
     private readonly listEl: HTMLElement,
@@ -78,8 +79,24 @@ export class BrowseManager {
     this.render();
   }
 
+  async search(query: string): Promise<void> {
+    if (!query.trim()) {
+      this.searchResults = null;
+      this.render();
+      return;
+    }
+    const response = await chrome.runtime.sendMessage({
+      type: MSG.QUERY_SNIPPETS,
+      query,
+    }) as { ok: boolean; results?: QueryResult[] };
+
+    this.searchResults = response?.ok ? (response.results ?? []) : [];
+    this.render();
+  }
+
   setFilter(filter: FilterMode): void {
     this.filter = filter;
+    this.searchResults = null;
     this.render();
   }
 
@@ -104,17 +121,27 @@ export class BrowseManager {
     }
     this.onCountsChange?.(this.snippets.length, manual, history, pinned);
 
-    const filtered = this.getFiltered();
+    let snippetsToRender: Snippet[] = [];
+    if (this.searchResults) {
+      const results = this.searchResults.map((r) => r.snippet);
+      if (this.filter === 'all') snippetsToRender = results;
+      else if (this.filter === 'pinned') snippetsToRender = results.filter((s) => s.pinned);
+      else snippetsToRender = results.filter((s) => (s.source ?? 'manual') === this.filter);
+    } else {
+      snippetsToRender = this.getFiltered();
+    }
 
-    if (filtered.length === 0) {
+    if (snippetsToRender.length === 0) {
       const emptyMsg = this.snippets.length === 0
         ? 'Highlight text on any page and press <strong>Alt+Shift+C</strong> or right-click to save it here.'
-        : this.filter === 'manual'
-          ? 'No manually saved snippets yet.'
-          : this.filter === 'history'
-            ? 'No history items synced yet.'
-            : 'No pinned items yet. Pin zen feed bubbles to collect them here.';
-      const emptyTitle = this.filter === 'pinned' ? 'No pinned items' : 'No saved snippets';
+        : this.searchResults
+          ? 'No snippets match your search.'
+          : this.filter === 'manual'
+            ? 'No manually saved snippets yet.'
+            : this.filter === 'history'
+              ? 'No history items synced yet.'
+              : 'No pinned items yet. Pin zen feed bubbles to collect them here.';
+      const emptyTitle = this.searchResults ? 'No search results' : this.filter === 'pinned' ? 'No pinned items' : 'No saved snippets';
       this.listEl.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">
@@ -131,7 +158,7 @@ export class BrowseManager {
     }
 
     this.listEl.innerHTML = '';
-    for (const snippet of filtered) {
+    for (const snippet of snippetsToRender) {
       const card = this.buildCard(snippet);
       this.listEl.appendChild(card);
     }

@@ -1685,9 +1685,7 @@ body {
 }
 
 .history-domain-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  display: block;
   margin-top: 12px;
 }
 
@@ -1761,9 +1759,7 @@ body {
 }
 
 @media (max-width: 760px) {
-  .history-domain-grid {
-    grid-template-columns: 1fr;
-  }
+  /* empty */
 }
 
 .rss-add-row {

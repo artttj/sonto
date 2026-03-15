@@ -45,6 +45,7 @@ class SontoSidebar {
   private readonly zenFeedEl = qs<HTMLElement>('#zen-feed');
   private readonly cosmosViewEl = qs<HTMLElement>('#cosmos-view');
   private readonly snippetListEl = qs<HTMLElement>('#snippet-list');
+  private readonly searchInputEl = qs<HTMLInputElement>('#browse-search');
   private readonly chatMessagesEl = qs<HTMLElement>('#chat-messages');
   private readonly chatInputEl = qs<HTMLTextAreaElement>('#chat-input');
   private readonly sendBtnEl = qs<HTMLButtonElement>('#btn-send');
@@ -127,11 +128,26 @@ class SontoSidebar {
 
     qs<HTMLButtonElement>('#btn-clear-all').addEventListener('click', () => void this.browseManager.clearAll());
 
+    let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+    const doSearch = () => void this.browseManager.search(this.searchInputEl.value);
+    this.searchInputEl.addEventListener('input', () => {
+      if (searchDebounce) clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(doSearch, 500);
+    });
+    this.searchInputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (searchDebounce) clearTimeout(searchDebounce);
+        doSearch();
+      }
+    });
+
     document.querySelectorAll<HTMLButtonElement>('.filter-tab').forEach((btn) => {
       btn.addEventListener('click', () => {
         const filter = (btn.dataset.filter ?? 'all') as FilterMode;
         document.querySelectorAll('.filter-tab').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
+        this.searchInputEl.value = '';
         this.browseManager.setFilter(filter);
       });
     });

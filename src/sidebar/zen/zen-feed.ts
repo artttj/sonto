@@ -270,7 +270,8 @@ export class ZenFeed {
       if (resurfaced > 1) return resurfaced;
     }
 
-      const fetcher = pickFetcherWithSignals(ZEN_FETCHERS, this.sourceSignals, this.disabledSources);
+    const fetcher = pickFetcherWithSignals(ZEN_FETCHERS, this.sourceSignals, this.disabledSources);
+    
     const ctx = {
       language: this.language,
       isValidFact: (t: string) => this.isValidFact(t),

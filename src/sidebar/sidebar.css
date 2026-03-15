@@ -762,6 +762,46 @@ html, body {
 .link-btn:hover { color: var(--c-text-2); }
 .link-btn.danger:hover { color: var(--c-error); }
 
+.browse-search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+
+.search-icon {
+  position: absolute;
+  left: 22px;
+  width: 14px;
+  height: 14px;
+  color: var(--c-text-3);
+  pointer-events: none;
+}
+
+.browse-search-input {
+  width: 100%;
+  background: var(--c-input-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 6px 12px 6px 30px;
+  color: var(--c-text);
+  font-family: var(--font);
+  font-size: 13px;
+  transition: border-color var(--t) var(--ease), background var(--t) var(--ease);
+}
+
+.browse-search-input::placeholder {
+  color: var(--c-text-3);
+}
+
+.browse-search-input:focus {
+  outline: none;
+  border-color: var(--c-history-bd);
+  background: var(--c-bg);
+}
+
 .snippet-list {
   flex: 1;
   overflow-y: auto;

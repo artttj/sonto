@@ -63,4 +63,10 @@ export interface ProviderStrategy {
     messages: ChatMessage[];
     signal: AbortSignal;
   }): Promise<string>;
+  chatStream(input: {
+    apiKey: string;
+    model: string;
+    messages: ChatMessage[];
+    signal: AbortSignal;
+  }): AsyncIterable<string>;
 }

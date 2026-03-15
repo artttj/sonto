@@ -159,6 +159,8 @@ Host permissions: `*://*/*` (content script injection), `api.openai.com`, `gener
 - TypeScript strict mode. Target ES2020.
 - No test framework is currently configured.
 - The only runtime dependency is `kotowaza` (Japanese proverbs data).
+- NEVER add comments to the code unless absolutely necessary to explain complex logic. The code should be self-documenting.
+- NEVER add co-authorship tags (e.g., `Co-authored-by:`) to Git commit messages.
 
 ## Privacy Model
 

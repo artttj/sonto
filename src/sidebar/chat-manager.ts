@@ -137,15 +137,57 @@ export class ChatManager {
       const model = settings.llmProvider === 'gemini' ? settings.geminiModel : settings.openaiModel;
 
       this.abortController = new AbortController();
-      const signal = AbortSignal.any([this.abortController.signal, AbortSignal.timeout(30000)]);
+      const signal = this.abortController.signal;
 
       const strategy = getProviderStrategy(settings.llmProvider);
-      const reply = await strategy.chat({ apiKey: key, model, messages, signal });
+      
+      const msgDiv = this.appendMessage('assistant', '');
+      const body = msgDiv.querySelector<HTMLElement>('.chat-msg-body')!;
+      let fullReply = '';
+      let lastRenderTime = 0;
+      let streamError: Error | null = null;
 
-      this.appendAssistantMessage(reply, queryResponse.results, query);
-      this.sessionMessages.push({ role: 'assistant', content: reply });
+      try {
+        const stream = strategy.chatStream({ apiKey: key, model, messages, signal });
+        for await (const chunk of stream) {
+          fullReply += chunk;
+          const now = Date.now();
+          if (now - lastRenderTime > 50) {
+            body.innerHTML = renderMarkdown(fullReply);
+            lastRenderTime = now;
+          }
+        }
+      } catch (err: unknown) {
+        streamError = err instanceof Error ? err : new Error('Stream error');
+      }
+
+      // Remove orphan empty message if stream failed and we have no text
+      if (streamError && !fullReply.trim()) {
+        msgDiv.remove();
+        this.appendMessage('error', streamError.message);
+        return;
+      }
+      
+      if (!fullReply.trim()) {
+        msgDiv.remove();
+        this.appendMessage('error', 'Provider returned an empty response.');
+        return;
+      }
+
+      // Final render to fix any potential markdown inconsistencies
+      body.innerHTML = renderMarkdown(fullReply);
+      
+      // Add citations and followups
+      this.addAssistantFooter(body, queryResponse.results, fullReply, query);
+
+      this.sessionMessages.push({ role: 'assistant', content: fullReply });
       await this.saveCurrentSession(query);
     } catch (err: unknown) {
+      // Clean up orphan message if it exists
+      const assistantMsg = this.messagesEl.querySelector('.chat-msg.assistant:last-child');
+      if (assistantMsg && !assistantMsg.querySelector('.chat-grounding-note')) {
+        assistantMsg.remove();
+      }
       const msg = err instanceof Error ? err.message : 'Something went wrong.';
       this.appendMessage('error', msg);
     } finally {
@@ -259,6 +301,17 @@ export class ChatManager {
     const body = div.querySelector<HTMLElement>('.chat-msg-body');
     if (!body) return div;
 
+    this.addAssistantFooter(body, results, text, query);
+    
+    return div;
+  }
+
+  private addAssistantFooter(
+    body: HTMLElement,
+    results: QueryResult[],
+    text: string,
+    query: string,
+  ): void {
     const note = document.createElement('div');
     note.className = 'chat-grounding-note';
     note.textContent = `Grounded in ${results.length} saved item${results.length === 1 ? '' : 's'}. Chips are direct sources. Inference may go beyond exact saved text.`;
@@ -300,7 +353,6 @@ export class ChatManager {
     }
 
     body.appendChild(actions);
-    return div;
   }
 
   private async saveAnswer(

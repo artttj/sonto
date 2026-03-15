@@ -289,7 +289,9 @@ async function initHistoryDomainRules(): Promise<void> {
   const allowedInput = document.getElementById('history-allowed-input') as HTMLInputElement | null;
   const blockedAddBtn = document.getElementById('history-blocked-add-btn');
   const allowedAddBtn = document.getElementById('history-allowed-add-btn');
-  if (!modeStatusEl || !blockedList || !allowedList || !blockedInput || !allowedInput || !blockedAddBtn || !allowedAddBtn) return;
+  const blockedCol = document.getElementById('history-blocked-col');
+  const allowedCol = document.getElementById('history-allowed-col');
+  if (!modeStatusEl || !blockedList || !allowedList || !blockedInput || !allowedInput || !blockedAddBtn || !allowedAddBtn || !blockedCol || !allowedCol) return;
 
   let rules = await getHistoryDomainRules();
 
@@ -328,6 +330,16 @@ async function initHistoryDomainRules(): Promise<void> {
 
   const render = () => {
     setMode(rules.mode);
+    
+    // Toggle column visibility
+    if (rules.mode === 'allowlist') {
+      blockedCol.style.display = 'none';
+      allowedCol.style.display = 'block';
+    } else {
+      blockedCol.style.display = 'block';
+      allowedCol.style.display = 'none';
+    }
+
     renderDomainList(blockedList, rules.blocked, 'No blocked domains yet.', 'Excluded', async (domain) => {
       rules = { ...rules, blocked: rules.blocked.filter((entry) => entry !== domain) };
       await saveHistoryDomainRules(rules);
