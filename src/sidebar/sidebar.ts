@@ -14,6 +14,7 @@ import {
   getReadLater,
   getStoredDigest,
   saveStoredDigest,
+  hasApiKey,
 } from '../shared/storage';
 import type { ReadLaterItem, Snippet } from '../shared/types';
 import { BrowseManager } from './browse-manager';
@@ -388,9 +389,18 @@ class SontoSidebar {
 
     qs<HTMLButtonElement>('#history-prompt-yes').addEventListener('click', () => {
       void (async () => {
+        const keyConfigured = await hasApiKey();
         await Promise.all([setHistoryEnabled(true), setOnboardingDone()]);
         prompt.classList.add('hidden');
-        await chrome.runtime.sendMessage({ type: MSG.SYNC_HISTORY });
+        
+        if (!keyConfigured) {
+          const gotoSettings = confirm('History sync requires an AI API key (OpenAI or Gemini) to generate embeddings. Would you like to open Settings to add one?');
+          if (gotoSettings) {
+            await chrome.runtime.sendMessage({ type: MSG.OPEN_SETTINGS });
+          }
+        } else {
+          await chrome.runtime.sendMessage({ type: MSG.SYNC_HISTORY });
+        }
       })();
     });
 

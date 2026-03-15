@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from './constants';
-import type { AppLanguage, AppSettings, ChatSession, HistoryDomainRules, ProviderName, ReadLaterItem } from './types';
+import type { AppLanguage, AppSettings, ChatSession, HistoryDomainRules, ProviderName, ReadLaterItem, HistorySyncState } from './types';
 
 function isProviderName(value: string): value is ProviderName {
   return value === 'openai' || value === 'gemini';
@@ -53,6 +53,16 @@ export async function saveGeminiKey(key: string): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.GEMINI_KEY]: key });
 }
 
+export async function hasApiKey(): Promise<boolean> {
+  const settings = await getSettings();
+  if (settings.llmProvider === 'gemini') {
+    const key = await getGeminiKey();
+    return !!key.trim();
+  }
+  const key = await getOpenAIKey();
+  return !!key.trim();
+}
+
 const DISABLED_SOURCES_KEY = 'sonto_disabled_sources';
 const DRIP_INTERVAL_KEY = 'sonto_drip_interval_ms';
 
@@ -91,6 +101,23 @@ const HISTORY_ENABLED_KEY = 'sonto_history_enabled';
 const ONBOARDING_DONE_KEY = 'sonto_onboarding_done';
 const HISTORY_DOMAIN_RULES_KEY = 'sonto_history_domain_rules';
 const ZEN_SOURCE_SIGNALS_KEY = 'sonto_zen_source_signals';
+const HISTORY_SYNC_STATE_KEY = 'sonto_history_sync_state';
+
+export async function getHistorySyncState(): Promise<HistorySyncState> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.HISTORY_SYNC_STATE);
+  const raw = result[STORAGE_KEYS.HISTORY_SYNC_STATE] as Partial<HistorySyncState> | undefined;
+  if (!raw) return { status: 'idle' };
+  return {
+    status: raw.status ?? 'idle',
+    progress: raw.progress,
+    lastSyncedAt: raw.lastSyncedAt,
+    error: raw.error,
+  };
+}
+
+export async function saveHistorySyncState(state: HistorySyncState): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.HISTORY_SYNC_STATE]: state });
+}
 
 export async function isHistoryEnabled(): Promise<boolean> {
   const result = await chrome.storage.local.get(HISTORY_ENABLED_KEY);

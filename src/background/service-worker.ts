@@ -28,6 +28,9 @@ import {
   saveStoredDigest,
   saveLastDigestAt,
   getLastDigestAt,
+  hasApiKey,
+  saveHistorySyncState,
+  getHistorySyncState,
 } from '../shared/storage';
 import { getProviderStrategy } from '../shared/providers';
 import type { Snippet } from '../shared/types';
@@ -238,16 +241,20 @@ const HISTORY_INITIAL_DAYS = 30;
 const HISTORY_MAX_RESULTS = 500;
 const BATCH_SIZE = 100;
 
-async function hasApiKey(): Promise<boolean> {
-  const settings = await getSettings();
-  const key = settings.llmProvider === 'gemini' ? await getGeminiKey() : await getOpenAIKey();
-  return !!key.trim();
-}
-
 async function syncHistory(startTime?: number): Promise<void> {
   const [onboardingDone, historyEnabled] = await Promise.all([isOnboardingDone(), isHistoryEnabled()]);
   if (!onboardingDone || !historyEnabled) return;
-  if (!await hasApiKey()) return;
+  
+  if (!await hasApiKey()) {
+    await saveHistorySyncState({ status: 'error', error: 'No API key' });
+    return;
+  }
+  
+  const currentState = await getHistorySyncState();
+  if (currentState.status === 'syncing') return;
+  
+  await saveHistorySyncState({ status: 'syncing', progress: { current: 0, total: 0 } });
+  
   const rules = await getHistoryDomainRules();
 
   const msPerDay = 86400000;
@@ -270,9 +277,15 @@ async function syncHistory(startTime?: number): Promise<void> {
     pending.push({ text: embedText, url, title });
   }
 
-  if (pending.length === 0) return;
+  if (pending.length === 0) {
+    await saveHistorySyncState({ status: 'idle', lastSyncedAt: Date.now() });
+    return;
+  }
+  
   console.log(`[Sonto] syncing ${pending.length} history items`);
+  await saveHistorySyncState({ status: 'syncing', progress: { current: 0, total: pending.length } });
 
+  let syncedCount = 0;
   for (let i = 0; i < pending.length; i += BATCH_SIZE) {
     const batch = pending.slice(i, i + BATCH_SIZE);
     try {
@@ -290,12 +303,18 @@ async function syncHistory(startTime?: number): Promise<void> {
         };
         await addSnippet(snippet);
       }
+      syncedCount += batch.length;
+      await saveHistorySyncState({ status: 'syncing', progress: { current: syncedCount, total: pending.length } });
       console.log(`[Sonto] embedded batch ${i + 1}-${i + batch.length}`);
     } catch (err) {
       console.error('[Sonto] history batch failed:', err);
-      break;
+      const msg = err instanceof Error ? err.message : 'Batch failed';
+      await saveHistorySyncState({ status: 'error', error: msg, lastSyncedAt: Date.now() });
+      return;
     }
   }
+  
+  await saveHistorySyncState({ status: 'idle', lastSyncedAt: Date.now() });
 }
 
 async function isDuplicateSnippet(text: string, url: string): Promise<boolean> {

@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   LAST_DIGEST_AT: 'sonto_last_digest_at',
   STORED_DIGEST: 'sonto_stored_digest',
   CUSTOM_JSON_SOURCES: 'sonto_custom_json_sources',
+  HISTORY_SYNC_STATE: 'sonto_history_sync_state',
 } as const;
 
 export const PROVIDER_MODELS: Record<string, string[]> = {

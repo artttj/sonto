@@ -25,11 +25,14 @@ import {
   getCustomJsonSources,
   saveCustomJsonSources,
   getTheme,
+  getHistorySyncState,
+  hasApiKey,
 } from '../shared/storage';
 import { parseFeed } from '../shared/rss-parser';
 import { exportBackup, importBackup, downloadBackup } from '../shared/backup';
 import { clearAllSnippets, getSnippetCount } from '../shared/embeddings/vector-store';
 import { setLocale, applyI18n } from '../shared/i18n';
+import { MSG } from '../shared/messages';
 import type { ProviderName } from '../shared/types';
 
 function qs<T extends HTMLElement>(selector: string): T {
@@ -275,9 +278,79 @@ async function initHistoryToggle(): Promise<void> {
   const toggle = document.getElementById('toggle-history-enabled') as HTMLInputElement;
   if (!toggle) return;
   toggle.checked = await isHistoryEnabled();
-  toggle.addEventListener('change', () => void setHistoryEnabled(toggle.checked));
+  toggle.addEventListener('change', () => {
+    void setHistoryEnabled(toggle.checked);
+    void updateHistorySyncStatus();
+  });
 
-   await initHistoryDomainRules();
+  await initHistoryDomainRules();
+  initHistorySyncStatus();
+}
+
+let historySyncInterval: ReturnType<typeof setInterval> | null = null;
+
+async function updateHistorySyncStatus(): Promise<void> {
+  const statusEl = document.getElementById('history-sync-status-text');
+  const syncBtn = document.getElementById('btn-sync-history-now') as HTMLButtonElement | null;
+  if (!statusEl || !syncBtn) return;
+
+  const isEnabled = await isHistoryEnabled();
+  if (!isEnabled) {
+    statusEl.textContent = 'History sync is disabled.';
+    syncBtn.disabled = true;
+    syncBtn.textContent = 'Sync Now';
+    return;
+  }
+
+  const state = await getHistorySyncState();
+  
+  if (state.status === 'syncing') {
+    syncBtn.disabled = true;
+    syncBtn.textContent = 'Syncing...';
+    if (state.progress && state.progress.total > 0) {
+      const left = state.progress.total - state.progress.current;
+      statusEl.textContent = `Syncing... ${left} item${left === 1 ? '' : 's'} left`;
+    } else {
+      statusEl.textContent = 'Syncing in progress...';
+    }
+  } else {
+    syncBtn.disabled = false;
+    syncBtn.textContent = 'Sync Now';
+    
+    if (state.status === 'error') {
+      statusEl.innerHTML = `<span style="color:var(--c-error)">Error: ${escapeHtml(state.error || 'Unknown error')}</span>`;
+    } else if (state.lastSyncedAt) {
+      const mins = Math.floor((Date.now() - state.lastSyncedAt) / 60000);
+      statusEl.textContent = `Last synced: ${mins === 0 ? 'just now' : `${mins} min${mins === 1 ? '' : 's'} ago`}`;
+    } else {
+      statusEl.textContent = 'Never synced.';
+    }
+  }
+}
+
+function initHistorySyncStatus(): void {
+  const syncBtn = document.getElementById('btn-sync-history-now') as HTMLButtonElement | null;
+  const statusEl = document.getElementById('history-sync-status-text');
+  if (!syncBtn || !statusEl) return;
+
+  syncBtn.addEventListener('click', async () => {
+    syncBtn.disabled = true;
+    syncBtn.textContent = 'Starting...';
+    
+    if (!await hasApiKey()) {
+      statusEl.innerHTML = `<span style="color:var(--c-error)">Error: No API key configured. Required for embeddings.</span>`;
+      syncBtn.disabled = false;
+      syncBtn.textContent = 'Sync Now';
+      return;
+    }
+    
+    await chrome.runtime.sendMessage({ type: MSG.SYNC_HISTORY });
+    void updateHistorySyncStatus();
+  });
+
+  void updateHistorySyncStatus();
+  if (historySyncInterval) clearInterval(historySyncInterval);
+  historySyncInterval = setInterval(() => void updateHistorySyncStatus(), 2000);
 }
 
 async function initHistoryDomainRules(): Promise<void> {

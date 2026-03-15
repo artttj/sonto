@@ -51,6 +51,16 @@ export interface ReadLaterItem {
   addedAt: number;
 }
 
+export interface HistorySyncState {
+  status: 'idle' | 'syncing' | 'error';
+  lastSyncedAt?: number;
+  error?: string;
+  progress?: {
+    current: number;
+    total: number;
+  };
+}
+
 export interface QueryResult {
   snippet: Snippet;
   score: number;
