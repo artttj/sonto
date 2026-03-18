@@ -330,6 +330,10 @@ async function initDataTab(): Promise<void> {
   const count = await getClipCount();
   countEl.textContent = String(count);
 
+  const versionEl = document.getElementById('about-version')!;
+  const manifest = chrome.runtime.getManifest();
+  versionEl.textContent = manifest.version;
+
   qs<HTMLButtonElement>('#btn-delete-all').addEventListener('click', async () => {
     const current = await getClipCount();
     if (current === 0) return;
