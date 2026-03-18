@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Sonto",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "A calm zen feed paired with a clipboard manager. Copy anything on any page and browse your history in the sidebar.",
   "author": "Artem Iagovdik (artyom.yagovdik@gmail.com)",
   "icons": {

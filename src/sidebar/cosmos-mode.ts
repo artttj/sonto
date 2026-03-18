@@ -1,6 +1,7 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
+import { MSG } from '../shared/messages';
 import { getDripInterval, getDisabledSources, getTheme } from '../shared/storage';
 import { translateText } from './zen/translator';
 import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetcher } from './zen/zen-fetchers';
@@ -607,6 +608,26 @@ export class CosmosMode {
       srcEl.className = 'cosmos-source';
       srcEl.textContent = source;
       this.msgEl.appendChild(srcEl);
+    }
+
+    const saveText = isArtResult(result) ? result.caption : isTextResult(result) ? result.text : '';
+    const saveLink = isArtResult(result) ? result.link : isTextResult(result) ? result.link : undefined;
+    if (saveText) {
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'cosmos-save';
+      saveBtn.textContent = 'Save';
+      saveBtn.addEventListener('click', () => {
+        void chrome.runtime.sendMessage({
+          type: MSG.CAPTURE_CLIP,
+          text: saveText,
+          url: saveLink,
+          source: 'manual',
+        }).then((res) => {
+          saveBtn.textContent = res?.ok ? 'Saved' : 'Already saved';
+          setTimeout(() => { saveBtn.textContent = 'Save'; }, 2000);
+        });
+      });
+      this.msgEl.appendChild(saveBtn);
     }
   }
 

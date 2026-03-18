@@ -29,18 +29,6 @@ export interface ReadLaterItem {
   addedAt: number;
 }
 
-export interface Flashcard {
-  id: string;
-  front: string;
-  back: string;
-  sourceClipId?: string;
-  createdAt: number;
-  nextReviewAt: number;
-  interval: number;
-  easeFactor: number;
-  reviewCount: number;
-}
-
 export interface Collection {
   id: string;
   name: string;

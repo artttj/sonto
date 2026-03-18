@@ -6,7 +6,6 @@ import {
   getSettings,
   saveSettings,
   getTheme,
-  saveTheme,
   getClipboardMonitoring,
   setClipboardMonitoring,
   getMaxHistorySize,
@@ -25,6 +24,10 @@ import {
   setDailyNotificationEnabled,
   getDailyNotificationTime,
   setDailyNotificationTime,
+  getBadgeCounterEnabled,
+  setBadgeCounterEnabled,
+  getReadingCompanionEnabled,
+  setReadingCompanionEnabled,
   getShowFeedToggle,
   setShowFeedToggle,
 } from '../shared/storage';
@@ -282,13 +285,17 @@ async function initClipboardTab(): Promise<void> {
   const clipCountEl = document.getElementById('clip-count-display');
   const dailyToggle = qs<HTMLInputElement>('#daily-notification-toggle');
   const dailyTimeInput = qs<HTMLInputElement>('#daily-notification-time');
+  const badgeToggle = qs<HTMLInputElement>('#badge-counter-toggle');
+  const companionToggle = qs<HTMLInputElement>('#reading-companion-toggle');
 
-  const [monitoring, maxSize, count, dailyEnabled, dailyTime] = await Promise.all([
+  const [monitoring, maxSize, count, dailyEnabled, dailyTime, badgeEnabled, companionEnabled] = await Promise.all([
     getClipboardMonitoring(),
     getMaxHistorySize(),
     getClipCount(),
     getDailyNotificationEnabled(),
     getDailyNotificationTime(),
+    getBadgeCounterEnabled(),
+    getReadingCompanionEnabled(),
   ]);
 
   monitoringToggle.checked = monitoring;
@@ -296,6 +303,8 @@ async function initClipboardTab(): Promise<void> {
   if (clipCountEl) clipCountEl.textContent = String(count);
   dailyToggle.checked = dailyEnabled;
   dailyTimeInput.value = dailyTime;
+  badgeToggle.checked = badgeEnabled;
+  companionToggle.checked = companionEnabled;
 
   monitoringToggle.addEventListener('change', async () => {
     await setClipboardMonitoring(monitoringToggle.checked);
@@ -322,6 +331,17 @@ async function initClipboardTab(): Promise<void> {
     await setDailyNotificationTime(dailyTimeInput.value);
     await chrome.runtime.sendMessage({ type: 'UPDATE_DAILY_ALARM' });
     showStatus('status-daily');
+  });
+
+  badgeToggle.addEventListener('change', async () => {
+    await setBadgeCounterEnabled(badgeToggle.checked);
+    if (!badgeToggle.checked) {
+      await chrome.action.setBadgeText({ text: '' });
+    }
+  });
+
+  companionToggle.addEventListener('change', async () => {
+    await setReadingCompanionEnabled(companionToggle.checked);
   });
 }
 

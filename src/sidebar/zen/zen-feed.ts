@@ -16,6 +16,7 @@ import { type ZenFetchResult, ZEN_FETCHERS, isArtResult, isTextResult, pickFetch
 import { translateText } from './translator';
 
 const SVG_COPY = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
+const SVG_SAVE = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 1.5h7v8L5.5 7 2 9.5z"/></svg>';
 
 export class ZenFeed {
   private pastFacts: string[] = [];
@@ -245,6 +246,27 @@ export class ZenFeed {
     bubble.appendChild(btn);
   }
 
+  private attachSaveButton(bubble: HTMLElement, text: string, link?: string): void {
+    const btn = document.createElement('button');
+    btn.className = 'zen-save';
+    btn.title = 'Save to clipboard';
+    btn.setAttribute('aria-label', 'Save to clipboard history');
+    btn.innerHTML = SVG_SAVE;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void chrome.runtime.sendMessage({
+        type: MSG.CAPTURE_CLIP,
+        text,
+        url: link,
+        source: 'manual',
+      }).then((res) => {
+        btn.innerHTML = res?.ok ? '✓' : '!';
+        setTimeout(() => { btn.innerHTML = SVG_SAVE; }, 1500);
+      });
+    });
+    bubble.appendChild(btn);
+  }
+
   private appendBubbleElement(text: string, link?: string, icon?: string, html?: string, sourceId?: string, source?: string): HTMLElement {
     const bubble = document.createElement('div');
     bubble.className = 'zen-bubble';
@@ -257,6 +279,7 @@ export class ZenFeed {
     const sourceHtml = source ? `<span class="zen-source">${escapeHtml(source)}</span>` : '';
     bubble.innerHTML = `${icon ?? SVG_BULB}<div class="zen-bubble-body"><div class="zen-bubble-text">${innerContent}${linkHtml}</div>${sourceHtml}</div>`;
     this.attachCopyButton(bubble, text, sourceId);
+    this.attachSaveButton(bubble, text, link);
     this.attachSourceInteractions(bubble, sourceId);
     const first = this.feedEl.firstChild;
     if (first) {
@@ -287,6 +310,7 @@ export class ZenFeed {
       img.addEventListener('error', () => (img.closest('.zen-art-img-link') ?? img).remove(), { once: true });
     }
     this.attachCopyButton(bubble, caption, sourceId);
+    this.attachSaveButton(bubble, caption, link);
     this.attachSourceInteractions(bubble, sourceId);
     const first = this.feedEl.firstChild;
     if (first) {

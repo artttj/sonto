@@ -18,8 +18,7 @@ import {
   getClipboardMonitoring,
   getDailyNotificationEnabled,
   getDailyNotificationTime,
-  getFlashcards,
-  saveFlashcards,
+  getBadgeCounterEnabled,
 } from '../shared/storage';
 import { getClipsByDomain } from '../shared/embeddings/vector-store';
 import { buildTags } from '../shared/utils';
@@ -91,6 +90,7 @@ async function captureClip(
   await addClip(clip);
   await enforceHistoryLimit();
   void chrome.runtime.sendMessage({ type: MSG.CLIP_ADDED }).catch(() => {});
+  void updateCaptureBadge();
 }
 
 async function checkReadLaterForTab(url: string): Promise<void> {
@@ -297,26 +297,6 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
     return true;
   }
 
-  if (message.type === MSG.SAVE_FLASHCARD) {
-    void (async () => {
-      try {
-        const cards = await getFlashcards();
-        cards.push(message.flashcard);
-        await saveFlashcards(cards);
-        sendResponse({ ok: true });
-      } catch (err) {
-        sendResponse({ ok: false, message: 'Failed to save flashcard' });
-      }
-    })();
-    return true;
-  }
-
-  if (message.type === MSG.GET_FLASHCARDS) {
-    void getFlashcards()
-      .then((cards) => sendResponse({ ok: true, flashcards: cards }))
-      .catch(() => sendResponse({ ok: false, flashcards: [] }));
-    return true;
-  }
 });
 
 async function setupDailyAlarm(): Promise<void> {
@@ -377,4 +357,38 @@ async function showDailyWrapup(): Promise<void> {
   });
 }
 
+async function updateCaptureBadge(): Promise<void> {
+  const enabled = await getBadgeCounterEnabled();
+  if (!enabled) return;
+
+  const todayKey = new Date().toDateString();
+  const result = await chrome.storage.session.get('badge_date');
+  let count = 0;
+
+  if (result.badge_date === todayKey) {
+    const countResult = await chrome.storage.session.get('badge_count');
+    count = (countResult.badge_count as number) ?? 0;
+  }
+
+  count++;
+  await chrome.storage.session.set({ badge_date: todayKey, badge_count: count });
+  await chrome.action.setBadgeText({ text: String(count) });
+  await chrome.action.setBadgeBackgroundColor({ color: '#e8b931' });
+}
+
+async function restoreBadge(): Promise<void> {
+  const enabled = await getBadgeCounterEnabled();
+  if (!enabled) { await chrome.action.setBadgeText({ text: '' }); return; }
+
+  const todayKey = new Date().toDateString();
+  const result = await chrome.storage.session.get(['badge_date', 'badge_count']);
+  if (result.badge_date === todayKey && result.badge_count > 0) {
+    await chrome.action.setBadgeText({ text: String(result.badge_count) });
+    await chrome.action.setBadgeBackgroundColor({ color: '#e8b931' });
+  } else {
+    await chrome.action.setBadgeText({ text: '' });
+  }
+}
+
 void setupDailyAlarm();
+void restoreBadge();

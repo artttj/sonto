@@ -1,7 +1,7 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import type { ClipItem, ReadLaterItem, Flashcard } from './types';
+import type { ClipItem, ReadLaterItem } from './types';
 
 export const MSG = {
   CAPTURE_CLIP: 'CAPTURE_CLIP',
@@ -24,8 +24,6 @@ export const MSG = {
   UPDATE_DAILY_ALARM: 'UPDATE_DAILY_ALARM',
   QUICK_SEARCH: 'SONTO_QUICK_SEARCH',
   GET_RELATED_CLIPS: 'GET_RELATED_CLIPS',
-  SAVE_FLASHCARD: 'SAVE_FLASHCARD',
-  GET_FLASHCARDS: 'GET_FLASHCARDS',
 } as const;
 
 export interface CaptureClipMessage {
@@ -87,15 +85,6 @@ export interface GetRelatedClipsMessage {
   domain: string;
 }
 
-export interface SaveFlashcardMessage {
-  type: typeof MSG.SAVE_FLASHCARD;
-  flashcard: import('./types').Flashcard;
-}
-
-export interface GetFlashcardsMessage {
-  type: typeof MSG.GET_FLASHCARDS;
-}
-
 export type RuntimeMessage =
   | CaptureClipMessage
   | DeleteClipMessage
@@ -108,9 +97,7 @@ export type RuntimeMessage =
   | RemoveReadLaterMessage
   | GetReadLaterMessage
   | UpdateDailyAlarmMessage
-  | GetRelatedClipsMessage
-  | SaveFlashcardMessage
-  | GetFlashcardsMessage;
+  | GetRelatedClipsMessage;
 
 export interface CaptureSuccessResult {
   ok: true;

@@ -264,6 +264,13 @@ function createQuickSearchOverlay(): void {
       text-align: center;
       color: #666;
     }
+    .result-item.command .preview {
+      color: #e8b931;
+    }
+    .cmd-prefix {
+      color: #666;
+      margin-right: 4px;
+    }
   `;
 
   const container = document.createElement('div');
@@ -275,7 +282,7 @@ function createQuickSearchOverlay(): void {
           <circle cx="9" cy="9" r="5"/>
           <path d="M12.5 12.5L16 16"/>
         </svg>
-        <input type="text" class="search-input" placeholder="Search your snippets..." autofocus />
+        <input type="text" class="search-input" placeholder="Search snippets or type > for commands..." autofocus />
         <button class="close-btn">×</button>
       </div>
       <div class="results">
@@ -308,15 +315,84 @@ function createQuickSearchOverlay(): void {
     }
   });
 
+  const COMMANDS = [
+    { id: 'format-json', label: 'Format JSON', keywords: ['format', 'json', 'pretty'], transform: (t: string) => JSON.stringify(JSON.parse(t.trim()), null, 2) },
+    { id: 'uppercase', label: 'UPPERCASE', keywords: ['upper', 'case', 'caps'], transform: (t: string) => t.toUpperCase() },
+    { id: 'lowercase', label: 'lowercase', keywords: ['lower', 'case'], transform: (t: string) => t.toLowerCase() },
+    { id: 'title-case', label: 'Title Case', keywords: ['title', 'case'], transform: (t: string) => t.replace(/\b\w/g, (c) => c.toUpperCase()) },
+    { id: 'extract-urls', label: 'Extract URLs', keywords: ['extract', 'urls', 'links'], transform: (t: string) => (t.match(/https?:\/\/[^\s<>"']+/g) ?? []).join('\n') },
+    { id: 'strip-html', label: 'Strip HTML', keywords: ['strip', 'html', 'tags'], transform: (t: string) => t.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() },
+    { id: 'trim', label: 'Trim whitespace', keywords: ['trim', 'whitespace', 'clean'], transform: (t: string) => t.replace(/\s+/g, ' ').trim() },
+  ];
+
+  let selectedIdx = -1;
+
+  function updateSelected(): void {
+    const items = results.querySelectorAll('.result-item');
+    items.forEach((el, i) => el.classList.toggle('selected', i === selectedIdx));
+    if (selectedIdx >= 0 && selectedIdx < items.length) {
+      items[selectedIdx].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function activateSelected(): void {
+    const items = results.querySelectorAll<HTMLElement>('.result-item');
+    if (selectedIdx >= 0 && selectedIdx < items.length) {
+      items[selectedIdx].click();
+    }
+  }
+
+  function renderCommands(cmdQuery: string): void {
+    const q = cmdQuery.toLowerCase();
+    const filtered = q
+      ? COMMANDS.filter((c) => c.label.toLowerCase().includes(q) || c.keywords.some((k) => k.includes(q)))
+      : COMMANDS;
+
+    if (filtered.length === 0) {
+      results.innerHTML = '<div class="empty-state">No matching commands</div>';
+      return;
+    }
+
+    results.innerHTML = filtered.map((c) =>
+      `<button class="result-item command" data-cmd="${c.id}"><div class="preview"><span class="cmd-prefix">&gt;</span>${escapeHtml(c.label)}</div><div class="meta">Transforms clipboard text</div></button>`
+    ).join('');
+
+    selectedIdx = -1;
+
+    results.querySelectorAll<HTMLElement>('.result-item').forEach((item) => {
+      item.addEventListener('click', async () => {
+        const cmdId = item.dataset.cmd;
+        const cmd = COMMANDS.find((c) => c.id === cmdId);
+        if (!cmd) return;
+        try {
+          const text = await navigator.clipboard.readText();
+          if (!text.trim()) { showToast('Clipboard is empty', true); return; }
+          const result = cmd.transform(text);
+          await navigator.clipboard.writeText(result);
+          showToast(`Applied: ${cmd.label}`);
+          close();
+        } catch {
+          showToast('Could not read clipboard', true);
+        }
+      });
+    });
+  }
+
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   input.addEventListener('input', () => {
     const query = input.value.trim();
-    
+    selectedIdx = -1;
+
     if (searchTimeout) clearTimeout(searchTimeout);
-    
+
     if (!query) {
       results.innerHTML = '<div class="empty-state">Start typing to search your snippets</div>';
+      return;
+    }
+
+    if (query.startsWith('>')) {
+      renderCommands(query.slice(1).trim());
       return;
     }
 
@@ -325,7 +401,7 @@ function createQuickSearchOverlay(): void {
     searchTimeout = setTimeout(async () => {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'SEARCH_CLIPS', query });
-        
+
         if (response?.ok && response.clips?.length > 0) {
           results.innerHTML = response.clips.slice(0, 10).map((clip: { id: string; text: string; timestamp: number; url?: string }) => `
             <button class="result-item" data-id="${clip.id}" data-text="${escapeHtml(clip.text.slice(0, 200))}">
@@ -333,6 +409,8 @@ function createQuickSearchOverlay(): void {
               <div class="meta">${formatTime(clip.timestamp)}${clip.url ? ' · ' + new URL(clip.url).hostname : ''}</div>
             </button>
           `).join('');
+
+          selectedIdx = -1;
 
           results.querySelectorAll('.result-item').forEach((item) => {
             item.addEventListener('click', async () => {
@@ -345,10 +423,26 @@ function createQuickSearchOverlay(): void {
         } else {
           results.innerHTML = '<div class="empty-state">No snippets found</div>';
         }
-      } catch (err) {
+      } catch {
         results.innerHTML = '<div class="empty-state">Search error</div>';
       }
     }, 300);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    const items = results.querySelectorAll('.result-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIdx = Math.min(selectedIdx + 1, items.length - 1);
+      updateSelected();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIdx = Math.max(selectedIdx - 1, -1);
+      updateSelected();
+    } else if (e.key === 'Enter' && selectedIdx >= 0) {
+      e.preventDefault();
+      activateSelected();
+    }
   });
 
   input.focus();
@@ -462,6 +556,11 @@ function createReadingCompanionBanner(clips: Array<{ id: string; text: string; t
       cursor: pointer;
       font-size: 16px;
       padding: 2px;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .companion-close:hover { color: #999; }
     .companion-list {
@@ -502,7 +601,7 @@ function createReadingCompanionBanner(clips: Array<{ id: string; text: string; t
   const header = document.createElement('div');
   header.innerHTML = `
     <div class="companion-header">
-      <span class="companion-title">📖 Related from your saves</span>
+      <span class="companion-title">Related from your saves</span>
       <button class="companion-close">×</button>
     </div>
   `;
@@ -537,4 +636,8 @@ function createReadingCompanionBanner(clips: Array<{ id: string; text: string; t
   });
 }
 
-initReadingCompanion();
+void chrome.storage.local.get('sonto_reading_companion_enabled').then((result) => {
+  if (result.sonto_reading_companion_enabled !== false) {
+    initReadingCompanion();
+  }
+});

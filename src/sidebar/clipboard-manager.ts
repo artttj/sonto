@@ -2,10 +2,11 @@
 // Licensed under the MIT License.
 
 import { MSG } from '../shared/messages';
-import type { ClipItem, ClipContentType, Flashcard } from '../shared/types';
+import type { ClipItem, ClipContentType } from '../shared/types';
 import { escapeHtml } from '../shared/utils';
+import { highlightCode } from './syntax-highlight';
+import { getApplicableTransforms } from './clip-transforms';
 
-const TOAST_DURATION_MS = 2000;
 const TEXT_PREVIEW_CHARS = 280;
 const CODE_PREVIEW_CHARS = 300;
 
@@ -58,26 +59,32 @@ function truncateUrl(url: string): string {
   }
 }
 
+function extractDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
 export class ClipboardManager {
   private clips: ClipItem[] = [];
-  private flashcardClipIds: Set<string> = new Set();
   private listEl: HTMLElement;
   private isLoading = false;
+  private selectedIndex = -1;
+  private activeDomain = '';
+  private openTransformMenu: HTMLElement | null = null;
 
   constructor(listEl: HTMLElement) {
     this.listEl = listEl;
   }
 
-  async load(): Promise<void> {
+  async load(domain?: string): Promise<void> {
+    this.activeDomain = domain ?? '';
     this.setLoading(true);
     try {
-      const [clipsResponse, flashcardsResponse] = await Promise.all([
-        chrome.runtime.sendMessage({ type: MSG.GET_ALL_CLIPS }),
-        chrome.runtime.sendMessage({ type: MSG.GET_FLASHCARDS }),
-      ]);
-      this.clips = clipsResponse?.ok ? (clipsResponse.clips as ClipItem[]) : [];
-      const flashcards = flashcardsResponse?.ok ? (flashcardsResponse.flashcards as Flashcard[]) : [];
-      this.flashcardClipIds = new Set(flashcards.map(f => f.sourceClipId).filter((id): id is string => !!id));
+      const response = await chrome.runtime.sendMessage({ type: MSG.GET_ALL_CLIPS });
+      this.clips = response?.ok ? (response.clips as ClipItem[]) : [];
     } catch (err) {
       console.error('[Sonto] Failed to load clipboard:', err);
     } finally {
@@ -88,7 +95,7 @@ export class ClipboardManager {
 
   async search(query: string): Promise<void> {
     if (!query.trim()) {
-      await this.load();
+      await this.load(this.activeDomain);
       return;
     }
     this.setLoading(true);
@@ -103,8 +110,44 @@ export class ClipboardManager {
     }
   }
 
+  handleKey(e: KeyboardEvent): boolean {
+    const cards = this.getCards();
+    if (cards.length === 0) return false;
+
+    if (e.key === 'ArrowDown') {
+      this.selectedIndex = Math.min(this.selectedIndex + 1, cards.length - 1);
+      this.selectCard(cards);
+      return true;
+    }
+    if (e.key === 'ArrowUp') {
+      this.selectedIndex = Math.max(this.selectedIndex - 1, 0);
+      this.selectCard(cards);
+      return true;
+    }
+    if (e.key === 'Enter' && this.selectedIndex >= 0) {
+      const card = cards[this.selectedIndex];
+      const clip = this.clips.find((c) => c.id === card.dataset.id);
+      if (clip) {
+        void navigator.clipboard.writeText(clip.text).then(() => {
+          const btn = card.querySelector<HTMLButtonElement>('.clip-btn-copy');
+          if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); }
+        });
+      }
+      return true;
+    }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedIndex >= 0) {
+      const card = cards[this.selectedIndex];
+      const id = card.dataset.id;
+      if (id) void this.deleteClip(id, card);
+      return true;
+    }
+    return false;
+  }
+
   render(): void {
     this.listEl.innerHTML = '';
+    this.selectedIndex = -1;
+    this.closeTransformMenu();
 
     if (this.isLoading) {
       this.renderLoading();
@@ -123,25 +166,59 @@ export class ClipboardManager {
       return;
     }
 
-    let currentDay = '';
+    const pinned = this.clips.filter((c) => c.pinned);
+    const unpinned = this.clips.filter((c) => !c.pinned);
 
-    for (const clip of this.clips) {
+    if (pinned.length > 0) {
+      this.addSeparator('Pinned', 'pinned-separator');
+      for (const clip of pinned) {
+        this.listEl.appendChild(this.buildCard(clip));
+      }
+    }
+
+    if (this.activeDomain) {
+      const siteClips = unpinned.filter((c) => this.matchesDomain(c));
+      const otherClips = unpinned.filter((c) => !this.matchesDomain(c));
+
+      if (siteClips.length > 0) {
+        this.addSeparator('From this site', 'site-separator');
+        for (const clip of siteClips) {
+          this.listEl.appendChild(this.buildCard(clip));
+        }
+      }
+      this.renderByDay(otherClips);
+    } else {
+      this.renderByDay(unpinned);
+    }
+  }
+
+  private matchesDomain(clip: ClipItem): boolean {
+    if (!clip.url || !this.activeDomain) return false;
+    const clipDomain = extractDomain(clip.url);
+    return clipDomain === this.activeDomain || clipDomain.endsWith('.' + this.activeDomain);
+  }
+
+  private renderByDay(clips: ClipItem[]): void {
+    let currentDay = '';
+    for (const clip of clips) {
       const day = new Date(clip.timestamp).toLocaleDateString(undefined, {
         weekday: 'long',
         month: 'short',
         day: 'numeric',
       });
-
       if (day !== currentDay) {
         currentDay = day;
-        const separator = document.createElement('div');
-        separator.className = 'day-separator';
-        separator.textContent = day;
-        this.listEl.appendChild(separator);
+        this.addSeparator(day);
       }
-
       this.listEl.appendChild(this.buildCard(clip));
     }
+  }
+
+  private addSeparator(label: string, extraClass?: string): void {
+    const separator = document.createElement('div');
+    separator.className = 'day-separator' + (extraClass ? ' ' + extraClass : '');
+    separator.textContent = label;
+    this.listEl.appendChild(separator);
   }
 
   private buildCard(clip: ClipItem): HTMLElement {
@@ -150,11 +227,16 @@ export class ClipboardManager {
     card.dataset.id = clip.id;
 
     const preview = clip.contentType === 'code'
-      ? `<pre class="clip-code-preview"><code>${escapeHtml(clip.text.slice(0, CODE_PREVIEW_CHARS))}</code></pre>`
+      ? `<pre class="clip-code-preview"><code>${highlightCode(clip.text.slice(0, CODE_PREVIEW_CHARS))}</code></pre>`
       : `<p class="clip-text-preview">${escapeHtml(clip.text.slice(0, TEXT_PREVIEW_CHARS))}${clip.text.length > TEXT_PREVIEW_CHARS ? '…' : ''}</p>`;
 
     const sourceInfo = clip.url
       ? `<a class="clip-source-url" href="${escapeHtml(clip.url)}" target="_blank" rel="noopener">${escapeHtml(truncateUrl(clip.url))}</a>`
+      : '';
+
+    const transforms = getApplicableTransforms(clip.text);
+    const transformBtn = transforms.length > 0
+      ? '<button class="clip-btn clip-btn-transform" title="Transform" aria-label="Transform this clip">Transform</button>'
       : '';
 
     card.innerHTML = `
@@ -171,30 +253,87 @@ export class ClipboardManager {
       </div>
       <div class="clip-card-actions">
         <button class="clip-btn clip-btn-copy" title="Copy to clipboard" aria-label="Copy this clip to clipboard">Copy</button>
-        <button class="clip-btn clip-btn-flashcard ${this.flashcardClipIds.has(clip.id) ? 'active' : ''}" title="Create flashcard" aria-label="Create flashcard from this clip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-        </button>
+        ${transformBtn}
         <button class="clip-btn clip-btn-delete" title="Delete this clip" aria-label="Delete this clip">Delete</button>
       </div>
     `;
 
-    qs<HTMLButtonElement>('.clip-btn-copy', card).addEventListener('click', () => {
+    const copyClip = () => {
       void navigator.clipboard.writeText(clip.text).then(() => {
         const btn = qs<HTMLButtonElement>('.clip-btn-copy', card);
         btn.textContent = 'Copied!';
         setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
       });
-    });
+    };
+
+    qs<HTMLButtonElement>('.clip-btn-copy', card).addEventListener('click', copyClip);
+    card.addEventListener('dblclick', copyClip);
 
     qs<HTMLButtonElement>('.clip-btn-delete', card).addEventListener('click', () => {
       void this.deleteClip(clip.id, card);
     });
 
-    qs<HTMLButtonElement>('.clip-btn-flashcard', card).addEventListener('click', () => {
-      void this.createFlashcard(clip);
-    });
+    if (transforms.length > 0) {
+      qs<HTMLButtonElement>('.clip-btn-transform', card).addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.showTransformMenu(clip, card);
+      });
+    }
 
     return card;
+  }
+
+  private showTransformMenu(clip: ClipItem, card: HTMLElement): void {
+    this.closeTransformMenu();
+
+    const transforms = getApplicableTransforms(clip.text);
+    const menu = document.createElement('div');
+    menu.className = 'clip-transform-menu';
+
+    for (const t of transforms) {
+      const btn = document.createElement('button');
+      btn.className = 'clip-transform-item';
+      btn.textContent = t.label;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const result = t.transform(clip.text);
+        void navigator.clipboard.writeText(result).then(() => {
+          const copyBtn = card.querySelector<HTMLButtonElement>('.clip-btn-copy');
+          if (copyBtn) { copyBtn.textContent = 'Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500); }
+        });
+        this.closeTransformMenu();
+      });
+      menu.appendChild(btn);
+    }
+
+    card.appendChild(menu);
+    this.openTransformMenu = menu;
+
+    const closeOnClick = (ev: MouseEvent) => {
+      if (menu.contains(ev.target as Node)) return;
+      this.closeTransformMenu();
+    };
+    requestAnimationFrame(() => {
+      document.addEventListener('click', closeOnClick, { once: true });
+    });
+  }
+
+  private closeTransformMenu(): void {
+    this.openTransformMenu?.remove();
+    this.openTransformMenu = null;
+  }
+
+  private getCards(): NodeListOf<HTMLElement> {
+    return this.listEl.querySelectorAll<HTMLElement>('.clip-card');
+  }
+
+  private selectCard(cards: NodeListOf<HTMLElement>): void {
+    cards.forEach((c) => c.classList.remove('clip-selected'));
+    if (this.selectedIndex >= 0 && this.selectedIndex < cards.length) {
+      const card = cards[this.selectedIndex];
+      card.classList.add('clip-selected');
+      card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
   }
 
   private setLoading(loading: boolean): void {
@@ -226,38 +365,5 @@ export class ClipboardManager {
 
       if (this.clips.length === 0) this.render();
     }, 200);
-  }
-
-  private async createFlashcard(clip: ClipItem): Promise<void> {
-    const flashcard = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      front: clip.text.slice(0, 200),
-      back: '',
-      sourceClipId: clip.id,
-      createdAt: Date.now(),
-      nextReviewAt: Date.now(),
-      interval: 1,
-      easeFactor: 2.5,
-      reviewCount: 0,
-    };
-
-    try {
-      await chrome.runtime.sendMessage({
-        type: MSG.SAVE_FLASHCARD,
-        flashcard,
-      });
-      this.flashcardClipIds.add(clip.id);
-      this.showFlashcardCreated();
-    } catch {
-      // ignore
-    }
-  }
-
-  private showFlashcardCreated(): void {
-    const toast = document.createElement('div');
-    toast.className = 'flashcard-toast';
-    toast.textContent = 'Flashcard created!';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), TOAST_DURATION_MS);
   }
 }

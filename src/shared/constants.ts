@@ -12,8 +12,9 @@ export const STORAGE_KEYS = {
   CUSTOM_JSON_SOURCES: 'sonto_custom_json_sources',
   DAILY_NOTIFICATION_ENABLED: 'sonto_daily_notification_enabled',
   DAILY_NOTIFICATION_TIME: 'sonto_daily_notification_time',
-  FLASHCARDS: 'sonto_flashcards',
   SHOW_FEED_TOGGLE: 'sonto_show_feed_toggle',
+  BADGE_COUNTER_ENABLED: 'sonto_badge_counter_enabled',
+  READING_COMPANION_ENABLED: 'sonto_reading_companion_enabled',
   COLLECTIONS: 'sonto_collections',
 } as const;
 

@@ -45,6 +45,8 @@ class SontoSidebar {
   private zenFeed: ZenFeed | null = null;
   private cosmosMode: CosmosMode | null = null;
 
+  private currentDomain = '';
+
   async init(): Promise<void> {
     qs<HTMLButtonElement>('#btn-settings').addEventListener('click', () => {
       void chrome.runtime.openOptionsPage();
@@ -52,13 +54,28 @@ class SontoSidebar {
 
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
       if (message.type === MSG.CLIP_ADDED) {
-        void this.clipManager.load();
+        void this.clipManager.load(this.currentDomain);
       }
     });
 
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.mode === 'clipboard') {
-        void this.clipManager.load();
+        void this.refreshDomainAndLoad();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (this.mode === 'clipboard') {
+        if (e.key === '/' && document.activeElement !== this.searchInputEl) {
+          e.preventDefault();
+          this.searchInputEl.focus();
+          return;
+        }
+        if (document.activeElement === this.searchInputEl) return;
+        if (this.clipManager.handleKey(e)) {
+          e.preventDefault();
+          return;
+        }
       }
     });
 
@@ -154,7 +171,7 @@ class SontoSidebar {
       await this.zenFeed.restorePastFacts();
     }
 
-    await this.clipManager.load();
+    await this.refreshDomainAndLoad();
 
     if (this.zenDisplay === 'cosmos') {
       void this.cosmosMode!.start();
@@ -293,8 +310,18 @@ class SontoSidebar {
     } else {
       this.zenFeed?.stop();
       this.cosmosMode?.stop();
-      void this.clipManager.load();
+      void this.refreshDomainAndLoad();
     }
+  }
+
+  private async refreshDomainAndLoad(): Promise<void> {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      this.currentDomain = tab?.url ? new URL(tab.url).hostname.replace(/^www\./, '') : '';
+    } catch {
+      this.currentDomain = '';
+    }
+    await this.clipManager.load(this.currentDomain);
   }
 }
 
