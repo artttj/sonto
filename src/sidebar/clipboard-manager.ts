@@ -2,12 +2,17 @@
 // Licensed under the MIT License.
 
 import { MSG } from '../shared/messages';
-import type { ClipItem, ClipContentType } from '../shared/types';
+import type { ClipItem, ClipContentType, Flashcard } from '../shared/types';
 import { escapeHtml } from '../shared/utils';
-import { exportToNotion, exportToMarkdown, exportToJson } from '../shared/export';
+
+const TOAST_DURATION_MS = 2000;
+const TEXT_PREVIEW_CHARS = 280;
+const CODE_PREVIEW_CHARS = 300;
 
 function qs<T extends Element>(selector: string, parent: ParentNode = document): T {
-  return parent.querySelector<T>(selector)!;
+  const el = parent.querySelector<T>(selector);
+  if (!el) throw new Error(`Element not found: ${selector}`);
+  return el;
 }
 
 function formatDate(ts: number): string {
@@ -55,16 +60,30 @@ function truncateUrl(url: string): string {
 
 export class ClipboardManager {
   private clips: ClipItem[] = [];
+  private flashcardClipIds: Set<string> = new Set();
   private listEl: HTMLElement;
+  private isLoading = false;
 
   constructor(listEl: HTMLElement) {
     this.listEl = listEl;
   }
 
   async load(): Promise<void> {
-    const response = await chrome.runtime.sendMessage({ type: MSG.GET_ALL_CLIPS });
-    this.clips = response?.ok ? (response.clips as ClipItem[]) : [];
-    this.render();
+    this.setLoading(true);
+    try {
+      const [clipsResponse, flashcardsResponse] = await Promise.all([
+        chrome.runtime.sendMessage({ type: MSG.GET_ALL_CLIPS }),
+        chrome.runtime.sendMessage({ type: MSG.GET_FLASHCARDS }),
+      ]);
+      this.clips = clipsResponse?.ok ? (clipsResponse.clips as ClipItem[]) : [];
+      const flashcards = flashcardsResponse?.ok ? (flashcardsResponse.flashcards as Flashcard[]) : [];
+      this.flashcardClipIds = new Set(flashcards.map(f => f.sourceClipId).filter((id): id is string => !!id));
+    } catch (err) {
+      console.error('[Sonto] Failed to load clipboard:', err);
+    } finally {
+      this.setLoading(false);
+      this.render();
+    }
   }
 
   async search(query: string): Promise<void> {
@@ -72,13 +91,25 @@ export class ClipboardManager {
       await this.load();
       return;
     }
-    const response = await chrome.runtime.sendMessage({ type: MSG.SEARCH_CLIPS, query });
-    this.clips = response?.ok ? response.clips : [];
-    this.render();
+    this.setLoading(true);
+    try {
+      const response = await chrome.runtime.sendMessage({ type: MSG.SEARCH_CLIPS, query });
+      this.clips = response?.ok ? response.clips : [];
+    } catch (err) {
+      console.error('[Sonto] Search failed:', err);
+    } finally {
+      this.setLoading(false);
+      this.render();
+    }
   }
 
   render(): void {
     this.listEl.innerHTML = '';
+
+    if (this.isLoading) {
+      this.renderLoading();
+      return;
+    }
 
     if (this.clips.length === 0) {
       const empty = document.createElement('div');
@@ -119,8 +150,8 @@ export class ClipboardManager {
     card.dataset.id = clip.id;
 
     const preview = clip.contentType === 'code'
-      ? `<pre class="clip-code-preview"><code>${escapeHtml(clip.text.slice(0, 300))}</code></pre>`
-      : `<p class="clip-text-preview">${escapeHtml(clip.text.slice(0, 280))}${clip.text.length > 280 ? '…' : ''}</p>`;
+      ? `<pre class="clip-code-preview"><code>${escapeHtml(clip.text.slice(0, CODE_PREVIEW_CHARS))}</code></pre>`
+      : `<p class="clip-text-preview">${escapeHtml(clip.text.slice(0, TEXT_PREVIEW_CHARS))}${clip.text.length > TEXT_PREVIEW_CHARS ? '…' : ''}</p>`;
 
     const sourceInfo = clip.url
       ? `<a class="clip-source-url" href="${escapeHtml(clip.url)}" target="_blank" rel="noopener">${escapeHtml(truncateUrl(clip.url))}</a>`
@@ -139,19 +170,11 @@ export class ClipboardManager {
         ${sourceInfo ? `<div class="clip-meta">${sourceInfo}</div>` : ''}
       </div>
       <div class="clip-card-actions">
-        <button class="clip-btn clip-btn-copy" title="Copy to clipboard">Copy</button>
-        <button class="clip-btn clip-btn-flashcard" title="Make Flashcard">⚡</button>
-        <button class="clip-btn clip-btn-export" title="Export">
-          <span class="export-icon">↑</span>
-          Export
+        <button class="clip-btn clip-btn-copy" title="Copy to clipboard" aria-label="Copy this clip to clipboard">Copy</button>
+        <button class="clip-btn clip-btn-flashcard ${this.flashcardClipIds.has(clip.id) ? 'active' : ''}" title="Create flashcard" aria-label="Create flashcard from this clip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
         </button>
-        <button class="clip-btn clip-btn-delete" title="Delete">Delete</button>
-      </div>
-      <div class="export-menu hidden">
-        <button class="export-option" data-export="notion">Notion</button>
-        <button class="export-option" data-export="markdown">Markdown</button>
-        <button class="export-option" data-export="json">JSON</button>
-        <button class="export-option" data-export="clipboard">Copy as Markdown</button>
+        <button class="clip-btn clip-btn-delete" title="Delete this clip" aria-label="Delete this clip">Delete</button>
       </div>
     `;
 
@@ -171,54 +194,18 @@ export class ClipboardManager {
       void this.createFlashcard(clip);
     });
 
-    const exportBtn = qs<HTMLButtonElement>('.clip-btn-export', card);
-    const exportMenu = qs<HTMLElement>('.export-menu', card);
-    
-    exportBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      exportMenu.classList.toggle('hidden');
-      document.querySelectorAll('.export-menu:not(.hidden)').forEach(menu => {
-        if (menu !== exportMenu) menu.classList.add('hidden');
-      });
-    });
-
-    document.addEventListener('click', () => {
-      exportMenu.classList.add('hidden');
-    });
-
-    exportMenu.querySelectorAll('.export-option').forEach(option => {
-      option.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const type = (option as HTMLElement).dataset.export;
-        
-        switch (type) {
-          case 'notion':
-            exportToNotion(clip);
-            break;
-          case 'markdown':
-          case 'clipboard':
-            const md = exportToMarkdown(clip);
-            void navigator.clipboard.writeText(md).then(() => {
-              const btn = qs<HTMLButtonElement>('.clip-btn-export', card);
-              btn.textContent = 'Copied!';
-              setTimeout(() => { btn.innerHTML = '<span class="export-icon">↑</span>Export'; }, 1500);
-            });
-            break;
-          case 'json':
-            const json = exportToJson(clip);
-            void navigator.clipboard.writeText(json).then(() => {
-              const btn = qs<HTMLButtonElement>('.clip-btn-export', card);
-              btn.textContent = 'JSON Copied!';
-              setTimeout(() => { btn.innerHTML = '<span class="export-icon">↑</span>Export'; }, 1500);
-            });
-            break;
-        }
-        
-        exportMenu.classList.add('hidden');
-      });
-    });
-
     return card;
+  }
+
+  private setLoading(loading: boolean): void {
+    this.isLoading = loading;
+  }
+
+  private renderLoading(): void {
+    const loading = document.createElement('div');
+    loading.className = 'clips-loading';
+    loading.innerHTML = '<div class="spinner"></div>';
+    this.listEl.appendChild(loading);
   }
 
   private async deleteClip(id: string, card: HTMLElement): Promise<void> {
@@ -259,6 +246,7 @@ export class ClipboardManager {
         type: MSG.SAVE_FLASHCARD,
         flashcard,
       });
+      this.flashcardClipIds.add(clip.id);
       this.showFlashcardCreated();
     } catch {
       // ignore
@@ -270,6 +258,6 @@ export class ClipboardManager {
     toast.className = 'flashcard-toast';
     toast.textContent = 'Flashcard created!';
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 2000);
+    setTimeout(() => toast.remove(), TOAST_DURATION_MS);
   }
 }

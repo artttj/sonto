@@ -25,6 +25,7 @@ export const MSG = {
   QUICK_SEARCH: 'SONTO_QUICK_SEARCH',
   GET_RELATED_CLIPS: 'GET_RELATED_CLIPS',
   SAVE_FLASHCARD: 'SAVE_FLASHCARD',
+  GET_FLASHCARDS: 'GET_FLASHCARDS',
 } as const;
 
 export interface CaptureClipMessage {
@@ -91,6 +92,10 @@ export interface SaveFlashcardMessage {
   flashcard: import('./types').Flashcard;
 }
 
+export interface GetFlashcardsMessage {
+  type: typeof MSG.GET_FLASHCARDS;
+}
+
 export type RuntimeMessage =
   | CaptureClipMessage
   | DeleteClipMessage
@@ -104,7 +109,8 @@ export type RuntimeMessage =
   | GetReadLaterMessage
   | UpdateDailyAlarmMessage
   | GetRelatedClipsMessage
-  | SaveFlashcardMessage;
+  | SaveFlashcardMessage
+  | GetFlashcardsMessage;
 
 export interface CaptureSuccessResult {
   ok: true;

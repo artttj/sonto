@@ -64,11 +64,12 @@
     <!-- CLIPBOARD VIEW -->
     <div id="view-clipboard" class="view hidden">
       <div class="browse-search-bar">
-        <svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+        <svg class="search-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
           <circle cx="9" cy="9" r="5" />
           <path d="M12.5 12.5L16 16" stroke-linecap="round" />
         </svg>
-        <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." />
+        <label for="clipboard-search" class="visually-hidden">Search clipboard history</label>
+        <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." aria-label="Search clipboard history" />
       </div>
 
       <div id="read-later-bar" class="read-later-bar hidden">

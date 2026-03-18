@@ -178,3 +178,12 @@ export async function getShowFeedToggle(): Promise<boolean> {
 export async function setShowFeedToggle(visible: boolean): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.SHOW_FEED_TOGGLE]: visible });
 }
+
+export async function getCollections(): Promise<import('./types').Collection[]> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.COLLECTIONS);
+  return (result[STORAGE_KEYS.COLLECTIONS] as import('./types').Collection[] | undefined) ?? [];
+}
+
+export async function saveCollections(collections: import('./types').Collection[]): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.COLLECTIONS]: collections });
+}

@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   DAILY_NOTIFICATION_TIME: 'sonto_daily_notification_time',
   FLASHCARDS: 'sonto_flashcards',
   SHOW_FEED_TOGGLE: 'sonto_show_feed_toggle',
+  COLLECTIONS: 'sonto_collections',
 } as const;
 
 export const DEFAULT_SETTINGS: AppSettings = {

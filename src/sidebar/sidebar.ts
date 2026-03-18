@@ -110,6 +110,11 @@ class SontoSidebar {
           void this.cosmosMode.start();
         }
       }
+      if (area === 'local' && changes.sonto_show_feed_toggle) {
+        const show = changes.sonto_show_feed_toggle.newValue as boolean;
+        const zdtEl = document.getElementById('zen-display-toggle');
+        if (zdtEl) zdtEl.classList.toggle('hidden', !show);
+      }
     });
 
     this.initReadLaterBar();
@@ -136,7 +141,9 @@ class SontoSidebar {
       if (!onboardingDone) {
         await setOnboardingDone();
       }
-    } catch {}
+    } catch (err) {
+      console.error('[Sonto] Failed to initialize settings:', err);
+    }
 
     if (this.zenDisplay === 'cosmos') {
       this.zenFeedEl.classList.add('hidden');

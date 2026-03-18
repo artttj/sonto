@@ -22,6 +22,7 @@ import {
   saveFlashcards,
 } from '../shared/storage';
 import { getClipsByDomain } from '../shared/embeddings/vector-store';
+import { buildTags } from '../shared/utils';
 import type { ClipItem, ClipContentType, ClipSource } from '../shared/types';
 
 function generateId(): string {
@@ -40,22 +41,14 @@ function normalizeText(text: string): string {
   return text.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-function buildTags(url: string | undefined): string[] {
-  if (!url) return [];
-  try {
-    const hostname = new URL(url).hostname.replace(/^www\./, '');
-    const main = hostname.split('.').slice(0, -1).join(' ').trim();
-    return main ? [main.toLowerCase().slice(0, 32)] : [];
-  } catch {
-    return [];
-  }
-}
-
-async function isRepeatOfLastClip(text: string): Promise<boolean> {
+async function isRepeatOfRecentClip(text: string): Promise<boolean> {
   const normalized = normalizeText(text);
   const all = await getAllClips();
   if (all.length === 0) return false;
-  return normalizeText(all[0].text) === normalized;
+
+  const CHECK_RECENT_COUNT = 5;
+  const recent = all.slice(0, CHECK_RECENT_COUNT);
+  return recent.some(clip => normalizeText(clip.text) === normalized);
 }
 
 async function enforceHistoryLimit(): Promise<void> {
@@ -79,7 +72,7 @@ async function captureClip(
   const monitoring = await getClipboardMonitoring();
   if (!monitoring && source === 'clipboard') throw new Error('Clipboard monitoring is off.');
 
-  if (await isRepeatOfLastClip(trimmed)) throw new Error('Already in clipboard history.');
+  if (await isRepeatOfRecentClip(trimmed)) throw new Error('Already in clipboard history.');
 
   const contentType = detectContentType(trimmed);
   const tags = buildTags(url);
@@ -315,6 +308,13 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
         sendResponse({ ok: false, message: 'Failed to save flashcard' });
       }
     })();
+    return true;
+  }
+
+  if (message.type === MSG.GET_FLASHCARDS) {
+    void getFlashcards()
+      .then((cards) => sendResponse({ ok: true, flashcards: cards }))
+      .catch(() => sendResponse({ ok: false, flashcards: [] }));
     return true;
   }
 });
