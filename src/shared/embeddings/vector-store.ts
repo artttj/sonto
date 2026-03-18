@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 import { DB_NAME, DB_VERSION, STORE_NAME } from '../constants';
-import type { QueryResult, Snippet } from '../types';
+import type { ClipItem } from '../types';
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -10,14 +10,14 @@ function openDb(): Promise<IDBDatabase> {
 
     req.onupgradeneeded = (event) => {
       const db = req.result;
-      let store: IDBObjectStore;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-      } else {
-        store = (event.target as IDBOpenDBRequest).transaction!.objectStore(STORE_NAME);
+      if (db.objectStoreNames.contains('snippets')) {
+        db.deleteObjectStore('snippets');
       }
-      if (!store.indexNames.contains('url')) {
-        store.createIndex('url', 'url', { unique: false });
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store.createIndex('timestamp', 'timestamp', { unique: false });
+        store.createIndex('contentType', 'contentType', { unique: false });
+        store.createIndex('pinned', 'pinned', { unique: false });
       }
     };
 
@@ -26,34 +26,21 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  return denom === 0 ? 0 : dot / denom;
-}
-
-export async function addSnippet(snippet: Snippet): Promise<void> {
+export async function addClip(clip: ClipItem): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
-    const req = tx.objectStore(STORE_NAME).put(snippet);
+    const req = tx.objectStore(STORE_NAME).put(clip);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
 }
 
-export async function updateSnippet(snippet: Snippet): Promise<void> {
-  return addSnippet(snippet);
+export async function updateClip(clip: ClipItem): Promise<void> {
+  return addClip(clip);
 }
 
-export async function deleteSnippet(id: string): Promise<void> {
+export async function deleteClip(id: string): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -63,69 +50,40 @@ export async function deleteSnippet(id: string): Promise<void> {
   });
 }
 
-export async function getAllSnippets(): Promise<Snippet[]> {
+export async function getAllClips(): Promise<ClipItem[]> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).getAll();
-    req.onsuccess = () => resolve((req.result as Snippet[]).sort((a, b) => b.timestamp - a.timestamp));
+    req.onsuccess = () =>
+      resolve((req.result as ClipItem[]).sort((a, b) => b.timestamp - a.timestamp));
     req.onerror = () => reject(req.error);
   });
 }
 
-export async function getSnippetById(id: string): Promise<Snippet | null> {
+export async function getClipById(id: string): Promise<ClipItem | null> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).get(id);
-    req.onsuccess = () => resolve((req.result as Snippet | undefined) ?? null);
+    req.onsuccess = () => resolve((req.result as ClipItem | undefined) ?? null);
     req.onerror = () => reject(req.error);
   });
 }
 
-export async function search(queryEmbedding: number[], topK: number): Promise<QueryResult[]> {
-  const snippets = await getAllSnippets();
-  return snippets
-    .map((snippet) => ({ snippet, score: cosineSimilarity(queryEmbedding, snippet.embedding) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topK);
+export async function searchClips(query: string): Promise<ClipItem[]> {
+  const all = await getAllClips();
+  const lower = query.toLowerCase();
+  return all.filter(
+    (clip) =>
+      clip.text.toLowerCase().includes(lower) ||
+      clip.title?.toLowerCase().includes(lower) ||
+      clip.url?.toLowerCase().includes(lower) ||
+      clip.tags?.some((tag) => tag.toLowerCase().includes(lower)),
+  );
 }
 
-export async function getRelatedSnippets(snippetId: string, topK = 5): Promise<QueryResult[]> {
-  const snippets = await getAllSnippets();
-  const source = snippets.find((s) => s.id === snippetId);
-  if (!source) return [];
-  return snippets
-    .filter((s) => s.id !== snippetId)
-    .map((snippet) => ({ snippet, score: cosineSimilarity(source.embedding, snippet.embedding) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topK);
-}
-
-export async function getSnippetsForDomain(domain: string, topK = 5): Promise<Snippet[]> {
-  const snippets = await getAllSnippets();
-  return snippets
-    .filter((s) => {
-      try {
-        return new URL(s.url).hostname === domain;
-      } catch {
-        return false;
-      }
-    })
-    .slice(0, topK);
-}
-
-export async function hasSnippetForUrl(url: string): Promise<boolean> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const req = tx.objectStore(STORE_NAME).index('url').count(IDBKeyRange.only(url));
-    req.onsuccess = () => resolve(req.result > 0);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-export async function clearAllSnippets(): Promise<void> {
+export async function clearAllClips(): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -135,7 +93,7 @@ export async function clearAllSnippets(): Promise<void> {
   });
 }
 
-export async function getSnippetCount(): Promise<number> {
+export async function getClipCount(): Promise<number> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -143,4 +101,11 @@ export async function getSnippetCount(): Promise<number> {
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
+}
+
+export async function getOldestNonPinnedClip(): Promise<ClipItem | null> {
+  const all = await getAllClips();
+  const nonPinned = all.filter((c) => !c.pinned);
+  if (nonPinned.length === 0) return null;
+  return nonPinned.reduce((oldest, c) => (c.timestamp < oldest.timestamp ? c : oldest));
 }

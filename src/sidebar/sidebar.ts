@@ -4,27 +4,19 @@
 import { MSG } from '../shared/messages';
 import {
   getSettings,
-  getZenDisplay,
-  saveZenDisplay,
   isOnboardingDone,
   setOnboardingDone,
-  setHistoryEnabled,
   getTheme,
   saveTheme,
   getReadLater,
-  getStoredDigest,
-  saveStoredDigest,
-  hasApiKey,
 } from '../shared/storage';
-import type { ReadLaterItem, Snippet } from '../shared/types';
-import { BrowseManager } from './browse-manager';
-import { ChatManager } from './chat-manager';
-import { CosmosMode } from './cosmos-mode';
+import type { ReadLaterItem } from '../shared/types';
+import { ClipboardManager } from './clipboard-manager';
+import type { ClipFilter } from './clipboard-manager';
 import { ZenFeed } from './zen/zen-feed';
-import { escapeHtml } from './zen/zen-content';
+import { escapeHtml } from '../shared/utils';
 
-type FilterMode = 'all' | 'manual' | 'history' | 'pinned';
-type ViewMode = 'zen' | 'browse' | 'chat';
+type ViewMode = 'zen' | 'clipboard';
 
 function qs<T extends HTMLElement>(sel: string): T {
   return document.querySelector<T>(sel)!;
@@ -32,42 +24,21 @@ function qs<T extends HTMLElement>(sel: string): T {
 
 class SontoSidebar {
   private mode: ViewMode = 'zen';
-  private snippets: Snippet[] = [];
   private language = 'en';
-  private zenDisplay: 'feed' | 'cosmos' = 'cosmos';
   private theme: 'dark' | 'light' = 'dark';
 
-  private readonly browseBtn = qs<HTMLButtonElement>('#btn-browse');
-  private readonly chatBtn = qs<HTMLButtonElement>('#btn-chat');
+  private readonly clipboardBtn = qs<HTMLButtonElement>('#btn-clipboard');
   private readonly themeBtn = qs<HTMLButtonElement>('#btn-theme');
   private readonly viewZen = qs<HTMLElement>('#view-zen');
-  private readonly viewBrowse = qs<HTMLElement>('#view-browse');
-  private readonly viewChat = qs<HTMLElement>('#view-chat');
+  private readonly viewClipboard = qs<HTMLElement>('#view-clipboard');
   private readonly zenFeedEl = qs<HTMLElement>('#zen-feed');
-  private readonly cosmosViewEl = qs<HTMLElement>('#cosmos-view');
-  private readonly snippetListEl = qs<HTMLElement>('#snippet-list');
-  private readonly searchInputEl = qs<HTMLInputElement>('#browse-search');
-  private readonly chatMessagesEl = qs<HTMLElement>('#chat-messages');
-  private readonly chatInputEl = qs<HTMLTextAreaElement>('#chat-input');
-  private readonly sendBtnEl = qs<HTMLButtonElement>('#btn-send');
-  private readonly historyBtnEl = qs<HTMLButtonElement>('#btn-chat-history');
+  private readonly clipListEl = qs<HTMLElement>('#clip-list');
+  private readonly clipCountEl = qs<HTMLElement>('#clip-count');
+  private readonly searchInputEl = qs<HTMLInputElement>('#clipboard-search');
 
-  private readonly browseManager = new BrowseManager(
-    this.snippetListEl,
-    (all, manual, history, pinned) => this.updateCounts(all, manual, history, pinned),
-    (snippet) => this.keepThreadGoingFromSnippet(snippet),
-  );
+  private readonly clipManager = new ClipboardManager(this.clipListEl, this.clipCountEl);
 
   private zenFeed: ZenFeed | null = null;
-  private cosmosMode: CosmosMode | null = null;
-
-  private readonly chatManager = new ChatManager(
-    this.chatMessagesEl,
-    this.chatInputEl,
-    this.sendBtnEl,
-    () => this.snippets,
-    this.historyBtnEl,
-  );
 
   async init(): Promise<void> {
     qs<HTMLButtonElement>('#btn-settings').addEventListener('click', () => {
@@ -75,65 +46,30 @@ class SontoSidebar {
     });
 
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
-      if (message.type === MSG.SNIPPET_ADDED) {
-        void this.browseManager.load().then(() => {
-          this.snippets = this.browseManager.getSnippets();
-          if (this.mode === 'zen' && this.zenFeed) {
-            this.zenFeed.invalidateCategories();
-            void this.zenFeed.start();
-          }
-        });
+      if (message.type === MSG.CLIP_ADDED) {
+        void this.clipManager.load();
       }
     });
 
-    const toggleMode = (mode: ViewMode) => this.setMode(this.mode === mode ? 'zen' : mode);
-    this.browseBtn.addEventListener('click', () => toggleMode('browse'));
-    this.chatBtn.addEventListener('click', () => toggleMode('chat'));
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && this.mode === 'clipboard') {
+        void this.clipManager.load();
+      }
+    });
 
+    const toggleClipboard = () => this.setMode(this.mode === 'clipboard' ? 'zen' : 'clipboard');
+    this.clipboardBtn.addEventListener('click', toggleClipboard);
     this.themeBtn.addEventListener('click', () => void this.toggleTheme());
 
-    const zdtEl = document.getElementById('zen-display-toggle')!;
-    zdtEl.querySelectorAll<HTMLButtonElement>('.zdt-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const display = btn.dataset.display as 'feed' | 'cosmos';
-        if (!display) return;
-        if (this.mode !== 'zen') this.setMode('zen');
-        if (display !== this.zenDisplay) void saveZenDisplay(display);
-      });
-    });
-
-    chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === 'local' && changes.sonto_zen_display) {
-        const newMode = changes.sonto_zen_display.newValue as string;
-        if (newMode === 'feed' || newMode === 'cosmos') {
-          void this.switchZenDisplay(newMode);
-        }
-      }
-      if (area === 'local' && changes.sonto_drip_interval_ms) {
-        const ms = changes.sonto_drip_interval_ms.newValue as number;
-        this.zenFeed?.setDripInterval(ms);
-        this.cosmosMode?.setIntervalMs(ms);
-      }
-      if (area === 'local' && changes.sonto_theme) {
-        const newTheme = changes.sonto_theme.newValue as 'dark' | 'light';
-        this.theme = newTheme;
-        this.applyTheme(newTheme);
-        if (this.cosmosMode && this.zenDisplay === 'cosmos') {
-          this.cosmosMode.stop();
-          this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
-          this.cosmosMode.refresh(this.browseManager?.getSnippets() ?? [], this.language);
-          void this.cosmosMode.start();
-        }
-      }
-    });
-
-    qs<HTMLButtonElement>('#btn-clear-all').addEventListener('click', () => void this.browseManager.clearAll());
+    qs<HTMLButtonElement>('#btn-clear-all').addEventListener('click', () =>
+      void this.clipManager.clearAll(),
+    );
 
     let searchDebounce: ReturnType<typeof setTimeout> | null = null;
-    const doSearch = () => void this.browseManager.search(this.searchInputEl.value);
+    const doSearch = () => void this.clipManager.search(this.searchInputEl.value);
     this.searchInputEl.addEventListener('input', () => {
       if (searchDebounce) clearTimeout(searchDebounce);
-      searchDebounce = setTimeout(doSearch, 500);
+      searchDebounce = setTimeout(doSearch, 400);
     });
     this.searchInputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -145,65 +81,40 @@ class SontoSidebar {
 
     document.querySelectorAll<HTMLButtonElement>('.filter-tab').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const filter = (btn.dataset.filter ?? 'all') as FilterMode;
+        const filter = (btn.dataset.filter ?? 'all') as ClipFilter;
         document.querySelectorAll('.filter-tab').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         this.searchInputEl.value = '';
-        this.browseManager.setFilter(filter);
+        this.clipManager.setFilter(filter);
       });
     });
 
     this.initExportDropdown();
     this.initReadLaterBar();
 
-    this.sendBtnEl.addEventListener('click', () => void this.chatManager.sendMessage());
-    this.chatInputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        void this.chatManager.sendMessage();
-      }
-    });
-
     try {
-      const [settings, zenDisplay, onboardingDone, theme] = await Promise.all([
+      const [settings, onboardingDone, theme] = await Promise.all([
         getSettings(),
-        getZenDisplay(),
         isOnboardingDone(),
         getTheme(),
       ]);
       this.language = settings.language ?? 'en';
-      this.zenDisplay = zenDisplay;
-      this.syncDisplayToggle(zenDisplay);
       this.theme = theme;
       this.applyTheme(theme);
-      if (!onboardingDone) this.showHistoryPrompt();
+      if (!onboardingDone) {
+        await setOnboardingDone();
+      }
     } catch {}
 
-    if (this.zenDisplay === 'cosmos') {
-      this.zenFeedEl.classList.add('hidden');
-      this.cosmosViewEl.classList.remove('hidden');
-      this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
-    } else {
-      this.zenFeed = new ZenFeed(this.zenFeedEl, {
-        language: this.language,
-        snippets: () => this.snippets,
-      });
-      await this.zenFeed.restorePastFacts();
-      this.zenFeed.refresh(this.snippets, this.language);
-    }
+    this.zenFeed = new ZenFeed(this.zenFeedEl, {
+      language: this.language,
+      snippets: () => [],
+    });
+    await this.zenFeed.restorePastFacts();
 
-    await this.browseManager.load();
-    this.snippets = this.browseManager.getSnippets();
+    await this.clipManager.load();
 
-    if (this.zenDisplay === 'cosmos') {
-      this.cosmosMode!.refresh(this.snippets, this.language);
-      void this.cosmosMode!.start();
-    } else {
-      void this.zenFeed!.start();
-    }
-
-    void this.checkDigest();
-    this.initReadingAssistant();
+    void this.zenFeed.start();
   }
 
   private initExportDropdown(): void {
@@ -218,12 +129,12 @@ class SontoSidebar {
     document.addEventListener('click', () => exportMenu.classList.add('hidden'));
 
     document.getElementById('btn-export-md')!.addEventListener('click', () => {
-      this.browseManager.exportMarkdown();
+      this.clipManager.exportMarkdown();
       exportMenu.classList.add('hidden');
     });
 
     document.getElementById('btn-export-json')!.addEventListener('click', () => {
-      this.browseManager.exportJson();
+      this.clipManager.exportJson();
       exportMenu.classList.add('hidden');
     });
   }
@@ -271,7 +182,13 @@ class SontoSidebar {
     for (const item of items) {
       const row = document.createElement('div');
       row.className = 'read-later-item';
-      const domain = (() => { try { return new URL(item.url).hostname; } catch { return item.url.slice(0, 40); } })();
+      const domain = (() => {
+        try {
+          return new URL(item.url).hostname;
+        } catch {
+          return item.url.slice(0, 40);
+        }
+      })();
       row.innerHTML = `
         <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" class="rl-link">${escapeHtml(item.title || domain)}</a>
         <button class="rl-remove" data-url="${escapeHtml(item.url)}" type="button">✕</button>
@@ -288,80 +205,6 @@ class SontoSidebar {
       });
       container.appendChild(row);
     }
-  }
-
-  private async checkDigest(): Promise<void> {
-    const digest = await getStoredDigest();
-    if (!digest) return;
-
-    const toastEl = document.getElementById('digest-toast')!;
-    const textEl = document.getElementById('digest-text')!;
-    textEl.textContent = digest;
-    toastEl.classList.remove('hidden');
-
-    document.getElementById('btn-dismiss-digest')!.addEventListener('click', async () => {
-      toastEl.classList.add('hidden');
-      await saveStoredDigest(null);
-    }, { once: true });
-  }
-
-  private initReadingAssistant(): void {
-    const bar = document.getElementById('reading-assistant-bar')!;
-    const textEl = document.getElementById('reading-assistant-text')!;
-
-    document.getElementById('btn-view-related')!.addEventListener('click', () => {
-      bar.classList.add('hidden');
-      this.setMode('browse');
-    });
-
-    document.getElementById('btn-ask-related')!.addEventListener('click', async () => {
-      try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tab?.url) return;
-        const response = await chrome.runtime.sendMessage({
-          type: MSG.GET_SNIPPETS_FOR_TAB,
-          url: tab.url,
-          title: tab.title ?? '',
-        }) as { ok: boolean; snippets?: Snippet[] };
-        if (!response?.ok || !response.snippets?.length) return;
-        const prompt = `What have I already saved that matters for ${tab.title || 'this page'}? Focus on the related items for ${tab.url}.`;
-        this.keepThreadGoing(prompt);
-      } catch {}
-    });
-
-    document.getElementById('btn-dismiss-ra')!.addEventListener('click', () => {
-      bar.classList.add('hidden');
-    });
-
-    const refresh = async () => {
-      try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tab?.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
-          bar.classList.add('hidden');
-          return;
-        }
-
-        const response = await chrome.runtime.sendMessage({
-          type: MSG.GET_SNIPPETS_FOR_TAB,
-          url: tab.url,
-          title: tab.title ?? '',
-        }) as { ok: boolean; snippets?: Snippet[] };
-
-        if (!response?.ok || !response.snippets?.length) {
-          bar.classList.add('hidden');
-          return;
-        }
-
-        const count = response.snippets.length;
-        textEl.textContent = `${count} related save${count > 1 ? 's' : ''} for this page`;
-        bar.classList.remove('hidden');
-      } catch {
-        bar.classList.add('hidden');
-      }
-    };
-
-    void refresh();
-    chrome.tabs.onActivated.addListener(() => void refresh());
   }
 
   private async toggleTheme(): Promise<void> {
@@ -383,114 +226,19 @@ class SontoSidebar {
     }
   }
 
-  private showHistoryPrompt(): void {
-    const prompt = qs<HTMLElement>('#history-prompt');
-    prompt.classList.remove('hidden');
-
-    qs<HTMLButtonElement>('#history-prompt-yes').addEventListener('click', () => {
-      void (async () => {
-        const keyConfigured = await hasApiKey();
-        await Promise.all([setHistoryEnabled(true), setOnboardingDone()]);
-        prompt.classList.add('hidden');
-        
-        if (!keyConfigured) {
-          const gotoSettings = confirm('History sync requires an AI API key (OpenAI or Gemini) to generate embeddings. Would you like to open Settings to add one?');
-          if (gotoSettings) {
-            await chrome.runtime.sendMessage({ type: MSG.OPEN_SETTINGS });
-          }
-        } else {
-          await chrome.runtime.sendMessage({ type: MSG.SYNC_HISTORY });
-        }
-      })();
-    });
-
-    qs<HTMLButtonElement>('#history-prompt-no').addEventListener('click', () => {
-      void (async () => {
-        await Promise.all([setHistoryEnabled(false), setOnboardingDone()]);
-        prompt.classList.add('hidden');
-      })();
-    });
-  }
-
-  private async switchZenDisplay(display: 'feed' | 'cosmos'): Promise<void> {
-    if (display === this.zenDisplay) return;
-
-    this.zenFeed?.stop();
-    this.cosmosMode?.stop();
-    this.zenDisplay = display;
-    this.syncDisplayToggle(display);
-
-    if (display === 'cosmos') {
-      this.zenFeedEl.classList.add('hidden');
-      this.cosmosViewEl.classList.remove('hidden');
-      this.zenFeed = null;
-      this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
-      this.cosmosMode.refresh(this.snippets, this.language);
-      if (this.mode === 'zen') void this.cosmosMode.start();
-    } else {
-      this.cosmosViewEl.classList.add('hidden');
-      this.zenFeedEl.classList.remove('hidden');
-      this.cosmosMode = null;
-      this.zenFeed = new ZenFeed(this.zenFeedEl, {
-        language: this.language,
-        snippets: () => this.snippets,
-      });
-      await this.zenFeed.restorePastFacts();
-      this.zenFeed.refresh(this.snippets, this.language);
-      if (this.mode === 'zen') void this.zenFeed.start();
-    }
-  }
-
-  private syncDisplayToggle(display: 'feed' | 'cosmos'): void {
-    document.querySelectorAll<HTMLButtonElement>('.zdt-btn').forEach(btn => {
-      const active = btn.dataset.display === display;
-      btn.classList.toggle('active', active);
-      btn.setAttribute('aria-selected', String(active));
-    });
-  }
-
   private setMode(mode: ViewMode): void {
     this.mode = mode;
-    this.browseBtn.classList.toggle('active', mode === 'browse');
-    this.chatBtn.classList.toggle('active', mode === 'chat');
-    this.browseBtn.setAttribute('aria-selected', String(mode === 'browse'));
-    this.chatBtn.setAttribute('aria-selected', String(mode === 'chat'));
+    this.clipboardBtn.classList.toggle('active', mode === 'clipboard');
+    this.clipboardBtn.setAttribute('aria-selected', String(mode === 'clipboard'));
     this.viewZen.classList.toggle('hidden', mode !== 'zen');
-    this.viewBrowse.classList.toggle('hidden', mode !== 'browse');
-    this.viewChat.classList.toggle('hidden', mode !== 'chat');
+    this.viewClipboard.classList.toggle('hidden', mode !== 'clipboard');
 
     if (mode === 'zen') {
-      if (this.zenDisplay === 'cosmos') {
-        void this.cosmosMode?.start();
-      } else {
-        void this.zenFeed?.start();
-      }
+      void this.zenFeed?.start();
     } else {
       this.zenFeed?.stop();
-      this.cosmosMode?.stop();
+      void this.clipManager.load();
     }
-  }
-
-  private keepThreadGoingFromSnippet(snippet: Snippet): void {
-    const label = snippet.title || snippet.text.slice(0, 80) || 'this saved snippet';
-    const prompt = `Keep this thread going from my saved snippet about "${label}".`;
-    this.keepThreadGoing(prompt);
-  }
-
-  private keepThreadGoing(prompt: string): void {
-    this.setMode('chat');
-    this.chatManager.draftQuestion(prompt);
-  }
-
-  private updateCounts(all: number, manual: number, history: number, pinned: number): void {
-    const setCount = (id: string, val: number) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = String(val);
-    };
-    setCount('count-all', all);
-    setCount('count-manual', manual);
-    setCount('count-history', history);
-    setCount('count-pinned', pinned);
   }
 }
 

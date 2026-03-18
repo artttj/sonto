@@ -18,20 +18,13 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-tab="feed" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="2" width="12" height="16" rx="2"/>
-            <path d="M7 6h6M7 9.5h6M7 13h4"/>
+        <button class="nav-item active" data-tab="clipboard" type="button">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="2" width="8" height="4" rx="1"/>
+            <path d="M6 4H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1"/>
+            <path d="M8 11h4M8 14h2"/>
           </svg>
-          <span data-i18n="nav_feed">Feed</span>
-        </button>
-
-        <button class="nav-item" data-tab="ai" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M4 14.5a2.5 2.5 0 0 1 0-5h1a4 4 0 0 1 7.9-.8A3.5 3.5 0 0 1 16 12a3.5 3.5 0 0 1-3.5 3.5H4z"/>
-          </svg>
-          <span data-i18n="nav_ai">AI</span>
-          <span id="nav-ai-warning" class="nav-warning hidden" title="No API keys configured">!</span>
+          <span>Clipboard</span>
         </button>
 
         <button class="nav-item" data-tab="data" type="button">
@@ -41,22 +34,6 @@
             <path d="M3 10c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/>
           </svg>
           <span>Data</span>
-        </button>
-
-        <button class="nav-item" data-tab="privacy" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M10 2L4 5v5c0 4.4 2.6 8 6 9 3.4-1 6-4.6 6-9V5l-6-3z"/>
-          </svg>
-          <span data-i18n="nav_privacy">Privacy</span>
-        </button>
-
-        <button class="nav-item" data-tab="how" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="10" cy="10" r="7.5"/>
-            <path d="M8 8a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3"/>
-            <circle cx="10" cy="15" r="0.8" fill="currentColor" stroke="none"/>
-          </svg>
-          <span data-i18n="nav_how">How It Works</span>
         </button>
 
         <button class="nav-item" data-tab="about" type="button">
@@ -71,17 +48,19 @@
     </aside>
 
     <main class="tab-content">
-      <!-- ═══ FEED ═══════════════════════════════════════════════════════ -->
-      <section id="tab-feed" class="tab-panel">
+      <!-- CLIPBOARD -->
+      <section id="tab-clipboard" class="tab-panel">
         <div class="panel-header">
-          <h1 data-i18n="feed_heading">Feed</h1>
+          <h1>Clipboard</h1>
+          <p>Configure how Sonto captures and stores clipboard history.</p>
         </div>
 
         <div class="setting-group">
+          <div class="setting-group-header" data-i18n="general_language">Language</div>
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title" data-i18n="general_language">Language</div>
-              <div class="setting-desc" data-i18n="general_language_desc">Preferred response language</div>
+              <div class="setting-title">Interface language</div>
+              <div class="setting-desc">Language used for the UI</div>
             </div>
             <div class="segmented" id="language-segmented">
               <button class="seg-btn" data-value="en" type="button">English</button>
@@ -91,220 +70,82 @@
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header">Zen Mode</div>
+          <div class="setting-group-header">Capture</div>
 
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title" data-i18n="zen_display_title">Display</div>
-              <div class="setting-desc" data-i18n="zen_display_desc">Feed scrolls continuously. Cosmos shows one message with a spirograph between each.</div>
-            </div>
-            <div class="segmented" id="zen-display-segmented">
-              <button class="seg-btn" data-value="feed" type="button">Feed</button>
-              <button class="seg-btn active" data-value="cosmos" type="button">Cosmos</button>
-            </div>
-          </div>
-
-          <div class="setting-row setting-row--refresh">
-            <div class="setting-label">
-              <div class="setting-title" data-i18n="zen_refresh_title">Speed</div>
-              <div class="setting-desc" data-i18n="zen_refresh_desc">Seconds between each new item in the feed</div>
-            </div>
-            <div class="drip-interval-control">
-              <input type="range" id="drip-interval-slider" min="5" max="100" step="5" value="30" />
-              <div class="drip-labels">
-                <span>5s</span>
-                <span id="drip-current-value">30s</span>
-                <span>100s</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-label">
-              <div class="setting-title">Browser history</div>
-              <div class="setting-desc">Sonto reads page titles from your last 30 days of browsing to find topics you care about. Only titles are used, never full URLs or page content. Everything stays in your browser. The only time data leaves your device is a one-time embedding call per title so it can match your searches. You can delete any history snippet from the sidebar whenever you want.</div>
+              <div class="setting-title">Auto-capture on copy</div>
+              <div class="setting-desc">Automatically save text whenever you copy on any webpage. Disable to capture only via shortcut or right-click.</div>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" id="toggle-history-enabled" />
+              <input type="checkbox" id="clipboard-monitoring-toggle" />
               <span class="toggle-track"></span>
             </label>
+            <span id="status-monitoring" class="saved-msg hidden">Saved</span>
           </div>
 
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title">Sync Status</div>
-              <div class="setting-desc" id="history-sync-status-text">Checking status...</div>
+              <div class="setting-title">Max history size</div>
+              <div class="setting-desc">Maximum number of entries to keep. Oldest non-pinned entries are removed when the limit is reached. (10–5000)</div>
             </div>
-            <button id="btn-sync-history-now" class="btn btn-primary btn-sm" type="button">Sync Now</button>
+            <input type="number" id="max-history-size" class="setting-input-sm" min="10" max="5000" step="10" value="500" />
+            <span id="status-max-size" class="saved-msg hidden">Saved</span>
           </div>
 
-          <div class="setting-row setting-row--stacked">
-            <div class="setting-label">
-              <div class="setting-title">History domain rules</div>
-              <div class="setting-desc">Choose whether history sync covers all sites except blocked ones, or only the domains you explicitly allow.</div>
-            </div>
-            <div class="history-domain-controls">
-              <div class="segmented" id="history-domain-mode-segmented">
-                <button class="seg-btn" data-value="all" type="button">Allow all</button>
-                <button class="seg-btn" data-value="allowlist" type="button">Allow list only</button>
-              </div>
-              <div class="history-domain-grid">
-                <div id="history-blocked-col" class="history-domain-column">
-                  <div class="history-domain-heading">Blocked domains</div>
-                  <div id="history-blocked-list" class="history-domain-list"></div>
-                  <div class="rss-add-row">
-                    <input id="history-blocked-input" type="text" placeholder="example.com" class="rss-url-input" />
-                    <button id="history-blocked-add-btn" class="btn btn-primary btn-sm" type="button">Block</button>
-                  </div>
-                </div>
-                <div id="history-allowed-col" class="history-domain-column">
-                  <div class="history-domain-heading">Allowed domains</div>
-                  <div id="history-allowed-list" class="history-domain-list"></div>
-                  <div class="rss-add-row">
-                    <input id="history-allowed-input" type="text" placeholder="example.com" class="rss-url-input" />
-                    <button id="history-allowed-add-btn" class="btn btn-primary btn-sm" type="button">Allow</button>
-                  </div>
-                </div>
-              </div>
-              <p id="history-domain-status" class="setting-hint" style="margin-top:8px"></p>
-              <p id="history-domain-error" class="setting-hint" style="display:none;color:var(--c-error)"></p>
-            </div>
-          </div>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-group-header" data-i18n="zen_sources_title">Sources</div>
-          <div class="zen-sources-body">
-            <p class="zen-sources-desc" data-i18n="zen_sources_desc">Choose which sources appear in your Zen feed. All are enabled by default.</p>
-            <div id="zen-sources-list"></div>
-          </div>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-group-header">Custom RSS Feeds</div>
-          <div class="setting-body">
-            <div id="rss-feeds-list"></div>
-            <div class="rss-add-row">
-              <input id="rss-url-input" type="url" placeholder="https://example.com/feed.xml" class="rss-url-input" />
-              <button id="rss-add-btn" class="btn btn-primary btn-sm" type="button">Add Feed</button>
-            </div>
-            <p class="setting-hint rss-feed-error" id="rss-feed-error" style="display:none;color:var(--c-error)"></p>
-          </div>
-        </div>
-
-        <div class="setting-group">
-          <div class="setting-group-header">Custom JSON API Sources</div>
-          <div class="setting-body">
-            <p class="setting-hint">Add any JSON API endpoint that returns items. The endpoint must return an array or <code>{"items": [...]}</code> where each item has: <code>text</code>, optional <code>image</code>, optional <code>link</code>, optional <code>attribution</code>.</p>
-            <div id="json-sources-list"></div>
-            <div class="rss-add-row">
-              <input id="json-source-url-input" type="url" placeholder="https://api.example.com/items" class="rss-url-input" />
-              <input id="json-source-label-input" type="text" placeholder="Label (optional)" class="rss-url-input" style="max-width:140px" />
-              <button id="json-source-add-btn" class="btn btn-primary btn-sm" type="button">Add Source</button>
-            </div>
-            <p class="setting-hint" id="json-source-error" style="display:none;color:var(--c-error)"></p>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══ AI ═════════════════════════════════════════════════════════ -->
-      <section id="tab-ai" class="tab-panel hidden">
-        <div class="panel-header">
-          <h1 data-i18n="ai_heading">AI</h1>
-        </div>
-
-        <div class="setting-group">
           <div class="setting-row">
             <div class="setting-label">
-              <div class="setting-title" data-i18n="general_provider">AI Provider</div>
-              <div class="setting-desc" data-i18n="general_provider_desc">Which service answers your questions</div>
+              <div class="setting-title">Entries stored</div>
             </div>
-            <div class="segmented" id="provider-segmented">
-              <button class="seg-btn" data-value="openai" type="button">OpenAI</button>
-              <button class="seg-btn" data-value="gemini" type="button">Gemini</button>
-            </div>
+            <span id="clip-count-display" class="setting-value">—</span>
           </div>
         </div>
 
-        <div class="privacy-notice" role="note">
-          <div class="privacy-notice-title">
-            <svg class="privacy-notice-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M10 2.5L1.5 17h17L10 2.5z"/>
-              <line x1="10" y1="8" x2="10" y2="12"/>
-              <circle cx="10" cy="15" r="0.6" fill="currentColor" stroke="none"/>
-            </svg>
-            <span data-i18n="ai_notice_title">Privacy & Data Notice</span>
-          </div>
-          <p data-i18n="ai_notice_p1">When you ask a question, relevant snippet text is sent to your chosen AI provider for a response. Embeddings are generated via API (OpenAI or Gemini) when saving snippets.</p>
-          <ul>
-            <li data-i18n-html="ai_notice_no_storage"><strong>No storage:</strong> This extension stores nothing on any server. API keys and all data stay on your device.</li>
-            <li data-i18n-html="ai_notice_transfer"><strong>Data transfer:</strong> Snippet text leaves your device only when generating embeddings or asking questions. It is processed by your chosen AI provider (OpenAI or Google).</li>
-            <li data-i18n-html="ai_notice_personal"><strong>Personal info:</strong> Avoid saving pages with sensitive health, financial, or private credentials.</li>
-            <li data-i18n-html="ai_notice_responsibility"><strong>Your responsibility:</strong> You are responsible for ensuring compliance with GDPR, CCPA, and other data protection regulations.</li>
-          </ul>
-          <p class="privacy-notice-links">
-            <strong data-i18n="ai_notice_policies">Privacy Policies:</strong>
-            <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI</a> ·
-            <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Google AI</a>
-          </p>
-        </div>
-
-        <div class="provider-card">
-          <div class="provider-header">
-            <div class="provider-info">
-              <div class="provider-name">OpenAI</div>
-              <select id="openai-model" class="provider-model-select setting-select setting-select--sm"></select>
+        <div class="setting-group">
+          <div class="setting-group-header">Keyboard Shortcuts</div>
+          <div class="shortcut-list">
+            <div class="shortcut-row">
+              <div class="shortcut-keys">
+                <span class="key">Alt</span>
+                <span class="key-plus">+</span>
+                <span class="key">Shift</span>
+                <span class="key-plus">+</span>
+                <span class="key">S</span>
+              </div>
+              <div class="shortcut-info">
+                <div class="shortcut-action">Open Sidebar</div>
+              </div>
             </div>
-            <span id="badge-openai" class="status-badge unconfigured">Not Configured</span>
-          </div>
-          <div class="provider-key-row">
-            <input id="openai-key" type="password" class="key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" />
-          </div>
-          <div class="provider-footer">
-            <span class="provider-hint"><span data-i18n="ai_sent_only">Sent only to</span> <code>api.openai.com</code></span>
-            <div class="provider-btns">
-              <button id="btn-save-openai" class="btn btn-primary btn-sm" type="button" data-i18n="ai_save">Save</button>
-              <button id="btn-clear-openai" class="btn btn-ghost btn-sm" type="button" data-i18n="ai_clear">Clear</button>
+            <div class="shortcut-row">
+              <div class="shortcut-keys">
+                <span class="key">Alt</span>
+                <span class="key-plus">+</span>
+                <span class="key">Shift</span>
+                <span class="key-plus">+</span>
+                <span class="key">C</span>
+              </div>
+              <div class="shortcut-info">
+                <div class="shortcut-action">Capture Selection</div>
+                <div class="shortcut-label">Saves selected text to clipboard history</div>
+              </div>
             </div>
           </div>
         </div>
-
-        <div class="provider-card">
-          <div class="provider-header">
-            <div class="provider-info">
-              <div class="provider-name">Gemini</div>
-              <select id="gemini-model" class="provider-model-select setting-select setting-select--sm"></select>
-            </div>
-            <span id="badge-gemini" class="status-badge unconfigured">Not Configured</span>
-          </div>
-          <div class="provider-key-row">
-            <input id="gemini-key" type="password" class="key-input" placeholder="AIza..." autocomplete="off" spellcheck="false" />
-          </div>
-          <div class="provider-footer">
-            <span class="provider-hint"><span data-i18n="ai_sent_only">Sent only to</span> <code>generativelanguage.googleapis.com</code></span>
-            <div class="provider-btns">
-              <button id="btn-save-gemini" class="btn btn-primary btn-sm" type="button" data-i18n="ai_save">Save</button>
-              <button id="btn-clear-gemini" class="btn btn-ghost btn-sm" type="button" data-i18n="ai_clear">Clear</button>
-            </div>
-          </div>
-        </div>
-
-        <span id="keys-status" class="saved-msg hidden" data-i18n="general_saved">Saved</span>
       </section>
 
-      <!-- ═══ DATA ═══════════════════════════════════════════════════════ -->
+      <!-- DATA -->
       <section id="tab-data" class="tab-panel hidden">
         <div class="panel-header">
           <h1>Data</h1>
-          <p>Export, import, and manage your saved data.</p>
+          <p>Export, import, and manage your clipboard history.</p>
         </div>
 
         <div class="setting-group">
           <div class="setting-group-header">Export</div>
           <div class="setting-body">
-            <p class="setting-hint" style="margin-top:0">Download all your snippets, chat sessions, and settings as a JSON file.</p>
+            <p class="setting-hint" style="margin-top:0">Download all your clipboard entries and settings as a JSON file.</p>
             <div style="margin-top:12px">
-              <button id="btn-export" class="btn btn-primary btn-sm" type="button">Export Backup</button>
+              <button id="btn-export-backup" class="btn btn-primary btn-sm" type="button">Export Backup</button>
               <span id="export-status" class="saved-msg hidden">Downloaded</span>
             </div>
           </div>
@@ -317,186 +158,41 @@
             <div class="setting-row" style="padding:10px 0 0;border:none">
               <div class="setting-label">
                 <div class="setting-title">Merge mode</div>
-                <div class="setting-desc">Keep existing snippets and add imported ones on top</div>
+                <div class="setting-desc">Keep existing entries and add imported ones on top</div>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="import-merge-toggle" checked />
+                <input type="checkbox" id="import-merge" checked />
                 <span class="toggle-track"></span>
               </label>
             </div>
             <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
-              <button id="btn-import" class="btn btn-ghost btn-sm" type="button">Choose File</button>
-              <input id="import-file-input" type="file" accept=".json" style="display:none" />
-              <span id="import-status" class="saved-msg hidden"></span>
+              <button id="btn-import-backup" class="btn btn-ghost btn-sm" type="button">Choose File</button>
+              <input id="import-file" type="file" accept=".json" style="display:none" />
+              <span id="status-import" class="saved-msg hidden">Imported</span>
             </div>
-            <p class="setting-hint import-error" id="import-error" style="display:none;color:var(--c-error)"></p>
           </div>
         </div>
 
         <div class="setting-group">
           <div class="setting-group-header">Danger Zone</div>
           <div class="setting-body">
-            <p class="setting-hint" style="margin-top:0">Permanently delete all saved snippets. This cannot be undone.</p>
+            <p class="setting-hint" style="margin-top:0">
+              <span id="snippet-count-data">0</span> entries stored.
+              Permanently deletes all clipboard entries. This cannot be undone.
+            </p>
             <div style="margin-top:12px">
-              <button id="btn-clear-all" class="btn btn-danger" type="button">Delete All Snippets</button>
+              <button id="btn-delete-all" class="btn btn-danger" type="button">Delete All</button>
+              <span id="status-delete" class="saved-msg hidden">Deleted</span>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ═══ PRIVACY ════════════════════════════════════════════════════ -->
-      <section id="tab-privacy" class="tab-panel hidden">
-        <div class="panel-header">
-          <h1 data-i18n="privacy_heading">Privacy</h1>
-          <p data-i18n="privacy_desc">How Sonto handles your data.</p>
-        </div>
-
-        <div class="privacy-sections">
-          <div class="privacy-section">
-            <div class="privacy-section-heading" data-i18n="privacy_collection_heading">Data Collection</div>
-            <p data-i18n="privacy_collection">Sonto collects no personal data. There are no accounts, no analytics, no telemetry, and no tracking of any kind. The extension is fully open source.</p>
-          </div>
-
-          <div class="privacy-section">
-            <div class="privacy-section-heading" data-i18n="privacy_storage_heading">Local Storage</div>
-            <p data-i18n-html="privacy_storage">All saved snippets, their vector embeddings, and your settings are stored locally in your browser using IndexedDB and <code>chrome.storage.local</code>. No data is sent to any Sonto server because there is no Sonto server.</p>
-          </div>
-
-          <div class="privacy-section">
-            <div class="privacy-section-heading" data-i18n="privacy_keys_heading">API Keys</div>
-            <p data-i18n="privacy_keys">Your API keys are stored locally on your device. They are only transmitted to the corresponding provider's API endpoint for authentication. Sonto never reads, logs, or forwards your keys anywhere else.</p>
-          </div>
-
-          <div class="privacy-section">
-            <div class="privacy-section-heading" data-i18n="privacy_embeddings_heading">Embeddings</div>
-            <p data-i18n="privacy_embeddings">When you save a snippet or sync browser history, the text is sent to your configured embedding provider (OpenAI or Gemini) to generate a vector representation. This is a one-time operation per snippet. The text is not stored by the provider beyond what their API terms specify.</p>
-          </div>
-
-          <div class="privacy-section">
-            <div class="privacy-section-heading" data-i18n="privacy_chat_heading">AI Chat</div>
-            <p data-i18n="privacy_chat">When you ask a question in the sidebar, the query and relevant snippet context are sent to your selected AI provider. The provider generates a response and returns it. Review their privacy policies:</p>
-            <ul class="privacy-provider-list">
-              <li><a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener">OpenAI Privacy Policy</a></li>
-              <li><a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Google AI Terms of Service</a></li>
-            </ul>
-          </div>
-
-          <div class="privacy-section">
-            <div class="privacy-section-heading" data-i18n="privacy_history_heading">Browser History</div>
-            <p data-i18n="privacy_history">Sonto reads your browser history (last 30 days) to automatically save page titles as searchable snippets. This data never leaves your browser except for the embedding API call. You can delete any history snippet from the sidebar at any time.</p>
-          </div>
-
-          <div class="privacy-section">
-            <div class="privacy-section-heading" data-i18n="privacy_responsibility_heading">Your Responsibility</div>
-            <p data-i18n="privacy_responsibility">You are responsible for the data you save and the API keys you provide. If you save sensitive content and then ask a question about it, that content will be sent to your chosen AI provider. Consider this before saving confidential information.</p>
-          </div>
-
-          <div class="privacy-section">
-            <div class="privacy-section-heading" data-i18n="privacy_content_heading">Third-Party Content</div>
-            <p data-i18n="privacy_content">The Zen feed displays content from public APIs (museums, news aggregators, quote services, NASA, and others). Sonto does not own, curate, or filter this content. The respective providers are responsible for the accuracy and appropriateness of their data. Use at your own discretion.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══ HOW IT WORKS ═════════════════════════════════════════════ -->
-      <section id="tab-how" class="tab-panel hidden">
-        <div class="panel-header">
-          <h1 data-i18n="how_heading">How It Works</h1>
-          <p data-i18n="how_desc">Sonto uses Retrieval-Augmented Generation (RAG) to answer your questions from saved snippets.</p>
-        </div>
-
-        <div class="rag-flow">
-          <div class="rag-step">
-            <div class="rag-step-number">1</div>
-            <div class="rag-step-content">
-              <div class="rag-step-title" data-i18n="how_step1_title">Capture</div>
-              <div class="rag-step-desc" data-i18n-html="how_step1_desc">You highlight text on any webpage and save it via keyboard shortcut (<code>Alt+Shift+C</code>) or right-click context menu. Browser history is also synced automatically every 30 minutes.</div>
-            </div>
-          </div>
-
-          <div class="rag-step">
-            <div class="rag-step-number">2</div>
-            <div class="rag-step-content">
-              <div class="rag-step-title" data-i18n="how_step2_title">Embed</div>
-              <div class="rag-step-desc" data-i18n="how_step2_desc">Each snippet is converted into a vector embedding (a list of numbers representing its meaning). Sonto uses your API key to call one of these models:</div>
-              <div class="model-cards">
-                <div class="model-card">
-                  <div class="model-card-name">text-embedding-3-small</div>
-                  <div class="model-card-meta">OpenAI &middot; 1536 dimensions</div>
-                  <div class="model-card-note" data-i18n="how_model_openai_note">Used when an OpenAI key is configured. Fast, cheap (~$0.02 per 1M tokens), high quality.</div>
-                </div>
-                <div class="model-card">
-                  <div class="model-card-name">text-embedding-004</div>
-                  <div class="model-card-meta">Google &middot; 768 dimensions</div>
-                  <div class="model-card-note" data-i18n="how_model_gemini_note">Fallback when only a Gemini key is configured. Free tier available.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="rag-step">
-            <div class="rag-step-number">3</div>
-            <div class="rag-step-content">
-              <div class="rag-step-title" data-i18n="how_step3_title">Store</div>
-              <div class="rag-step-desc" data-i18n="how_step3_desc">Embeddings and snippet text are stored locally in your browser's IndexedDB. Nothing leaves your device at this point.</div>
-            </div>
-          </div>
-
-          <div class="rag-step">
-            <div class="rag-step-number">4</div>
-            <div class="rag-step-content">
-              <div class="rag-step-title" data-i18n="how_step4_title">Search</div>
-              <div class="rag-step-desc" data-i18n="how_step4_desc">When you ask a question, your query is embedded with the same model. Sonto finds the most relevant snippets using cosine similarity on the stored vectors.</div>
-            </div>
-          </div>
-
-          <div class="rag-step">
-            <div class="rag-step-number">5</div>
-            <div class="rag-step-content">
-              <div class="rag-step-title" data-i18n="how_step5_title">Answer</div>
-              <div class="rag-step-desc" data-i18n="how_step5_desc">The relevant snippets are sent as context along with your question to the selected chat model (OpenAI or Gemini). The AI generates an answer grounded in your saved data.</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="help-section" style="margin-top: 24px;">
-          <div class="help-heading" data-i18n="how_shortcuts">Keyboard Shortcuts</div>
-          <div class="shortcut-list">
-            <div class="shortcut-row">
-              <div class="shortcut-keys">
-                <span class="key">Alt</span>
-                <span class="key-plus">+</span>
-                <span class="key">Shift</span>
-                <span class="key-plus">+</span>
-                <span class="key">S</span>
-              </div>
-              <div class="shortcut-info">
-                <div class="shortcut-action" data-i18n="how_shortcut_open">Open Sidebar</div>
-                <div class="shortcut-label" data-i18n="how_shortcut_open_desc">Opens the Sonto side panel</div>
-              </div>
-            </div>
-            <div class="shortcut-row">
-              <div class="shortcut-keys">
-                <span class="key">Alt</span>
-                <span class="key-plus">+</span>
-                <span class="key">Shift</span>
-                <span class="key-plus">+</span>
-                <span class="key">C</span>
-              </div>
-              <div class="shortcut-info">
-                <div class="shortcut-action" data-i18n="how_shortcut_capture">Capture Selection</div>
-                <div class="shortcut-label" data-i18n="how_shortcut_capture_desc">Saves highlighted text to your memory</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══ ABOUT ════════════════════════════════════════════════════ -->
+      <!-- ABOUT -->
       <section id="tab-about" class="tab-panel hidden">
         <div class="panel-header">
           <h1 data-i18n="about_heading">About Sonto</h1>
-          <p data-i18n="about_desc">Your local second brain for the browser.</p>
+          <p>Zen feed + clipboard manager. No accounts, no backend, no tracking.</p>
         </div>
 
         <div class="about-block">
@@ -511,6 +207,17 @@
           <div class="about-row">
             <span class="about-label" data-i18n="about_license">License</span>
             <span class="about-value" data-i18n="about_license_text">MIT — free to use and modify.</span>
+          </div>
+        </div>
+
+        <div class="privacy-sections" style="margin-top:24px">
+          <div class="privacy-section">
+            <div class="privacy-section-heading">Privacy</div>
+            <p>All clipboard entries are stored locally in your browser using IndexedDB. Nothing is sent to any server. No accounts, no telemetry, no analytics.</p>
+          </div>
+          <div class="privacy-section">
+            <div class="privacy-section-heading">Third-Party Content</div>
+            <p>The Zen feed displays content from public APIs (museums, news aggregators, quote services, and others). Sonto does not own or curate this content.</p>
           </div>
         </div>
 

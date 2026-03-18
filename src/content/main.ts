@@ -49,18 +49,73 @@ function showToast(message: string, isError = false): void {
   setTimeout(() => host.remove(), 2500);
 }
 
-function extractSurroundingContext(selection: Selection): string {
-  const range = selection.getRangeAt(0);
-  const container = range.commonAncestorContainer;
-  const el = container.nodeType === Node.TEXT_NODE ? container.parentElement : container as Element;
-  if (!el) return '';
+let monitoringEnabled = true;
+let lastKnownClipboard = '';
+let pendingPollTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const block = el.closest('p, li, blockquote, td, article, section, div') ?? el;
-  const text = (block.textContent ?? '').replace(/\s+/g, ' ').trim();
-  const selected = selection.toString().trim();
+void chrome.storage.local.get('sonto_clipboard_monitoring').then((result) => {
+  monitoringEnabled = (result['sonto_clipboard_monitoring'] as boolean | undefined) ?? true;
+});
 
-  if (text === selected || text.length < selected.length + 20) return '';
-  return text.slice(0, 500);
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && 'sonto_clipboard_monitoring' in changes) {
+    monitoringEnabled = (changes['sonto_clipboard_monitoring'].newValue as boolean | undefined) ?? true;
+  }
+});
+
+function sendClip(text: string, source: 'clipboard' | 'shortcut'): void {
+  chrome.runtime.sendMessage(
+    {
+      type: MSG.CAPTURE_CLIP,
+      text,
+      url: location.href,
+      title: document.title,
+      source,
+    },
+    (response) => {
+      if (chrome.runtime.lastError) return;
+      if (source === 'shortcut') {
+        if (response?.ok) {
+          showToast('Saved to clipboard history.');
+        } else {
+          showToast(response?.message ?? 'Save failed.', true);
+        }
+      }
+    },
+  );
+}
+
+function triggerCapture(): void {
+  const text = window.getSelection()?.toString().trim() ?? '';
+
+  if (!text) {
+    showToast('Select some text first.', true);
+    return;
+  }
+
+  sendClip(text, 'shortcut');
+}
+
+async function pollClipboard(): Promise<void> {
+  if (!monitoringEnabled) return;
+  if (!document.hasFocus()) return;
+
+  try {
+    const text = (await navigator.clipboard.readText()).trim();
+    if (!text || text === lastKnownClipboard) return;
+    lastKnownClipboard = text;
+    sendClip(text, 'clipboard');
+  } catch {
+    // clipboard read permission denied or not available — ignore
+  }
+}
+
+function schedulePoll(): void {
+  if (pendingPollTimer !== null) return;
+  pendingPollTimer = setTimeout(() => {
+    pendingPollTimer = null;
+    void pollClipboard();
+  }, 150);
 }
 
 chrome.runtime.onMessage.addListener((message) => {
@@ -72,36 +127,31 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
-function triggerCapture(): void {
-  const selection = window.getSelection();
-  const text = selection?.toString().trim() ?? '';
+// Ctrl+C / keyboard copy — most reliable path
+document.addEventListener('copy', (e) => {
+  if (!monitoringEnabled) return;
 
-  if (!text) {
-    showToast('Select some text first.', true);
-    return;
-  }
+  const text =
+    (e.clipboardData?.getData('text/plain') ?? '').trim() ||
+    window.getSelection()?.toString().trim() ||
+    '';
 
-  let context: string | undefined;
-  if (selection && selection.rangeCount > 0) {
-    const surrounding = extractSurroundingContext(selection);
-    if (surrounding && surrounding !== text) context = surrounding;
-  }
+  if (!text) return;
 
-  chrome.runtime.sendMessage({
-    type: MSG.CAPTURE_SNIPPET,
-    text,
-    url: location.href,
-    title: document.title,
-    ...(context ? { context } : {}),
-  }, (response) => {
-    if (chrome.runtime.lastError) {
-      showToast('Could not save. Try again.', true);
-      return;
-    }
-    if (response?.ok) {
-      showToast('Saved to Sonto.');
-    } else {
-      showToast(response?.message ?? 'Save failed.', true);
-    }
-  });
-}
+  lastKnownClipboard = text;
+  sendClip(text, 'clipboard');
+});
+
+// Right-click context menu "Copy" does not fire the copy event.
+// Track selection text and poll the clipboard briefly after mouseup/keyup
+// so we catch context menu copies without polling constantly.
+document.addEventListener('mouseup', () => {
+  const selected = window.getSelection()?.toString().trim() ?? '';
+  if (selected) schedulePoll();
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'c' && (e.ctrlKey || e.metaKey)) return; // handled by copy event
+  const selected = window.getSelection()?.toString().trim() ?? '';
+  if (selected) schedulePoll();
+});

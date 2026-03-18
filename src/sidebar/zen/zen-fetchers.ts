@@ -10,7 +10,6 @@ import {
   SVG_REDDIT,
   escapeHtml,
 } from './zen-content';
-import { getCustomFeeds, getCustomJsonSources } from '../../shared/storage';
 import { parseFeed } from '../../shared/rss-parser';
 import kotowazaData from '../../../node_modules/kotowaza/data/kotowaza.json';
 import haikuData from './haiku-data.json';
@@ -420,30 +419,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
-    id: 'customRss',
-    label: 'Custom RSS Feeds',
-    weight: 4,
-    fetch: async (ctx) => {
-      const feeds = await getCustomFeeds();
-      if (feeds.length === 0) return null;
-      const feed = feeds[Math.floor(Math.random() * feeds.length)];
-      try {
-        const res = await fetch(feed.url, { signal: AbortSignal.timeout(9000) });
-        if (!res.ok) return null;
-        const xml = await res.text();
-        const items = parseFeed(xml).filter((it) => ctx.isValidFact(it.title));
-        if (items.length === 0) return null;
-        const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))];
-        if (pick.imageUrl) {
-          return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
-        }
-        return { text: pick.title, link: pick.link };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
     id: 'kotowaza',
     label: 'Japanese Proverbs',
     weight: 7,
@@ -704,46 +679,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const sized = imageUrl.replace('/full/max/', '/full/800,/');
         const caption = artist ? `${title} — ${artist}` : title;
         return { imageUrl: sized, caption, link };
-      } catch {
-        return null;
-      }
-    },
-  },
-  {
-    id: 'customJson',
-    label: 'Custom API',
-    weight: 4,
-    fetch: async (ctx) => {
-      const sources = await getCustomJsonSources();
-      if (sources.length === 0) return null;
-      const source = sources[Math.floor(Math.random() * sources.length)];
-      try {
-        const res = await fetch(source.url, { signal: AbortSignal.timeout(9000) });
-        if (!res.ok) return null;
-        const data = await res.json() as unknown;
-        const items = Array.isArray(data)
-          ? data as unknown[]
-          : (data as { items?: unknown[] }).items ?? [];
-        if (!Array.isArray(items) || items.length === 0) return null;
-        const pick = items[Math.floor(Math.random() * Math.min(items.length, 20))] as {
-          text?: string;
-          image?: string;
-          link?: string;
-          attribution?: string;
-        };
-        if (!pick || typeof pick !== 'object') return null;
-        const text = typeof pick.text === 'string' ? pick.text.trim() : '';
-        const image = typeof pick.image === 'string' ? pick.image.trim() : '';
-        const link = typeof pick.link === 'string' ? pick.link.trim() : undefined;
-        const attribution = typeof pick.attribution === 'string' ? pick.attribution.trim() : '';
-        if (image && (text || attribution)) {
-          return { imageUrl: image, caption: attribution || text, link };
-        }
-        if (text && ctx.isValidFact(text)) {
-          const displayText = attribution ? `${text} — ${attribution}` : text;
-          return { text: displayText, link };
-        }
-        return null;
       } catch {
         return null;
       }

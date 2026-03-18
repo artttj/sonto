@@ -1,92 +1,57 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import type { QueryResult, ReadLaterItem, Snippet } from './types';
+import type { ClipItem, ReadLaterItem } from './types';
 
 export const MSG = {
-  CAPTURE_SNIPPET: 'CAPTURE_SNIPPET',
+  CAPTURE_CLIP: 'CAPTURE_CLIP',
   CAPTURE_SUCCESS: 'CAPTURE_SUCCESS',
   CAPTURE_ERROR: 'CAPTURE_ERROR',
-  QUERY_SNIPPETS: 'QUERY_SNIPPETS',
-  DELETE_SNIPPET: 'DELETE_SNIPPET',
-  GET_ALL_SNIPPETS: 'GET_ALL_SNIPPETS',
+  DELETE_CLIP: 'DELETE_CLIP',
+  GET_ALL_CLIPS: 'GET_ALL_CLIPS',
+  SEARCH_CLIPS: 'SEARCH_CLIPS',
+  UPDATE_CLIP: 'UPDATE_CLIP',
+  CLEAR_CLIPS: 'CLEAR_CLIPS',
+  CLIP_ADDED: 'CLIP_ADDED',
   OPEN_SETTINGS: 'OPEN_SETTINGS',
-  SNIPPET_ADDED: 'SNIPPET_ADDED',
-  EXTRACT_CATEGORIES: 'EXTRACT_CATEGORIES',
-  GENERATE_ZEN_FACT: 'GENERATE_ZEN_FACT',
-  GENERATE_ZEN_STAT: 'GENERATE_ZEN_STAT',
-  SYNC_HISTORY: 'SYNC_HISTORY',
-  GET_RELATED_SNIPPETS: 'GET_RELATED_SNIPPETS',
-  UPDATE_SNIPPET: 'UPDATE_SNIPPET',
-  GET_SNIPPETS_FOR_TAB: 'GET_SNIPPETS_FOR_TAB',
   ADD_READ_LATER: 'ADD_READ_LATER',
   REMOVE_READ_LATER: 'REMOVE_READ_LATER',
   GET_READ_LATER: 'GET_READ_LATER',
-  GENERATE_DIGEST: 'GENERATE_DIGEST',
 } as const;
 
-export interface CaptureSnippetMessage {
-  type: typeof MSG.CAPTURE_SNIPPET;
+export interface CaptureClipMessage {
+  type: typeof MSG.CAPTURE_CLIP;
   text: string;
-  url: string;
-  title: string;
-  context?: string;
-  tags?: string[];
-  pinned?: boolean;
+  url?: string;
+  title?: string;
+  source: ClipItem['source'];
 }
 
-export interface QuerySnippetsMessage {
-  type: typeof MSG.QUERY_SNIPPETS;
-  query: string;
-}
-
-export interface DeleteSnippetMessage {
-  type: typeof MSG.DELETE_SNIPPET;
+export interface DeleteClipMessage {
+  type: typeof MSG.DELETE_CLIP;
   id: string;
 }
 
-export interface GetAllSnippetsMessage {
-  type: typeof MSG.GET_ALL_SNIPPETS;
+export interface GetAllClipsMessage {
+  type: typeof MSG.GET_ALL_CLIPS;
+}
+
+export interface SearchClipsMessage {
+  type: typeof MSG.SEARCH_CLIPS;
+  query: string;
+}
+
+export interface UpdateClipMessage {
+  type: typeof MSG.UPDATE_CLIP;
+  clip: ClipItem;
+}
+
+export interface ClearClipsMessage {
+  type: typeof MSG.CLEAR_CLIPS;
 }
 
 export interface OpenSettingsMessage {
   type: typeof MSG.OPEN_SETTINGS;
-}
-
-export interface ExtractCategoriesMessage {
-  type: typeof MSG.EXTRACT_CATEGORIES;
-  snippets: { text: string; title: string; source: string }[];
-}
-
-export interface GenerateZenFactMessage {
-  type: typeof MSG.GENERATE_ZEN_FACT;
-  category: string;
-  previousFacts: string[];
-  language: string;
-}
-
-export interface GenerateZenStatMessage {
-  type: typeof MSG.GENERATE_ZEN_STAT;
-  category: string;
-  previousFacts: string[];
-  language: string;
-}
-
-export interface GetRelatedSnippetsMessage {
-  type: typeof MSG.GET_RELATED_SNIPPETS;
-  snippetId: string;
-  topK?: number;
-}
-
-export interface UpdateSnippetMessage {
-  type: typeof MSG.UPDATE_SNIPPET;
-  snippet: Snippet;
-}
-
-export interface GetSnippetsForTabMessage {
-  type: typeof MSG.GET_SNIPPETS_FOR_TAB;
-  url: string;
-  title: string;
 }
 
 export interface AddReadLaterMessage {
@@ -104,32 +69,17 @@ export interface GetReadLaterMessage {
   type: typeof MSG.GET_READ_LATER;
 }
 
-export interface GenerateDigestMessage {
-  type: typeof MSG.GENERATE_DIGEST;
-  language: string;
-}
-
-export interface SyncHistoryMessage {
-  type: typeof MSG.SYNC_HISTORY;
-}
-
 export type RuntimeMessage =
-  | CaptureSnippetMessage
-  | QuerySnippetsMessage
-  | DeleteSnippetMessage
-  | GetAllSnippetsMessage
+  | CaptureClipMessage
+  | DeleteClipMessage
+  | GetAllClipsMessage
+  | SearchClipsMessage
+  | UpdateClipMessage
+  | ClearClipsMessage
   | OpenSettingsMessage
-  | ExtractCategoriesMessage
-  | GenerateZenFactMessage
-  | GenerateZenStatMessage
-  | GetRelatedSnippetsMessage
-  | UpdateSnippetMessage
-  | GetSnippetsForTabMessage
   | AddReadLaterMessage
   | RemoveReadLaterMessage
-  | GetReadLaterMessage
-  | GenerateDigestMessage
-  | SyncHistoryMessage;
+  | GetReadLaterMessage;
 
 export interface CaptureSuccessResult {
   ok: true;
@@ -142,14 +92,14 @@ export interface CaptureErrorResult {
   message: string;
 }
 
-export interface QueryResult2 {
+export interface AllClipsResult {
   ok: true;
-  results: QueryResult[];
+  clips: ClipItem[];
 }
 
-export interface AllSnippetsResult {
+export interface SearchClipsResult {
   ok: true;
-  snippets: Snippet[];
+  clips: ClipItem[];
 }
 
 export interface ReadLaterResult {

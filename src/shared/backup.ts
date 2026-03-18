@@ -1,119 +1,55 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import { getAllSnippets, addSnippet, clearAllSnippets } from './embeddings/vector-store';
-import {
-  getSettings,
-  saveSettings,
-  getCustomFeeds,
-  saveCustomFeeds,
-  getCustomJsonSources,
-  saveCustomJsonSources,
-  getDisabledSources,
-  saveDisabledSources,
-  getDripInterval,
-  saveDripInterval,
-  getZenDisplay,
-  saveZenDisplay,
-  getTheme,
-  saveTheme,
-  getChatSessions,
-  saveChatSessions,
-  isHistoryEnabled,
-  setHistoryEnabled,
-} from './storage';
-import type { Snippet } from './types';
+import { getAllClips, addClip, clearAllClips } from './embeddings/vector-store';
+import { getSettings, saveSettings, getTheme, saveTheme } from './storage';
+import type { ClipItem } from './types';
 
 interface BackupPayload {
   version: number;
   createdAt: number;
-  snippets: Snippet[];
+  clips: ClipItem[];
   settings: {
     app: Awaited<ReturnType<typeof getSettings>>;
-    disabledSources: string[];
-    dripInterval: number;
-    zenDisplay: string;
     theme: string;
-    historyEnabled: boolean;
-    customFeeds: Awaited<ReturnType<typeof getCustomFeeds>>;
-    customJsonSources: Awaited<ReturnType<typeof getCustomJsonSources>>;
   };
-  chatSessions: Awaited<ReturnType<typeof getChatSessions>>;
 }
 
 export async function exportBackup(): Promise<string> {
-  const [
-    snippets, app, disabledSources, dripInterval,
-    zenDisplay, theme, historyEnabled, customFeeds,
-    customJsonSources, chatSessions,
-  ] = await Promise.all([
-    getAllSnippets(),
-    getSettings(),
-    getDisabledSources(),
-    getDripInterval(),
-    getZenDisplay(),
-    getTheme(),
-    isHistoryEnabled(),
-    getCustomFeeds(),
-    getCustomJsonSources(),
-    getChatSessions(),
-  ]);
+  const [clips, app, theme] = await Promise.all([getAllClips(), getSettings(), getTheme()]);
 
   const payload: BackupPayload = {
-    version: 1,
+    version: 2,
     createdAt: Date.now(),
-    snippets,
-    settings: {
-      app,
-      disabledSources,
-      dripInterval,
-      zenDisplay,
-      theme,
-      historyEnabled,
-      customFeeds,
-      customJsonSources,
-    },
-    chatSessions,
+    clips,
+    settings: { app, theme },
   };
 
   return JSON.stringify(payload);
 }
 
-export async function importBackup(json: string, merge: boolean): Promise<{ snippets: number; sessions: number }> {
+export async function importBackup(json: string, merge: boolean): Promise<{ clips: number }> {
   const data = JSON.parse(json) as BackupPayload;
-  if (!data.version || !Array.isArray(data.snippets)) {
+  if (!data.version || !Array.isArray(data.clips)) {
     throw new Error('Invalid backup file');
   }
 
   if (!merge) {
-    await clearAllSnippets();
+    await clearAllClips();
   }
 
-  let importedSnippets = 0;
-  for (const snippet of data.snippets) {
-    await addSnippet(snippet);
-    importedSnippets++;
+  let importedClips = 0;
+  for (const clip of data.clips) {
+    await addClip(clip);
+    importedClips++;
   }
 
   if (data.settings) {
-    const s = data.settings;
-    if (s.app) await saveSettings(s.app);
-    if (s.disabledSources) await saveDisabledSources(s.disabledSources);
-    if (s.dripInterval) await saveDripInterval(s.dripInterval);
-    if (s.zenDisplay) await saveZenDisplay(s.zenDisplay as 'feed' | 'cosmos');
-    if (s.theme) await saveTheme(s.theme as 'dark' | 'light');
-    if (s.historyEnabled !== undefined) await setHistoryEnabled(s.historyEnabled);
-    if (s.customFeeds) await saveCustomFeeds(s.customFeeds);
-    if (s.customJsonSources) await saveCustomJsonSources(s.customJsonSources);
+    if (data.settings.app) await saveSettings(data.settings.app);
+    if (data.settings.theme) await saveTheme(data.settings.theme as 'dark' | 'light');
   }
 
-  let importedSessions = 0;
-  if (data.chatSessions?.length) {
-    await saveChatSessions(data.chatSessions);
-    importedSessions = data.chatSessions.length;
-  }
-
-  return { snippets: importedSnippets, sessions: importedSessions };
+  return { clips: importedClips };
 }
 
 export function downloadBackup(json: string): void {

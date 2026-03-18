@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Sonto",
   "version": "1.7.8",
-  "description": "A calm sidebar feed of art, quotes, science, and news. Save highlights and chat with your browsing history using AI.",
+  "description": "A calm zen feed paired with a clipboard manager. Copy anything on any page and browse your history in the sidebar.",
   "author": "Artem Iagovdik (artyom.yagovdik@gmail.com)",
   "icons": {
     "16": "icons/icon16.png",
@@ -15,13 +15,10 @@
     "tabs",
     "sidePanel",
     "contextMenus",
-    "history",
-    "alarms"
+    "clipboardRead"
   ],
   "host_permissions": [
-    "*://*/*",
-    "https://api.openai.com/*",
-    "https://generativelanguage.googleapis.com/*"
+    "*://*/*"
   ],
   "action": {
     "default_icon": {
@@ -63,7 +60,7 @@
         "default": "Alt+Shift+C",
         "mac": "Alt+Shift+C"
       },
-      "description": "Save selected text to Sonto"
+      "description": "Save selected text to clipboard history"
     }
   },
   "options_ui": {

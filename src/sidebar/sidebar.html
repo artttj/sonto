@@ -14,26 +14,11 @@
         <span class="brand-name">Sonto</span>
       </div>
       <div class="header-actions">
-        <div id="zen-display-toggle" class="mode-toggle" role="tablist" aria-label="Feed display">
-          <button class="mode-btn zdt-btn" data-display="feed" type="button" role="tab" aria-selected="false" aria-label="Feed">
-            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="2" width="12" height="16" rx="2"/>
-              <path d="M7 6h6M7 9.5h6M7 13h4"/>
-            </svg>
-          </button>
-          <button class="mode-btn zdt-btn active" data-display="cosmos" type="button" role="tab" aria-selected="true" aria-label="Cosmos">
-            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4">
-              <circle cx="10" cy="10" r="2.5"/>
-              <ellipse cx="10" cy="10" rx="8.5" ry="3.5" transform="rotate(0 10 10)"/>
-              <ellipse cx="10" cy="10" rx="8.5" ry="3.5" transform="rotate(60 10 10)"/>
-              <ellipse cx="10" cy="10" rx="8.5" ry="3.5" transform="rotate(120 10 10)"/>
-            </svg>
-          </button>
-        </div>
-        <button id="btn-browse" class="icon-btn" type="button" aria-label="History">
-          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="10" cy="10" r="7"/>
-            <path d="M10 6v4l2.5 2.5" stroke-linecap="round"/>
+        <button id="btn-clipboard" class="icon-btn" type="button" aria-label="Clipboard history">
+          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="2" width="8" height="4" rx="1"/>
+            <path d="M6 4H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1"/>
+            <path d="M8 11h4M8 14h2"/>
           </svg>
         </button>
         <button id="btn-theme" class="icon-btn" type="button" aria-label="Toggle theme">
@@ -54,30 +39,33 @@
       </div>
     </header>
 
+    <!-- ZEN VIEW -->
     <div id="view-zen" class="view zen-view">
-      <div id="reading-assistant-bar" class="reading-assistant-bar hidden">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="7" cy="7" r="5"/>
-          <path d="M5 7h4M7 5v4"/>
-        </svg>
-        <span id="reading-assistant-text">Related saves for this page</span>
-        <button id="btn-ask-related" class="ra-btn ra-btn-secondary" type="button">Ask</button>
-        <button id="btn-view-related" class="ra-btn" type="button">View</button>
-        <button id="btn-dismiss-ra" class="ra-dismiss" type="button">✕</button>
-      </div>
       <div id="zen-feed" class="zen-feed"></div>
-      <div id="cosmos-view" class="cosmos-view hidden"></div>
     </div>
 
-    <div id="view-browse" class="view hidden">
-      <div class="snippet-count-bar">
+    <!-- CLIPBOARD VIEW -->
+    <div id="view-clipboard" class="view hidden">
+      <div class="clip-toolbar">
         <div class="filter-tabs">
-          <button class="filter-tab active" data-filter="all" type="button">All <span id="count-all" class="filter-count">0</span></button>
-          <button class="filter-tab" data-filter="manual" type="button">Saved <span id="count-manual" class="filter-count">0</span></button>
-          <button class="filter-tab" data-filter="history" type="button">History <span id="count-history" class="filter-count">0</span></button>
-          <button class="filter-tab" data-filter="pinned" type="button">Pinned <span id="count-pinned" class="filter-count">0</span></button>
+          <button class="filter-tab active" data-filter="all" type="button">
+            All <span class="filter-count">0</span>
+          </button>
+          <button class="filter-tab" data-filter="text" type="button">
+            Text <span class="filter-count">0</span>
+          </button>
+          <button class="filter-tab" data-filter="link" type="button">
+            Links <span class="filter-count">0</span>
+          </button>
+          <button class="filter-tab" data-filter="code" type="button">
+            Code <span class="filter-count">0</span>
+          </button>
+          <button class="filter-tab" data-filter="pinned" type="button">
+            Pinned <span class="filter-count">0</span>
+          </button>
         </div>
-        <div class="browse-actions">
+        <div class="clip-actions">
+          <span id="clip-count" class="clip-total-count hidden">0</span>
           <div class="export-dropdown" id="export-dropdown">
             <button id="btn-export" class="link-btn" type="button">Export ▾</button>
             <div class="export-menu hidden" id="export-menu">
@@ -85,96 +73,26 @@
               <button id="btn-export-json" type="button">JSON</button>
             </div>
           </div>
-          <button id="btn-clear-all" class="link-btn danger" type="button">Clear all</button>
+          <button id="btn-clear-all" class="link-btn danger" type="button">Clear</button>
         </div>
       </div>
+
       <div class="browse-search-bar">
         <svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
           <circle cx="9" cy="9" r="5" />
           <path d="M12.5 12.5L16 16" stroke-linecap="round" />
         </svg>
-        <input type="search" id="browse-search" class="browse-search-input" placeholder="Search saved snippets..." />
+        <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." />
       </div>
 
       <div id="read-later-bar" class="read-later-bar hidden">
         <span id="read-later-count"></span>
         <button id="btn-view-later" class="rl-btn" type="button">View queue</button>
       </div>
-
       <div id="read-later-list" class="read-later-list hidden"></div>
 
-      <div id="snippet-list" class="snippet-list">
-        <div class="empty-state">
-          <div class="empty-icon">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
-              <path d="M12 8h24a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3V11a3 3 0 0 1 3-3z"/>
-              <path d="M17 16h14M17 22h10M17 28h6"/>
-              <circle cx="34" cy="34" r="8" fill="var(--c-bg)" stroke-width="1.4"/>
-              <path d="M31 34h6M34 31v6" stroke-width="1.4"/>
-            </svg>
-          </div>
-          <div class="empty-title">No saved snippets</div>
-          <div class="empty-desc">Highlight text on any page and press <strong>Alt+Shift+C</strong> or right-click to save it here.</div>
-        </div>
-      </div>
+      <div id="clip-list" class="clip-list"></div>
     </div>
-
-    <div id="view-chat" class="view hidden">
-      <div id="chat-messages" class="chat-messages"></div>
-      <div class="chat-input-area">
-        <button id="btn-chat-history" class="icon-btn chat-history-btn" type="button" title="Past conversations">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="8" cy="8" r="6"/>
-            <path d="M8 4v4l2.5 2" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <textarea
-          id="chat-input"
-          class="chat-input"
-          placeholder="Ask anything about your saved snippets..."
-          rows="2"
-        ></textarea>
-        <button id="btn-send" class="send-btn" type="button">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 10h10M11 6l4 4-4 4"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <nav class="bottom-nav">
-      <button id="btn-chat" class="bnav-btn" type="button" aria-label="Chat">
-        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
-          <path d="M4 5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H8l-3 2.5V13H6a2 2 0 0 1-2-2V5z"/>
-          <path d="M7 7h6M7 10h4" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </nav>
-  </div>
-
-  <div id="history-prompt" class="history-prompt hidden">
-    <div class="history-prompt-card">
-      <div class="history-prompt-icon">
-        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="16" cy="16" r="13"/>
-          <path d="M16 9v7l4 4"/>
-        </svg>
-      </div>
-      <div class="history-prompt-title">Sync browser history?</div>
-      <p class="history-prompt-body">Sonto can read your recent browsing history to personalize your Zen feed with topics you actually visit. Your data stays on your device and is never shared.</p>
-      <div class="history-prompt-actions">
-        <button id="history-prompt-yes" class="history-btn history-btn-primary" type="button">Yes, enable</button>
-        <button id="history-prompt-no" class="history-btn history-btn-ghost" type="button">No thanks</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="digest-toast" class="digest-toast hidden">
-    <div class="digest-toast-body">
-      <div class="digest-toast-title">Your week in review</div>
-      <div id="digest-text" class="digest-toast-text"></div>
-    </div>
-    <button id="btn-dismiss-digest" class="digest-dismiss" type="button">✕</button>
   </div>
 
   <script type="module" src="sidebar.js"></script>
