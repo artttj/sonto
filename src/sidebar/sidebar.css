@@ -363,6 +363,69 @@ html, body {
   margin-top: 14px;
 }
 
+.cosmos-nav-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.cosmos-nav-btn {
+  pointer-events: auto;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.15);
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.cosmos-nav-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.5;
+}
+
+.cosmos-message:hover ~ .cosmos-nav-wrap .cosmos-nav-btn {
+  color: rgba(255,255,255,0.5);
+}
+
+.cosmos-nav-btn:hover:not(:disabled) {
+  color: rgba(255,255,255,0.9);
+  transform: scale(1.1);
+}
+
+.cosmos-nav-btn:active:not(:disabled) {
+  transform: scale(1);
+}
+
+.cosmos-nav-btn:disabled {
+  opacity: 0.1;
+  cursor: default;
+}
+
+[data-theme="light"] .cosmos-nav-btn {
+  color: rgba(0,0,0,0.15);
+}
+
+[data-theme="light"] .cosmos-message:hover ~ .cosmos-nav-wrap .cosmos-nav-btn {
+  color: rgba(0,0,0,0.45);
+}
+
+[data-theme="light"] .cosmos-nav-btn:hover:not(:disabled) {
+  color: rgba(0,0,0,0.85);
+}
+
 /* ═══ ZEN VIEW ════════════════════════════════════════════════════════════ */
 .zen-view {
   position: relative;
@@ -1235,45 +1298,50 @@ html, body {
 
 .clip-card-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 8px;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--c-border);
   position: relative;
 }
 
 .clip-btn {
-  font-size: 11px;
+  font-size: 12px;
   font-family: inherit;
   font-weight: 500;
-  padding: 6px 11px;
-  min-height: 44px;
-  min-width: 44px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--c-border);
+  padding: 0 10px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 6px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--c-text-2);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-  line-height: 1.4;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+  line-height: 1.2;
   touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .clip-btn:hover {
   background: var(--c-elevated);
-  border-color: var(--c-border-hi);
   color: var(--c-text);
+  transform: translateY(-1px);
+}
+
+.clip-btn:active {
+  transform: translateY(0);
 }
 
 .clip-btn-copy:hover {
-  background: rgba(100,180,255,0.12);
-  border-color: rgba(100,180,255,0.3);
-  color: rgba(100,180,255,0.9);
+  background: rgba(100,180,255,0.15);
+  color: rgba(100,180,255,0.95);
 }
 
 .clip-btn-delete:hover {
-  background: rgba(255,96,96,0.1);
-  border-color: rgba(255,96,96,0.28);
+  background: rgba(255,96,96,0.12);
   color: #ff7070;
 }
 

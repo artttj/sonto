@@ -72,16 +72,16 @@ function generateDenseParams(): SpiroParams {
     const Rarm2 = (armSum - armDiff) / 2;
     if (Larm2 < 100 || Rarm2 < 100) continue;
 
-    const Crota = rnd(-2.5, 2.5);
-    const Lrota = rnd(-4, 4);
-    const Rrota = rnd(-4, 4);
+    const Crota = rnd(-3.5, 3.5);
+    const Lrota = rnd(-6, 6);
+    const Rrota = rnd(-6, 6);
     if (Math.abs(Crota) < 0.1 || Math.abs(Lrota) < 0.05 || Math.abs(Rrota) < 0.05) continue;
     // Avoid both rotation rates being nearly equal (produces degenerate straight lines)
     if (Math.abs(Math.abs(Lrota) - Math.abs(Rrota)) < 0.05) continue;
 
     const HBx = rnd(-100, 100);
     const HBy = rnd(-650, -400);
-    const Ext = rnd(2, 60);
+    const Ext = rnd(5, 90);
 
     return { Crota, HBx, HBy, Hdist, Lrota, Larm1, Larm2, Rrota, Rarm1, Rarm2, Ext };
   }
@@ -108,9 +108,9 @@ function generateOpenParams(): SpiroParams {
     const Rarm2 = (armSum - armDiff) / 2;
     if (Larm2 < 80 || Rarm2 < 80) continue;
 
-    const Crota = rnd(-2, 2);
-    const Lrota = rnd(-4, 4);
-    const Rrota = rnd(-4, 4);
+    const Crota = rnd(-3, 3);
+    const Lrota = rnd(-6, 6);
+    const Rrota = rnd(-6, 6);
     if (Math.abs(Crota) < 0.1 || Math.abs(Lrota) < 0.05 || Math.abs(Rrota) < 0.05) continue;
     if (Math.abs(Math.abs(Lrota) - Math.abs(Rrota)) < 0.05) continue;
 
@@ -404,6 +404,10 @@ class SpirographCanvas {
     res?.();
   }
 
+  setLight(light: boolean): void {
+    this.light = light;
+  }
+
   remove(): void {
     this.stop();
     this.ro.disconnect();
@@ -429,6 +433,12 @@ async function fadeEl(el: HTMLElement, from: number, to: number, ms: number): Pr
   });
 }
 
+interface HistoryItem {
+  result: ZenFetchResult;
+  source: string | null;
+  timestamp: number;
+}
+
 export class CosmosMode {
   private stopped = false;
   private spiro: SpirographCanvas | null = null;
@@ -436,10 +446,16 @@ export class CosmosMode {
   private pastFacts: string[] = [];
   private disabledSources = new Set<string>();
   private intervalMs = 15000;
-
+  private history: HistoryItem[] = [];
+  private currentIndex = -1;
+  private isNavigating = false;
+  private autoAdvanceTimer: number | null = null;
 
   private readonly canvasWrap: HTMLElement;
   private readonly msgEl: HTMLElement;
+  private readonly navWrap: HTMLElement;
+  private readonly prevBtn: HTMLButtonElement;
+  private readonly nextBtn: HTMLButtonElement;
 
   constructor(container: HTMLElement, private language: string) {
     container.innerHTML = '';
@@ -451,13 +467,117 @@ export class CosmosMode {
     this.msgEl.className = 'cosmos-message';
     this.msgEl.style.opacity = '0';
 
+    this.navWrap = document.createElement('div');
+    this.navWrap.className = 'cosmos-nav-wrap';
+
+    this.prevBtn = document.createElement('button');
+    this.prevBtn.className = 'cosmos-nav-btn cosmos-nav-prev';
+    this.prevBtn.disabled = true;
+    this.prevBtn.setAttribute('aria-label', 'Previous');
+    this.prevBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l-8 8 8 8"/></svg>`;
+
+    this.nextBtn = document.createElement('button');
+    this.nextBtn.className = 'cosmos-nav-btn cosmos-nav-next';
+    this.nextBtn.disabled = true;
+    this.nextBtn.setAttribute('aria-label', 'Next');
+    this.nextBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4l8 8-8 8"/></svg>`;
+
+    this.navWrap.appendChild(this.prevBtn);
+    this.navWrap.appendChild(this.nextBtn);
+
     container.appendChild(this.canvasWrap);
     container.appendChild(this.msgEl);
+    container.appendChild(this.navWrap);
+
+    this.prevBtn.addEventListener('click', () => this.navigate(-1));
+    this.nextBtn.addEventListener('click', () => this.navigate(1));
+    this.setupKeyboardNav();
   }
 
   stop(): void {
     this.stopped = true;
+    this.isNavigating = false;
     this.spiro?.stop();
+    this.clearAutoAdvance();
+  }
+
+  setTheme(theme: 'dark' | 'light'): void {
+    const isLight = theme === 'light';
+    this.spiro?.setLight(isLight);
+  }
+
+  private clearAutoAdvance(): void {
+    if (this.autoAdvanceTimer !== null) {
+      window.clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+  }
+
+  private setupKeyboardNav(): void {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        this.navigate(-1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        this.navigate(1);
+      }
+    };
+    document.addEventListener('keydown', handler);
+  }
+
+  private navigate(direction: -1 | 1): void {
+    if (this.history.length === 0) return;
+
+    const newIndex = this.currentIndex + direction;
+    if (newIndex < 0 || newIndex >= this.history.length) return;
+
+    this.isNavigating = true;
+    this.clearAutoAdvance();
+    void this.showHistoryItem(newIndex);
+  }
+
+  private async showHistoryItem(index: number): Promise<void> {
+    this.currentIndex = index;
+    const item = this.history[index];
+    this.updateNavButtons();
+
+    const FADE_MS = 300;
+
+    await fadeEl(this.msgEl, 1, 0, FADE_MS);
+    if (this.stopped) return;
+
+    const skipSpiro = !item.result
+      || !isTextResult(item.result)
+      || (item.result.html?.includes('zen-haiku') ?? false)
+      || (item.result.html?.includes('zen-oblique') ?? false);
+
+    await this.renderResult(item.result, item.source);
+    await fadeEl(this.msgEl, 0, 1, FADE_MS);
+    if (this.stopped) return;
+
+    if (!skipSpiro && !this.spiro) {
+      const theme = await getTheme();
+      this.spiro = new SpirographCanvas(this.canvasWrap, theme === 'light');
+      const spiroPromise = this.spiro.start(this.intervalMs);
+      await spiroPromise;
+    } else if (!skipSpiro && this.spiro) {
+      const spiroPromise = this.spiro.start(this.intervalMs);
+      await spiroPromise;
+    }
+
+    if (this.isNavigating && index === this.history.length - 1) {
+      this.isNavigating = false;
+      void this.runLoop();
+    }
+  }
+
+  private updateNavButtons(): void {
+    this.prevBtn.disabled = this.currentIndex <= 0;
+    this.nextBtn.disabled = this.currentIndex >= this.history.length - 1;
+
+    this.prevBtn.style.opacity = this.currentIndex <= 0 ? '0.3' : '1';
+    this.nextBtn.style.opacity = this.currentIndex >= this.history.length - 1 ? '0.3' : '1';
   }
 
   setLanguage(language: string): void {
@@ -633,11 +753,18 @@ export class CosmosMode {
 
   private async runLoop(): Promise<void> {
     if (this.stopped) return;
+    if (this.isNavigating) return;
 
     const FADE_MS = 500;
 
     const [result, source] = await this.fetchNext();
     if (this.stopped) return;
+
+    if (result) {
+      this.history.push({ result, source, timestamp: Date.now() });
+      this.currentIndex = this.history.length - 1;
+      this.updateNavButtons();
+    }
 
     const skipSpiro = !result
       || !isTextResult(result)
@@ -645,10 +772,15 @@ export class CosmosMode {
       || (result.html?.includes('zen-oblique') ?? false);
 
     if (!skipSpiro) {
-      this.spiro?.remove();
       const theme = await getTheme();
-      this.spiro = new SpirographCanvas(this.canvasWrap, theme === 'light');
-      const spiroPromise = this.spiro.start(this.intervalMs);
+      const needsNewSpiro = !this.spiro || this.spiro.removed;
+
+      if (needsNewSpiro) {
+        this.spiro?.remove();
+        this.spiro = new SpirographCanvas(this.canvasWrap, theme === 'light');
+      }
+
+      const spiroPromise = this.spiro!.start(this.intervalMs);
 
       await this.renderResult(result, source);
       await fadeEl(this.msgEl, 0, 1, FADE_MS);
@@ -659,12 +791,9 @@ export class CosmosMode {
 
       await Promise.all([
         fadeEl(this.msgEl, 1, 0, FADE_MS),
-        this.spiro.fadeOut(FADE_MS),
+        this.spiro!.fadeOut(FADE_MS),
       ]);
       if (this.stopped) return;
-
-      this.spiro.remove();
-      this.spiro = null;
     } else {
       this.spiro?.remove();
       this.spiro = null;

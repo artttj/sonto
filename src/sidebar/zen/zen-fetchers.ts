@@ -10,9 +10,13 @@ import {
   SVG_REDDIT,
   escapeHtml,
 } from './zen-content';
-import { getCustomFeeds, getCustomJsonSources } from '../../shared/storage';
+import { getCustomFeeds, getCustomJsonSources, isItemSeen, markItemSeen, getRecentlySeenBySource } from '../../shared/storage';
 import { parseFeed } from '../../shared/rss-parser';
 import kotowazaData from '../../../node_modules/kotowaza/data/kotowaza.json';
+import haikuData from './haiku-data.json';
+import albumOfDayAlbums from './album-of-a-day.json';
+
+const DAY_MS = 86_400_000;
 import haikuData from './haiku-data.json';
 import albumOfDayAlbums from './album-of-a-day.json';
 
@@ -90,24 +94,36 @@ const COMMONS_PAINTING_CATEGORIES = [
   'Category:Portrait paintings',
   'Category:Oil paintings',
   'Category:Paintings by Vincent van Gogh',
+  'Category:Watercolor paintings',
+  'Category:Drawings',
+  'Category:Prints',
+  'Category:Japanese paintings',
+  'Category:Chinese paintings',
+  'Category:Baroque paintings',
+  'Category:Impressionist paintings',
 ];
 
-const MET_SEARCH_TERMS = ['painting', 'sculpture', 'portrait', 'landscape', 'still life'];
+const MET_SEARCH_TERMS = [
+  'painting', 'sculpture', 'portrait', 'landscape', 'still life',
+  'drawing', 'print', 'photography', 'textile', 'ceramics',
+  'metalwork', 'jewelry', 'furniture', 'costume', 'armor',
+  'weapon', 'musical instrument', 'book', 'manuscript', 'calligraphy'
+];
 let metIdCache: number[] = [];
 
-const GETTY_MAX_PAGE = 42498;
+const GETTY_MAX_PAGE = 50000;
 let gettyUuidCache: string[] = [];
 
-const RIJKS_ID_MIN = 25000;
-const RIJKS_ID_MAX = 900000;
+const RIJKS_ID_MIN = 1;
+const RIJKS_ID_MAX = 1000000;
 let rijksIdCache: string[] = [];
 
 let kotowazaQueue: Array<unknown> = [];
 let obliqueQueue: string[] = [];
 let haikuQueue: string[] = [];
-let atlasCache: Array<{ title: string; link?: string; imageUrl?: string }> = [];
-let smithsonianCache: Array<{ title: string; link?: string; imageUrl?: string }> = [];
-let philosophyCache: Array<{ title: string; link?: string }> = [];
+let atlasCache: Array<{ title: string; link?: string; imageUrl?: string; id: string }> = [];
+let smithsonianCache: Array<{ title: string; link?: string; imageUrl?: string; id: string }> = [];
+let philosophyCache: Array<{ title: string; link?: string; id: string }> = [];
 const albumOfDayList = albumOfDayAlbums as AlbumOfDaySeed[];
 const albumOfDayCache = new Map<string, ZenArtResult | null>();
 const albumOfDayResultCache = new Map<string, ZenArtResult | null>();
@@ -168,7 +184,11 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           .filter((page) => page.imageinfo?.[0]?.url || page.imageinfo?.[0]?.thumburl);
         if (pages.length === 0) return null;
 
-        const pick = pages[Math.floor(Math.random() * pages.length)];
+        const recentlySeen = await getRecentlySeenBySource('wikimediaPaintings', 30 * DAY_MS);
+        const available = pages.filter((p) => !recentlySeen.has(p.title ?? ''));
+        const pool = available.length > 0 ? available : pages;
+
+        const pick = pool[Math.floor(Math.random() * pool.length)];
         const info = pick.imageinfo?.[0];
         if (!info) return null;
 
@@ -180,6 +200,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const year = readCommonsYear(info.extmetadata);
         const caption = [title, artist, year].filter(Boolean).join(' — ');
 
+        await markItemSeen(pick.title ?? '', 'wikimediaPaintings');
         return {
           imageUrl,
           caption: caption || 'Painting',
@@ -226,24 +247,44 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         });
         if (!listRes.ok) return null;
         const ids = await listRes.json() as number[];
-        const pool = ids.slice(0, 30);
-        const id = pool[Math.floor(Math.random() * pool.length)];
-        const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, {
-          signal: AbortSignal.timeout(8000),
-        });
-        if (!itemRes.ok) return null;
-        const item = await itemRes.json() as {
-          title?: string;
-          url?: string;
-          type?: string;
-          dead?: boolean;
-          deleted?: boolean;
-        };
-        if (item.dead || item.deleted || item.type !== 'story') return null;
-        const title = item.title?.replace(/<[^>]+>/g, '').trim() ?? '';
-        if (!isValidHnTitle(title)) return null;
-        const link = item.url ?? `https://news.ycombinator.com/item?id=${id}`;
-        return { text: title, link, icon: SVG_HN, hideLabel: true };
+        const recentlySeen = await getRecentlySeenBySource('hnStory', 1 * DAY_MS);
+
+        let attempts = 0;
+        const maxAttempts = 10;
+        while (attempts < maxAttempts) {
+          const id = ids[Math.floor(Math.random() * Math.min(ids.length, 30))];
+          if (recentlySeen.has(String(id))) {
+            attempts++;
+            continue;
+          }
+          const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, {
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!itemRes.ok) {
+            attempts++;
+            continue;
+          }
+          const item = await itemRes.json() as {
+            title?: string;
+            url?: string;
+            type?: string;
+            dead?: boolean;
+            deleted?: boolean;
+          };
+          if (item.dead || item.deleted || item.type !== 'story') {
+            attempts++;
+            continue;
+          }
+          const title = item.title?.replace(/<[^>]+>/g, '').trim() ?? '';
+          if (!isValidHnTitle(title)) {
+            attempts++;
+            continue;
+          }
+          const link = item.url ?? `https://news.ycombinator.com/item?id=${id}`;
+          await markItemSeen(String(id), 'hnStory');
+          return { text: title, link, icon: SVG_HN, hideLabel: true };
+        }
+        return null;
       } catch {
         return null;
       }
@@ -271,7 +312,16 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           .map((p) => p.data)
           .filter((p) => isValidRedditPost(p));
         if (posts.length === 0) return null;
-        const pick = posts[Math.floor(Math.random() * Math.min(posts.length, 10))];
+
+        const recentlySeen = await getRecentlySeenBySource('reddit', 1 * DAY_MS);
+        const availablePosts = posts.filter((p) => !recentlySeen.has(p.permalink));
+
+        if (availablePosts.length === 0) {
+          return null;
+        }
+
+        const pick = availablePosts[Math.floor(Math.random() * Math.min(availablePosts.length, 10))];
+        await markItemSeen(pick.permalink, 'reddit');
         return {
           text: `r/${sub}: ${pick.title}`,
           link: `https://www.reddit.com${pick.permalink}`,
@@ -322,8 +372,15 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
 
       const pickFromIds = async (ids: number[]) => {
         if (ids.length === 0) return null;
-        const objectId = ids[Math.floor(Math.random() * Math.min(ids.length, 200))];
-        return fetchObject(objectId);
+        const recentlySeen = await getRecentlySeenBySource('metArtwork', 30 * DAY_MS);
+        const availableIds = ids.filter((id) => !recentlySeen.has(String(id)));
+        const pool = availableIds.length > 0 ? availableIds : ids;
+        const objectId = pool[Math.floor(Math.random() * Math.min(pool.length, 300))];
+        const result = await fetchObject(objectId);
+        if (result) {
+          await markItemSeen(String(objectId), 'metArtwork');
+        }
+        return result;
       };
 
       try {
@@ -351,14 +408,30 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     weight: 5,
     fetch: async () => {
       const today = new Date();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
       const currentYear = today.getFullYear();
-      const year = Math.floor(Math.random() * (currentYear - 2021)) + 2021;
-      const date = `${year}-${mm}-${dd}`;
+      const startYear = 2021;
+      const startMonth = 2;
+
+      const totalMonths = (currentYear - startYear) * 12 + (today.getMonth() - startMonth) + 1;
+      const randomMonthOffset = Math.floor(Math.random() * totalMonths);
+      const targetMonth = startMonth + randomMonthOffset;
+      const targetYear = startYear + Math.floor(targetMonth / 12);
+      const monthNum = ((targetMonth - 1) % 12) + 1;
+
+      const daysInMonth = new Date(targetYear, monthNum, 0).getDate();
+      const day = Math.floor(Math.random() * daysInMonth) + 1;
+
+      const mm = String(monthNum).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      const date = `${targetYear}-${mm}-${dd}`;
+      const dateId = date;
+
       const dateLabel = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
         month: 'short', day: 'numeric', year: 'numeric',
       });
+
+      const recentlySeen = await getRecentlySeenBySource('marsRover', 7 * DAY_MS);
+      if (recentlySeen.has(dateId)) return null;
 
       try {
         const res = await fetch(
@@ -372,6 +445,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const photos = data.photos ?? [];
         if (photos.length === 0) return null;
         const photo = photos[Math.floor(Math.random() * Math.min(photos.length, 20))];
+        await markItemSeen(dateId, 'marsRover');
         return {
           imageUrl: photo.img_src,
           caption: `Mars on ${dateLabel} · Perseverance · ${photo.camera.full_name}`,
@@ -387,9 +461,14 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     weight: 6,
     fetch: async (ctx) => {
       try {
-        const skip = Math.floor(Math.random() * 3000);
+        const clevelandTerms = [
+          'painting', 'sculpture', 'drawing', 'print', 'photography',
+          'textile', 'metalwork', 'ceramics', 'japanese', 'chinese', 'african'
+        ];
+        const term = clevelandTerms[Math.floor(Math.random() * clevelandTerms.length)];
+        const skip = Math.floor(Math.random() * 10000);
         const res = await fetch(
-          `https://openaccess-api.clevelandart.org/api/artworks/?cc0&has_image=1&limit=10&skip=${skip}&fields=title,creators,creation_date,images,did_you_know,url`,
+          `https://openaccess-api.clevelandart.org/api/artworks/?cc0&has_image=1&q=${encodeURIComponent(term)}&limit=10&skip=${skip}&fields=title,creators,creation_date,images,did_you_know,url`,
           { signal: AbortSignal.timeout(10000) },
         );
         if (!res.ok) return null;
@@ -403,9 +482,15 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
             url?: string;
           }>;
         };
-        const artworks = (data.data ?? []).filter((a) => a.images?.web?.url);
+        const artworks = (data.data ?? []).filter((a) => a.images?.web?.url && a.url);
         if (artworks.length === 0) return null;
-        const pick = artworks[Math.floor(Math.random() * artworks.length)];
+
+        const recentlySeen = await getRecentlySeenBySource('clevelandArtwork', 30 * DAY_MS);
+        const available = artworks.filter((a) => !recentlySeen.has(a.url!));
+        const pool = available.length > 0 ? available : artworks;
+
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        await markItemSeen(pick.url!, 'clevelandArtwork');
 
         const title = pick.title?.trim() || 'Untitled';
         const creator = pick.creators?.[0]?.description?.trim();
@@ -461,6 +546,8 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
       if (!raw) return null;
       const lines = raw.split(' / ').map((l) => l.trim()).filter(Boolean);
       const html = lines.map((l) => `<span class="zen-haiku-line">${escapeHtml(l)}</span>`).join('');
+
+      await markItemSeen(lines.join(' '), 'haiku');
       return { text: raw.replace(/ \/ /g, '\n'), html, icon: SVG_HAIKU };
     },
   },
@@ -469,7 +556,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     label: '1000-Word Philosophy',
     weight: 7,
     fetch: async (ctx) => {
-
       try {
         if (philosophyCache.length === 0) {
           const res = await fetch('https://1000wordphilosophy.com/feed/', {
@@ -477,13 +563,16 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           });
           if (!res.ok) return null;
           const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
+          const recentlySeen = await getRecentlySeenBySource('philosophyEssay', 7 * DAY_MS);
           for (const it of items) {
-            philosophyCache.push({ title: it.title, link: it.link });
+            if (recentlySeen.has(it.link)) continue;
+            philosophyCache.push({ title: it.title, link: it.link, id: it.link });
           }
           philosophyCache.sort(() => Math.random() - 0.5);
         }
         if (philosophyCache.length === 0) return null;
         const pick = philosophyCache.pop()!;
+        await markItemSeen(pick.link!, 'philosophyEssay');
         return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://1000wordphilosophy.com/wp-content/uploads/2024/09/1000-word-philosophy-square-logo.jpg" alt="1000-Word Philosophy" />', hideLabel: true };
       } catch {
         return null;
@@ -510,8 +599,22 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           if (uuids.length === 0) return null;
           gettyUuidCache.push(...uuids.sort(() => Math.random() - 0.5));
         }
-        const uuid = gettyUuidCache.pop();
+
+        const recentlySeen = await getRecentlySeenBySource('gettyArtwork', 30 * DAY_MS);
+        let uuid: string | null = null;
+        let attempts = 0;
+
+        while (attempts < 15 && gettyUuidCache.length > 0) {
+          const idx = Math.floor(Math.random() * gettyUuidCache.length);
+          uuid = gettyUuidCache[idx];
+          if (!recentlySeen.has(uuid)) break;
+          gettyUuidCache.splice(idx, 1);
+          uuid = null;
+          attempts++;
+        }
+
         if (!uuid) return null;
+
         const res = await fetch(
           `https://data.getty.edu/museum/collection/object/${uuid}`,
           { signal: AbortSignal.timeout(7000) },
@@ -529,6 +632,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
         const artist = obj.produced_by?.carried_out_by?.[0]?._label?.trim() ?? '';
         const caption = artist ? `${title} — ${artist}` : title;
         const link = obj.subject_of?.[0]?.id ?? null;
+        await markItemSeen(uuid, 'gettyArtwork');
         return { imageUrl, caption, link };
       } catch {
         return null;
@@ -540,7 +644,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     label: 'Smithsonian Smart News',
     weight: 8,
     fetch: async (ctx) => {
-
       try {
         if (smithsonianCache.length === 0) {
           const res = await fetch('https://www.smithsonianmag.com/rss/smart-news/', {
@@ -548,13 +651,16 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           });
           if (!res.ok) return null;
           const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
+          const recentlySeen = await getRecentlySeenBySource('smithsonianNews', 7 * DAY_MS);
           for (const it of items) {
-            smithsonianCache.push({ title: it.title, link: it.link, imageUrl: it.imageUrl });
+            if (recentlySeen.has(it.link)) continue;
+            smithsonianCache.push({ title: it.title, link: it.link, imageUrl: it.imageUrl, id: it.link });
           }
           smithsonianCache.sort(() => Math.random() - 0.5);
         }
         if (smithsonianCache.length === 0) return null;
         const pick = smithsonianCache.pop()!;
+        await markItemSeen(pick.link!, 'smithsonianNews');
         if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
         return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://www.teachingforchange.org/wp-content/uploads/2022/04/smithsonian-magazine-logo-vector.png" alt="Smithsonian Magazine" />', hideLabel: true };
       } catch {
@@ -567,7 +673,6 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     label: 'Atlas Obscura',
     weight: 8,
     fetch: async (ctx) => {
-
       try {
         if (atlasCache.length === 0) {
           const res = await fetch('https://www.atlasobscura.com/feeds/latest', {
@@ -575,18 +680,21 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           });
           if (!res.ok) return null;
           const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
+          const recentlySeen = await getRecentlySeenBySource('atlasObscura', 7 * DAY_MS);
           for (const it of items) {
+            if (recentlySeen.has(it.link)) continue;
             let imageUrl: string | undefined;
             if (it.description) {
               const doc = new DOMParser().parseFromString(it.description, 'text/html');
               imageUrl = doc.querySelector('img')?.src;
             }
-            atlasCache.push({ title: it.title, link: it.link, imageUrl });
+            atlasCache.push({ title: it.title, link: it.link, imageUrl, id: it.link });
           }
           atlasCache.sort(() => Math.random() - 0.5);
         }
         if (atlasCache.length === 0) return null;
         const pick = atlasCache.pop()!;
+        await markItemSeen(pick.link!, 'atlasObscura');
         if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
         return { text: pick.title, link: pick.link, icon: SVG_ATLAS };
       } catch {
@@ -607,7 +715,7 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
           const rand = Math.floor(Math.random() * (RIJKS_ID_MAX - RIJKS_ID_MIN)) + RIJKS_ID_MIN;
           const token = btoa(JSON.stringify({ token: `https://id.rijksmuseum.nl/200${rand}` }));
           const res = await fetch(
-            `https://data.rijksmuseum.nl/search/collection?type=painting&imageAvailable=true&pageToken=${token}`,
+            `https://www.rijksmuseum.nl/search/collection?type=painting&imageAvailable=true&pageToken=${token}`,
             { signal: timeout },
           );
           if (!res.ok) return null;
@@ -679,7 +787,10 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
 
         const sized = imageUrl.replace('/full/max/', '/full/800,/');
         const caption = artist ? `${title} — ${artist}` : title;
-        return { imageUrl: sized, caption, link };
+        const itemId = objectUrl.split('/').pop() ?? objectUrl;
+        await markItemSeen(itemId, 'rijksmuseumArtwork');
+        const webUrl = itemId ? `https://www.rijksmuseum.nl/en/collection/${itemId}` : undefined;
+        return { imageUrl: sized, caption, link: webUrl };
       } catch {
         return null;
       }

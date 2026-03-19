@@ -122,9 +122,7 @@ class SontoSidebar {
         this.theme = newTheme;
         this.applyTheme(newTheme);
         if (this.cosmosMode && this.zenDisplay === 'cosmos') {
-          this.cosmosMode.stop();
-          this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
-          void this.cosmosMode.start();
+          this.cosmosMode.setTheme(newTheme);
         }
       }
       if (area === 'local' && changes.sonto_show_feed_toggle) {
@@ -165,7 +163,7 @@ class SontoSidebar {
     if (this.zenDisplay === 'cosmos') {
       this.zenFeedEl.classList.add('hidden');
       this.cosmosViewEl.classList.remove('hidden');
-      this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
+      this.ensureCosmosMode();
     } else {
       this.zenFeed = new ZenFeed(this.zenFeedEl, { language: this.language });
       await this.zenFeed.restorePastFacts();
@@ -198,6 +196,7 @@ class SontoSidebar {
       this.cosmosViewEl.classList.add('hidden');
       this.zenFeedEl.classList.remove('hidden');
       this.cosmosMode = null;
+      this.ensureCosmosMode();
       this.zenFeed = new ZenFeed(this.zenFeedEl, { language: this.language });
       await this.zenFeed.restorePastFacts();
       if (this.mode === 'zen') void this.zenFeed.start();
@@ -210,6 +209,12 @@ class SontoSidebar {
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', String(active));
     });
+  }
+
+  private ensureCosmosMode(): void {
+    if (!this.cosmosMode) {
+      this.cosmosMode = new CosmosMode(this.cosmosViewEl, this.language);
+    }
   }
 
   private async initReadLaterBar(): Promise<void> {

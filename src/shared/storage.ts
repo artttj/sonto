@@ -197,3 +197,68 @@ export async function saveCollections(collections: import('./types').Collection[
   await chrome.storage.local.set({ [STORAGE_KEYS.COLLECTIONS]: collections });
 }
 
+const SEEN_ITEMS_KEY = 'sonto_seen_items';
+const DAY_MS = 86_400_000;
+
+type SeenItemEntry = {
+  id: string;
+  seenAt: number;
+  source: string;
+};
+
+export async function getSeenItems(): Promise<Record<string, SeenItemEntry>> {
+  const result = await chrome.storage.local.get(SEEN_ITEMS_KEY);
+  const entries = result[SEEN_ITEMS_KEY] as SeenItemEntry[] | undefined;
+  const now = Date.now();
+  const map: Record<string, SeenItemEntry> = {};
+
+  if (!entries) return map;
+
+  for (const entry of entries) {
+    if (now - entry.seenAt < 30 * DAY_MS) {
+      map[entry.id] = entry;
+    }
+  }
+
+  return map;
+}
+
+export async function markItemSeen(id: string, source: string): Promise<void> {
+  const entries = await getSeenItemsList();
+  entries.push({ id, seenAt: Date.now(), source });
+
+  const now = Date.now();
+  const filtered = entries.filter((e) => now - e.seenAt < 30 * DAY_MS);
+
+  await chrome.storage.local.set({ [SEEN_ITEMS_KEY]: filtered });
+}
+
+export async function getSeenItemsList(): Promise<SeenItemEntry[]> {
+  const result = await chrome.storage.local.get(SEEN_ITEMS_KEY);
+  return (result[SEEN_ITEMS_KEY] as SeenItemEntry[] | undefined) ?? [];
+}
+
+export async function isItemSeen(id: string, source: string, allowAfterMs?: number): Promise<boolean> {
+  const entries = await getSeenItemsList();
+  const entry = entries.find((e) => e.id === id && e.source === source);
+  if (!entry) return false;
+
+  if (allowAfterMs !== undefined) {
+    return Date.now() - entry.seenAt < allowAfterMs;
+  }
+  return true;
+}
+
+export async function getRecentlySeenBySource(source: string, withinMs: number): Promise<Set<string>> {
+  const entries = await getSeenItemsList();
+  const now = Date.now();
+  const result = new Set<string>();
+
+  for (const entry of entries) {
+    if (entry.source === source && now - entry.seenAt < withinMs) {
+      result.add(entry.id);
+    }
+  }
+
+  return result;
+}
