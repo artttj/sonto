@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 import { MSG } from '../shared/messages';
-import { TRANSFORMS } from '../shared/clip-transforms';
 
 function showToast(message: string, isError = false): void {
   const existing = document.getElementById('sonto-toast');
@@ -265,13 +264,6 @@ function createQuickSearchOverlay(): void {
       text-align: center;
       color: #666;
     }
-    .result-item.command .preview {
-      color: #e8b931;
-    }
-    .cmd-prefix {
-      color: #666;
-      margin-right: 4px;
-    }
   `;
 
   const container = document.createElement('div');
@@ -283,7 +275,7 @@ function createQuickSearchOverlay(): void {
           <circle cx="9" cy="9" r="5"/>
           <path d="M12.5 12.5L16 16"/>
         </svg>
-        <input type="text" class="search-input" placeholder="Search snippets or type > for commands..." autofocus />
+        <input type="text" class="search-input" placeholder="Search your snippets..." autofocus />
         <button class="close-btn">×</button>
       </div>
       <div class="results">
@@ -316,13 +308,6 @@ function createQuickSearchOverlay(): void {
     }
   });
 
-  const COMMANDS = TRANSFORMS.map((t) => ({
-    id: t.id,
-    label: t.label,
-    keywords: t.id.replace(/-/g, ' ').split(' '),
-    transform: t.transform,
-  }));
-
   let selectedIdx = -1;
 
   function updateSelected(): void {
@@ -340,42 +325,6 @@ function createQuickSearchOverlay(): void {
     }
   }
 
-  function renderCommands(cmdQuery: string): void {
-    const q = cmdQuery.toLowerCase();
-    const filtered = q
-      ? COMMANDS.filter((c) => c.label.toLowerCase().includes(q) || c.keywords.some((k) => k.includes(q)))
-      : COMMANDS;
-
-    if (filtered.length === 0) {
-      results.innerHTML = '<div class="empty-state">No matching commands</div>';
-      return;
-    }
-
-    results.innerHTML = filtered.map((c) =>
-      `<button class="result-item command" data-cmd="${c.id}"><div class="preview"><span class="cmd-prefix">&gt;</span>${escapeHtml(c.label)}</div><div class="meta">Transforms clipboard text</div></button>`
-    ).join('');
-
-    selectedIdx = -1;
-
-    results.querySelectorAll<HTMLElement>('.result-item').forEach((item) => {
-      item.addEventListener('click', async () => {
-        const cmdId = item.dataset.cmd;
-        const cmd = COMMANDS.find((c) => c.id === cmdId);
-        if (!cmd) return;
-        try {
-          const text = await navigator.clipboard.readText();
-          if (!text.trim()) { showToast('Clipboard is empty', true); return; }
-          const result = cmd.transform(text);
-          await navigator.clipboard.writeText(result);
-          showToast(`Applied: ${cmd.label}`);
-          close();
-        } catch {
-          showToast('Could not read clipboard', true);
-        }
-      });
-    });
-  }
-
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   input.addEventListener('input', () => {
@@ -386,11 +335,6 @@ function createQuickSearchOverlay(): void {
 
     if (!query) {
       results.innerHTML = '<div class="empty-state">Start typing to search your snippets</div>';
-      return;
-    }
-
-    if (query.startsWith('>')) {
-      renderCommands(query.slice(1).trim());
       return;
     }
 
@@ -462,30 +406,25 @@ function formatTime(ts: number): string {
 }
 
 // Ctrl+C / keyboard copy — most reliable path
-document.addEventListener('copy', (e) => {
+document.addEventListener('copy', () => {
   if (!monitoringEnabled) return;
 
-  const text =
-    (e.clipboardData?.getData('text/plain') ?? '').trim() ||
-    window.getSelection()?.toString().trim() ||
-    '';
-
-  if (!text) return;
-
-  lastKnownClipboard = text;
-  sendClip(text, 'clipboard');
+  // The clipboard data isn't available yet during the copy event.
+  // Schedule a poll to read the actual clipboard content after the event completes.
+  schedulePoll();
 });
 
-// Right-click context menu "Copy" does not fire the copy event.
-// Track selection text and poll the clipboard briefly after mouseup/keyup
-// so we catch context menu copies without polling constantly.
+// Context menu "Copy" and some edge cases don't fire the copy event reliably.
+// When user releases mouse with selection, schedule a clipboard poll.
 document.addEventListener('mouseup', () => {
   const selected = window.getSelection()?.toString().trim() ?? '';
   if (selected) schedulePoll();
 });
 
 document.addEventListener('keyup', (e) => {
-  if (e.key === 'c' && (e.ctrlKey || e.metaKey)) return; // handled by copy event
+  // Ctrl+C is handled by the copy event which schedules a poll
+  if (e.key === 'c' && (e.ctrlKey || e.metaKey)) return;
+  // For other keyups with selection, poll to catch context-menu copies
   const selected = window.getSelection()?.toString().trim() ?? '';
   if (selected) schedulePoll();
 });

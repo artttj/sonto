@@ -7,7 +7,7 @@ export interface AppSettings {
   language: AppLanguage;
 }
 
-export type ClipContentType = 'text' | 'link' | 'code' | 'email' | 'image';
+export type ClipContentType = 'text' | 'link' | 'code' | 'email' | 'image' | 'prompt';
 
 export type ClipSource = 'clipboard' | 'manual' | 'shortcut' | 'context-menu';
 

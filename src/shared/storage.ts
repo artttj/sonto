@@ -97,6 +97,7 @@ export async function setReadingCompanionEnabled(enabled: boolean): Promise<void
 }
 
 const ONBOARDING_DONE_KEY = 'sonto_onboarding_done';
+const DEFAULT_VIEW_KEY = 'sonto_default_view';
 
 export async function isOnboardingDone(): Promise<boolean> {
   const result = await chrome.storage.local.get(ONBOARDING_DONE_KEY);
@@ -105,6 +106,16 @@ export async function isOnboardingDone(): Promise<boolean> {
 
 export async function setOnboardingDone(): Promise<void> {
   await chrome.storage.local.set({ [ONBOARDING_DONE_KEY]: true });
+}
+
+export async function getDefaultView(): Promise<'zen' | 'clipboard'> {
+  const result = await chrome.storage.local.get(DEFAULT_VIEW_KEY);
+  const val = result[DEFAULT_VIEW_KEY] as string | undefined;
+  return val === 'zen' ? 'zen' : 'clipboard';
+}
+
+export async function saveDefaultView(mode: 'zen' | 'clipboard'): Promise<void> {
+  await chrome.storage.local.set({ [DEFAULT_VIEW_KEY]: mode });
 }
 
 const DISABLED_SOURCES_KEY = 'sonto_disabled_sources';

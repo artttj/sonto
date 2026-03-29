@@ -5,3 +5,4 @@ dist.zip
 *.zip
 .claude/
 claude/docs/ai/sonto/10x/
+tinyllama-1.1b/

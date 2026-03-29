@@ -70,6 +70,20 @@
         </svg>
         <label for="clipboard-search" class="visually-hidden">Search clipboard history</label>
         <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." aria-label="Search clipboard history" />
+        <button id="btn-add-prompt" class="icon-btn-small" type="button" title="Add prompt" aria-label="Add new prompt">
+          <i data-lucide="plus"></i>
+        </button>
+      </div>
+
+      <div id="prompt-modal" class="prompt-modal hidden">
+        <div class="prompt-modal-content">
+          <h3 class="prompt-modal-title">New Prompt</h3>
+          <textarea id="prompt-input" class="prompt-textarea" placeholder="Enter your prompt text..." rows="6"></textarea>
+          <div class="prompt-modal-actions">
+            <button id="prompt-cancel" class="prompt-btn prompt-btn-secondary" type="button">Cancel</button>
+            <button id="prompt-save" class="prompt-btn prompt-btn-primary" type="button">Save</button>
+          </div>
+        </div>
       </div>
 
       <div id="read-later-bar" class="read-later-bar hidden">

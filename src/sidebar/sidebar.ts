@@ -1,6 +1,7 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
+import { createIcons, icons } from 'lucide';
 import { MSG } from '../shared/messages';
 import {
   getSettings,
@@ -12,6 +13,7 @@ import {
   saveTheme,
   getReadLater,
   getShowFeedToggle,
+  getDefaultView,
 } from '../shared/storage';
 import type { ReadLaterItem } from '../shared/types';
 import { ClipboardManager } from './clipboard-manager';
@@ -26,7 +28,7 @@ function qs<T extends HTMLElement>(sel: string): T {
 }
 
 class SontoSidebar {
-  private mode: ViewMode = 'zen';
+  private mode: ViewMode = 'clipboard';
   private language = 'en';
   private zenDisplay: 'feed' | 'cosmos' = 'cosmos';
   private theme: 'dark' | 'light' = 'dark';
@@ -39,6 +41,11 @@ class SontoSidebar {
   private readonly cosmosViewEl = qs<HTMLElement>('#cosmos-view');
   private readonly clipListEl = qs<HTMLElement>('#clip-list');
   private readonly searchInputEl = qs<HTMLInputElement>('#clipboard-search');
+  private readonly promptModal = qs<HTMLElement>('#prompt-modal');
+  private readonly promptInput = qs<HTMLTextAreaElement>('#prompt-input');
+  private readonly promptCancelBtn = qs<HTMLButtonElement>('#prompt-cancel');
+  private readonly promptSaveBtn = qs<HTMLButtonElement>('#prompt-save');
+  private readonly addPromptBtn = qs<HTMLButtonElement>('#btn-add-prompt');
 
   private readonly clipManager = new ClipboardManager(this.clipListEl);
 
@@ -97,6 +104,13 @@ class SontoSidebar {
       }
     });
 
+    this.addPromptBtn.addEventListener('click', () => this.showPromptModal());
+    this.promptCancelBtn.addEventListener('click', () => this.hidePromptModal());
+    this.promptSaveBtn.addEventListener('click', () => void this.savePrompt());
+    this.promptModal.addEventListener('click', (e) => {
+      if (e.target === this.promptModal) this.hidePromptModal();
+    });
+
     const zdtEl = document.getElementById('zen-display-toggle')!;
     zdtEl.querySelectorAll<HTMLButtonElement>('.zdt-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -135,18 +149,21 @@ class SontoSidebar {
     this.initReadLaterBar();
 
     try {
-      const [settings, onboardingDone, theme, zenDisplay, showFeedToggle] = await Promise.all([
+      const [settings, onboardingDone, theme, zenDisplay, showFeedToggle, defaultView] = await Promise.all([
         getSettings(),
         isOnboardingDone(),
         getTheme(),
         getZenDisplay(),
         getShowFeedToggle(),
+        getDefaultView(),
       ]);
       this.language = settings.language ?? 'en';
       this.theme = theme;
       this.zenDisplay = zenDisplay;
+      this.mode = defaultView;
       this.applyTheme(theme);
       this.syncDisplayToggle(zenDisplay);
+      this.syncModeButtons();
       
       const zdtEl = document.getElementById('zen-display-toggle');
       if (zdtEl) {
@@ -169,13 +186,22 @@ class SontoSidebar {
       await this.zenFeed.restorePastFacts();
     }
 
+    if (this.mode === 'clipboard') {
+      this.viewZen.classList.add('hidden');
+      this.viewClipboard.classList.remove('hidden');
+    }
+
     await this.refreshDomainAndLoad();
 
-    if (this.zenDisplay === 'cosmos') {
-      void this.cosmosMode!.start();
-    } else {
-      void this.zenFeed!.start();
+    if (this.mode === 'zen') {
+      if (this.zenDisplay === 'cosmos') {
+        void this.cosmosMode!.start();
+      } else {
+        void this.zenFeed!.start();
+      }
     }
+
+    createIcons({ icons, attrs: { strokeWidth: 1.5 } });
   }
 
   private async switchZenDisplay(display: 'feed' | 'cosmos'): Promise<void> {
@@ -209,6 +235,12 @@ class SontoSidebar {
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', String(active));
     });
+  }
+
+  private syncModeButtons(): void {
+    this.clipboardBtn.classList.toggle('active', this.mode === 'clipboard');
+    this.viewZen.classList.toggle('hidden', this.mode !== 'zen');
+    this.viewClipboard.classList.toggle('hidden', this.mode !== 'clipboard');
   }
 
   private ensureCosmosMode(): void {
@@ -302,9 +334,7 @@ class SontoSidebar {
 
   private setMode(mode: ViewMode): void {
     this.mode = mode;
-    this.clipboardBtn.classList.toggle('active', mode === 'clipboard');
-    this.viewZen.classList.toggle('hidden', mode !== 'zen');
-    this.viewClipboard.classList.toggle('hidden', mode !== 'clipboard');
+    this.syncModeButtons();
 
     if (mode === 'zen') {
       if (this.zenDisplay === 'cosmos') {
@@ -327,6 +357,41 @@ class SontoSidebar {
       this.currentDomain = '';
     }
     await this.clipManager.load(this.currentDomain);
+  }
+
+  private showPromptModal(): void {
+    this.promptModal.classList.remove('hidden');
+    this.promptInput.value = '';
+    this.promptInput.focus();
+  }
+
+  private hidePromptModal(): void {
+    this.promptModal.classList.add('hidden');
+    this.promptInput.value = '';
+  }
+
+  private async savePrompt(): Promise<void> {
+    const text = this.promptInput.value.trim();
+    if (!text) {
+      this.hidePromptModal();
+      return;
+    }
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: MSG.CAPTURE_CLIP,
+        text,
+        source: 'manual',
+        contentType: 'prompt',
+      });
+
+      if (response?.ok) {
+        await this.clipManager.load(this.currentDomain);
+        this.hidePromptModal();
+      }
+    } catch (err) {
+      console.error('[Sonto] Failed to save prompt:', err);
+    }
   }
 }
 

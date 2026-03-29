@@ -64,6 +64,7 @@ async function captureClip(
   source: ClipSource,
   url?: string,
   title?: string,
+  explicitContentType?: ClipContentType,
 ): Promise<void> {
   const trimmed = text.slice(0, MAX_CAPTURE_CHARS);
   if (!trimmed.trim()) throw new Error('Nothing to save.');
@@ -73,7 +74,7 @@ async function captureClip(
 
   if (await isRepeatOfRecentClip(trimmed)) throw new Error('Already in clipboard history.');
 
-  const contentType = detectContentType(trimmed);
+  const contentType = explicitContentType ?? detectContentType(trimmed);
   const tags = buildTags(url);
 
   const clip: ClipItem = {
@@ -197,8 +198,8 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, sendResp
   }
 
   if (message.type === MSG.CAPTURE_CLIP) {
-    const { text, url, title, source } = message;
-    void captureClip(text, source, url, title)
+    const { text, url, title, source, contentType } = message;
+    void captureClip(text, source, url, title, contentType)
       .then(() => sendResponse({ ok: true, type: MSG.CAPTURE_SUCCESS }))
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : 'Unknown error';

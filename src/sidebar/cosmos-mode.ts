@@ -735,7 +735,7 @@ export class CosmosMode {
     if (saveText) {
       const saveBtn = document.createElement('button');
       saveBtn.className = 'cosmos-save';
-      saveBtn.textContent = 'Save';
+      saveBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a2 2a2 13 4 17"/><path d="M23 7a2 4a2 13v14a2 18v8a2 4v10"/></svg>`;
       saveBtn.addEventListener('click', () => {
         void chrome.runtime.sendMessage({
           type: MSG.CAPTURE_CLIP,

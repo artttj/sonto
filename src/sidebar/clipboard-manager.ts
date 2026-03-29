@@ -1,11 +1,11 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
+import { createIcons, icons } from 'lucide';
 import { MSG } from '../shared/messages';
 import type { ClipItem, ClipContentType } from '../shared/types';
 import { escapeHtml } from '../shared/utils';
 import { highlightCode } from './syntax-highlight';
-import { getApplicableTransforms } from '../shared/clip-transforms';
 
 const TEXT_PREVIEW_CHARS = 280;
 const CODE_PREVIEW_CHARS = 300;
@@ -39,6 +39,7 @@ function contentTypeLabel(type: ClipContentType): string {
     case 'code': return 'Code';
     case 'email': return 'Email';
     case 'image': return 'Image';
+    case 'prompt': return 'Prompt';
     default: return 'Text';
   }
 }
@@ -49,6 +50,7 @@ function contentTypeIcon(type: ClipContentType): string {
     case 'code': return '{}';
     case 'email': return '@';
     case 'image': return '▨';
+    case 'prompt': return '✦';
     default: return '¶';
   }
 }
@@ -76,7 +78,6 @@ export class ClipboardManager {
   private isLoading = false;
   private selectedIndex = -1;
   private activeDomain = '';
-  private openTransformMenu: HTMLElement | null = null;
 
   constructor(listEl: HTMLElement) {
     this.listEl = listEl;
@@ -155,7 +156,6 @@ export class ClipboardManager {
   render(): void {
     this.listEl.innerHTML = '';
     this.selectedIndex = -1;
-    this.closeTransformMenu();
 
     if (this.isLoading) {
       this.renderLoading();
@@ -175,7 +175,8 @@ export class ClipboardManager {
     }
 
     const pinned = this.clips.filter((c) => c.pinned);
-    const unpinned = this.clips.filter((c) => !c.pinned);
+    const prompts = this.clips.filter((c) => c.contentType === 'prompt' && !c.pinned);
+    const regular = this.clips.filter((c) => c.contentType !== 'prompt' && !c.pinned);
 
     if (pinned.length > 0) {
       this.addSeparator('Pinned', 'pinned-separator');
@@ -184,9 +185,16 @@ export class ClipboardManager {
       }
     }
 
+    if (prompts.length > 0) {
+      this.addSeparator('Prompts', 'prompts-separator');
+      for (const clip of prompts) {
+        this.listEl.appendChild(this.buildCard(clip));
+      }
+    }
+
     if (this.activeDomain) {
-      const siteClips = unpinned.filter((c) => this.matchesDomain(c));
-      const otherClips = unpinned.filter((c) => !this.matchesDomain(c));
+      const siteClips = regular.filter((c) => this.matchesDomain(c));
+      const otherClips = regular.filter((c) => !this.matchesDomain(c));
 
       if (siteClips.length > 0) {
         this.addSeparator('From this site', 'site-separator');
@@ -196,8 +204,10 @@ export class ClipboardManager {
       }
       this.renderByDay(otherClips);
     } else {
-      this.renderByDay(unpinned);
+      this.renderByDay(regular);
     }
+
+    createIcons({ icons, attrs: { strokeWidth: 1.5 } });
   }
 
   private matchesDomain(clip: ClipItem): boolean {
@@ -231,7 +241,7 @@ export class ClipboardManager {
 
   private buildCard(clip: ClipItem): HTMLElement {
     const card = document.createElement('div');
-    card.className = `clip-card clip-type-${clip.contentType}`;
+    card.className = `clip-card clip-type-${clip.contentType}${clip.pinned ? ' clip-pinned' : ''}`;
     card.dataset.id = clip.id;
 
     const preview = clip.contentType === 'code'
@@ -242,10 +252,8 @@ export class ClipboardManager {
       ? `<a class="clip-source-url" href="${escapeHtml(clip.url)}" target="_blank" rel="noopener">${escapeHtml(truncateUrl(clip.url))}</a>`
       : '';
 
-    const transforms = getApplicableTransforms(clip.text);
-    const transformBtn = transforms.length > 0
-      ? '<button class="clip-btn clip-btn-transform" title="Transform" aria-label="Transform this clip">Transform</button>'
-      : '';
+    const pinLabel = clip.pinned ? 'Unpin' : 'Pin';
+    const pinIcon = clip.pinned ? 'star' : 'star';
 
     card.innerHTML = `
       <div class="clip-header">
@@ -260,75 +268,38 @@ export class ClipboardManager {
         ${sourceInfo ? `<div class="clip-meta">${sourceInfo}</div>` : ''}
       </div>
       <div class="clip-card-actions">
-        <button class="clip-btn clip-btn-copy" title="Copy to clipboard" aria-label="Copy this clip to clipboard">Copy</button>
-        ${transformBtn}
-        <button class="clip-btn clip-btn-delete" title="Delete this clip" aria-label="Delete this clip">Delete</button>
+        <button class="clip-btn clip-btn-pin${clip.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this clip"><i data-lucide="${pinIcon}"></i></button>
+        <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this clip to clipboard"><i data-lucide="clipboard"></i><span class="clip-btn-label">Copy</span></button>
+        <button class="clip-btn clip-btn-delete" title="Delete" aria-label="Delete this clip"><i data-lucide="trash-2"></i></button>
       </div>
     `;
+
+    createIcons({ icons, attrs: { strokeWidth: 1.5 } });
 
     const copyClip = () => {
       void navigator.clipboard.writeText(clip.text).then(() => {
         const btn = qs<HTMLButtonElement>('.clip-btn-copy', card);
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = 'Copy'; }, COPY_FEEDBACK_MS);
+        const label = btn.querySelector('.clip-btn-label');
+        if (label) {
+          label.textContent = 'Copied!';
+          setTimeout(() => { label.textContent = 'Copy'; }, COPY_FEEDBACK_MS);
+        }
       }).catch(() => {});
     };
 
     qs<HTMLButtonElement>('.clip-btn-copy', card).addEventListener('click', copyClip);
     card.addEventListener('dblclick', copyClip);
 
+    qs<HTMLButtonElement>('.clip-btn-pin', card).addEventListener('click', (e) => {
+      e.stopPropagation();
+      void this.togglePin(clip.id, card);
+    });
+
     qs<HTMLButtonElement>('.clip-btn-delete', card).addEventListener('click', () => {
       void this.deleteClip(clip.id, card);
     });
 
-    if (transforms.length > 0) {
-      qs<HTMLButtonElement>('.clip-btn-transform', card).addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.showTransformMenu(clip, card);
-      });
-    }
-
     return card;
-  }
-
-  private showTransformMenu(clip: ClipItem, card: HTMLElement): void {
-    this.closeTransformMenu();
-
-    const transforms = getApplicableTransforms(clip.text);
-    const menu = document.createElement('div');
-    menu.className = 'clip-transform-menu';
-
-    for (const t of transforms) {
-      const btn = document.createElement('button');
-      btn.className = 'clip-transform-item';
-      btn.textContent = t.label;
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const result = t.transform(clip.text);
-        void navigator.clipboard.writeText(result).then(() => {
-          const copyBtn = card.querySelector<HTMLButtonElement>('.clip-btn-copy');
-          if (copyBtn) { copyBtn.textContent = 'Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy'; }, COPY_FEEDBACK_MS); }
-        }).catch(() => {});
-        this.closeTransformMenu();
-      });
-      menu.appendChild(btn);
-    }
-
-    card.appendChild(menu);
-    this.openTransformMenu = menu;
-
-    const closeOnClick = (ev: MouseEvent) => {
-      if (menu.contains(ev.target as Node)) return;
-      this.closeTransformMenu();
-    };
-    requestAnimationFrame(() => {
-      document.addEventListener('click', closeOnClick, { once: true });
-    });
-  }
-
-  private closeTransformMenu(): void {
-    this.openTransformMenu?.remove();
-    this.openTransformMenu = null;
   }
 
   private getCards(): NodeListOf<HTMLElement> {
@@ -373,5 +344,36 @@ export class ClipboardManager {
 
       if (this.clips.length === 0) this.render();
     }, 200);
+  }
+
+  private async togglePin(id: string, card: HTMLElement): Promise<void> {
+    const clip = this.clips.find((c) => c.id === id);
+    if (!clip) return;
+
+    const newPinned = !clip.pinned;
+    await chrome.runtime.sendMessage({
+      type: MSG.UPDATE_CLIP,
+      clip: { ...clip, pinned: newPinned },
+    });
+
+    clip.pinned = newPinned;
+    card.classList.toggle('clip-pinned', newPinned);
+
+    const pinBtn = card.querySelector<HTMLButtonElement>('.clip-btn-pin');
+    if (pinBtn) {
+      pinBtn.classList.toggle('pinned', newPinned);
+      pinBtn.title = newPinned ? 'Unpin' : 'Pin';
+      pinBtn.setAttribute('aria-label', `${newPinned ? 'Unpin' : 'Pin'} this clip`);
+      const icon = pinBtn.querySelector('svg');
+      if (icon) {
+        icon.remove();
+        const newIcon = document.createElement('i');
+        newIcon.setAttribute('data-lucide', 'star');
+        pinBtn.prepend(newIcon);
+        createIcons({ icons, attrs: { strokeWidth: 1.5 } });
+      }
+    }
+
+    this.render();
   }
 }
