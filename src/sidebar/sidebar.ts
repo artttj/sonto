@@ -148,7 +148,6 @@ class SontoSidebar {
 
     this.initReadLaterBar();
 
-    // Load settings and show default view immediately
     const settingsPromise = Promise.all([
       getSettings(),
       getTheme(),
@@ -158,7 +157,6 @@ class SontoSidebar {
       isOnboardingDone(),
     ]);
 
-    // Start loading clipboard data immediately
     const loadPromise = this.refreshDomainAndLoad();
 
     try {
@@ -180,7 +178,6 @@ class SontoSidebar {
         await setOnboardingDone();
       }
 
-      // Show the correct view immediately
       if (this.mode === 'clipboard') {
         this.viewZen.classList.add('hidden');
         this.viewClipboard.classList.remove('hidden');
@@ -188,10 +185,8 @@ class SontoSidebar {
 
       createIcons({ icons, attrs: { strokeWidth: 1.5 } });
 
-      // Wait for clipboard data
       await loadPromise;
 
-      // Only initialize zen/cosmos if needed
       if (this.mode === 'zen') {
         if (this.zenDisplay === 'cosmos') {
           this.zenFeedEl.classList.add('hidden');

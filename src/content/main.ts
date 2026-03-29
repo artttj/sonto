@@ -106,7 +106,6 @@ async function pollClipboard(): Promise<void> {
     lastKnownClipboard = text;
     sendClip(text, 'clipboard');
   } catch {
-    // clipboard read permission denied or not available — ignore
   }
 }
 
@@ -405,31 +404,22 @@ function formatTime(ts: number): string {
   return d.toLocaleDateString();
 }
 
-// Ctrl+C / keyboard copy — most reliable path
 document.addEventListener('copy', () => {
   if (!monitoringEnabled) return;
-
-  // The clipboard data isn't available yet during the copy event.
-  // Schedule a poll to read the actual clipboard content after the event completes.
   schedulePoll();
 });
 
-// Context menu "Copy" and some edge cases don't fire the copy event reliably.
-// When user releases mouse with selection, schedule a clipboard poll.
 document.addEventListener('mouseup', () => {
   const selected = window.getSelection()?.toString().trim() ?? '';
   if (selected) schedulePoll();
 });
 
 document.addEventListener('keyup', (e) => {
-  // Ctrl+C is handled by the copy event which schedules a poll
   if (e.key === 'c' && (e.ctrlKey || e.metaKey)) return;
-  // For other keyups with selection, poll to catch context-menu copies
   const selected = window.getSelection()?.toString().trim() ?? '';
   if (selected) schedulePoll();
 });
 
-// Reading Companion - show related snippets when visiting pages
 async function initReadingCompanion(): Promise<void> {
   try {
     const domain = window.location.hostname.replace(/^www\./, '');
@@ -444,7 +434,6 @@ async function initReadingCompanion(): Promise<void> {
       createReadingCompanionBanner(response.clips);
     }
   } catch {
-    // silently fail
   }
 }
 
