@@ -3,7 +3,7 @@
 
 export { escapeHtml } from '../../shared/utils';
 
-export const ZEN_INITIAL_BATCH = 4;
+export const ZEN_INITIAL_BATCH = 6;
 export const ZEN_DRIP_BATCH = 1;
 export const ZEN_DRIP_MS = 15000;
 export const ZEN_IDLE_MS = 5 * 60 * 1000;

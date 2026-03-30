@@ -76,10 +76,10 @@ export class ZenFeed {
 
       if (raw.length > 0) {
         this.feedEl.innerHTML = '';
-        const last = raw[raw.length - 1];
-        if (last) {
-          this.pastFacts.push(last);
-          this.appendBubbleElement(last);
+        const recent = raw.slice(-6);
+        for (const item of recent) {
+          this.pastFacts.push(item);
+          this.appendBubbleElement(item);
         }
         this.scheduleDrip();
         return;
