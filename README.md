@@ -65,22 +65,22 @@ No API keys needed. The extension works entirely in your browser.
 | Source | Content |
 |---|---|
 | [1000-Word Philosophy](https://1000wordphilosophy.com) | Philosophy essays |
-| [Cleveland Museum of Art](https://clevelandart.org) | Open access artworks |
-| [The Met](https://metmuseum.org) | Public domain paintings |
+| Album of a Day | Picks from Pitchfork and Rolling Stone top albums |
 | [Atlas Obscura](https://atlasobscura.com) | Curious places and stories |
+| [Cleveland Museum of Art](https://clevelandart.org) | Open access artworks |
+| Custom JSON API | Any endpoint returning items |
+| Custom RSS | Your own feeds |
 | [Getty Museum](https://getty.edu/museum) | Paintings and sculptures |
 | [Hacker News](https://news.ycombinator.com) | Top tech stories |
 | Haiku | Japanese haiku poems |
 | Japanese Proverbs | Kotowaza with English translation |
-| Oblique Strategies | Creative prompts by Brian Eno |
 | [NASA Perseverance](https://mars.nasa.gov/mars2020) | Mars surface photos |
-| [Wikimedia Commons](https://commons.wikimedia.org) | Paintings from curated categories |
-| Album of a Day | Picks from Pitchfork and Rolling Stone top albums |
+| Oblique Strategies | Creative prompts by Brian Eno |
 | [Reddit](https://reddit.com) | Science, space, philosophy subreddits |
 | [Rijksmuseum](https://rijksmuseum.nl) | Dutch Golden Age paintings |
 | [Smithsonian Magazine](https://smithsonianmag.com/smart-news) | Science and smart news |
-| Custom RSS | Your own feeds |
-| Custom JSON API | Any endpoint returning items |
+| [The Met](https://metmuseum.org) | Public domain paintings |
+| [Wikimedia Commons](https://commons.wikimedia.org) | Paintings from curated categories |
 
 Toggle sources in **Settings > Feed > Sources**.
 
