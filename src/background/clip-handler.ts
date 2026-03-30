@@ -50,6 +50,7 @@ export class ClipHandler {
 
     await addClip(clip);
     await this.enforceHistoryLimit();
+    void chrome.runtime.sendMessage({ type: MSG.CLIP_ADDED }).catch(() => {});
   }
 
   async delete(id: string): Promise<void> {
