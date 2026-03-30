@@ -264,17 +264,17 @@ export async function getAllPrompts(): Promise<PromptItem[]> {
 export async function savePrompt(text: string): Promise<PromptItem> {
   const prompts = await getAllPrompts();
   const newPrompt: PromptItem = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id: `${Date.now()}-${crypto.randomUUID()}`,
     text,
     createdAt: Date.now(),
   };
-  prompts.push(newPrompt);
-  await chrome.storage.local.set({ [PROMPTS_KEY]: prompts });
+  const updatedPrompts = [...prompts, newPrompt];
+  await chrome.storage.local.set({ [PROMPTS_KEY]: updatedPrompts });
   return newPrompt;
 }
 
 export async function deletePrompt(id: string): Promise<void> {
   const prompts = await getAllPrompts();
-  const filtered = prompts.filter((p) => p.id !== id);
-  await chrome.storage.local.set({ [PROMPTS_KEY]: filtered });
+  const updatedPrompts = prompts.filter((p) => p.id !== id);
+  await chrome.storage.local.set({ [PROMPTS_KEY]: updatedPrompts });
 }
