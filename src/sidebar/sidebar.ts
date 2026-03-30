@@ -50,8 +50,6 @@ class SontoSidebar {
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
       if (message.type === MSG.CLIP_ADDED) {
         void this.clipManager.load(this.currentDomain);
-        // Auto-switch to clipboard view when a new clip is added
-        this.viewController.setMode('clipboard');
       }
     });
 
