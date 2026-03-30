@@ -6,7 +6,6 @@ import { registerAllHandlers } from './handlers';
 import { handleMessage } from './message-router';
 import { clipHandler } from './clip-handler';
 import { readLaterHandler } from './read-later-handler';
-import { notificationHandler, setupAlarmListener } from './notification-handler';
 import { badgeHandler } from './badge-handler';
 import type { RuntimeMessage } from '../shared/messages';
 
@@ -100,7 +99,5 @@ chrome.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendRespo
 });
 
 registerAllHandlers();
-setupAlarmListener(notificationHandler);
 
-void notificationHandler.setupDailyAlarm();
 void badgeHandler.restoreBadge();

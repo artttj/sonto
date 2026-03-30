@@ -4,6 +4,7 @@
 const de: Record<string, string> = {
   nav_feed: 'Feed',
   nav_clipboard: 'Zwischenablage',
+  nav_language: 'Sprache',
   nav_data: 'Daten',
   nav_about: 'Über',
   brand_sub: 'Einstellungen',
@@ -38,10 +39,6 @@ const de: Record<string, string> = {
   related_popup: 'Verwandte Clips anzeigen',
   related_popup_desc: 'Zeigt eine Karte mit verwandten Clips aus deinen Einträgen, wenn du eine Seite besuchst',
 
-  daily_summary: 'Tägliche Zusammenfassung',
-  daily_notification: 'Tägliche Benachrichtigung',
-  daily_notification_desc: 'Erhalte eine Zusammenfassung deiner gespeicherten Einträge am Ende jedes Tages',
-  daily_time: 'Uhrzeit',
   badge_counter: 'Badge-Zähler',
   badge_counter_desc: 'Tägliche Anzahl der Clips auf dem Erweiterungssymbol anzeigen',
 

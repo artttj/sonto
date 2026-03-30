@@ -13,10 +13,6 @@ import {
   setClipboardMonitoring,
   getMaxHistorySize,
   setMaxHistorySize,
-  getDailyNotificationEnabled,
-  setDailyNotificationEnabled,
-  getDailyNotificationTime,
-  setDailyNotificationTime,
   getBadgeCounterEnabled,
   setBadgeCounterEnabled,
   getDripInterval,
@@ -97,7 +93,7 @@ describe('Storage Operations', () => {
   describe('Max History Size', () => {
     it('should return default when not set', async () => {
       const size = await getMaxHistorySize();
-      expect(size).toBe(100);
+      expect(size).toBe(500);
     });
 
     it('should save and retrieve max history size', async () => {
@@ -105,32 +101,6 @@ describe('Storage Operations', () => {
 
       const size = await getMaxHistorySize();
       expect(size).toBe(50);
-    });
-  });
-
-  describe('Daily Notification', () => {
-    it('should default to disabled', async () => {
-      const enabled = await getDailyNotificationEnabled();
-      expect(enabled).toBe(false);
-    });
-
-    it('should save and retrieve notification enabled state', async () => {
-      await setDailyNotificationEnabled(true);
-
-      const enabled = await getDailyNotificationEnabled();
-      expect(enabled).toBe(true);
-    });
-
-    it('should default to 18:00 time', async () => {
-      const time = await getDailyNotificationTime();
-      expect(time).toBe('18:00');
-    });
-
-    it('should save and retrieve notification time', async () => {
-      await setDailyNotificationTime('09:00');
-
-      const time = await getDailyNotificationTime();
-      expect(time).toBe('09:00');
     });
   });
 

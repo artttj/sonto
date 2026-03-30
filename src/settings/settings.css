@@ -341,6 +341,16 @@ body {
 .btn-primary:hover { filter: brightness(0.9); }
 .btn-primary:active { filter: brightness(0.8); }
 
+.btn-secondary {
+  background: var(--c-toggle-bg);
+  color: var(--c-text-2);
+  border: 1px solid var(--c-border);
+}
+.btn-secondary:hover {
+  background: var(--c-border);
+  color: var(--c-text);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--c-text-2);

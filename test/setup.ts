@@ -8,6 +8,118 @@ const mockSessionStorage: Record<string, unknown> = {};
 const mockAlarms: Map<string, { when: number; periodInMinutes?: number }> = new Map();
 const mockNotifications: unknown[] = [];
 
+// In-memory store for IndexedDB
+const idbData: Map<string, Map<string, unknown>> = new Map();
+
+// Helper to create DOMStringList-like object
+function createDOMStringList(names: string[]): { contains: (name: string) => boolean; length: number } {
+  return {
+    contains: (name: string) => names.includes(name),
+    get length() { return names.length; },
+  };
+}
+
+// Mock IndexedDB
+const mockIndexedDB = {
+  open: vi.fn((name: string, version?: number) => {
+    // Create request object
+    const req: {
+      result: unknown;
+      error: Error | null;
+      onsuccess: ((e: Event) => void) | null;
+      onerror: ((e: Event) => void) | null;
+      onupgradeneeded: ((e: Event) => void) | null;
+    } = {
+      result: null,
+      error: null,
+      onsuccess: null,
+      onerror: null,
+      onupgradeneeded: null,
+    };
+
+    // Create mock database
+    const storeNames: string[] = [];
+    const db = {
+      objectStoreNames: createDOMStringList(storeNames),
+      createObjectStore: (storeName: string, options?: { keyPath?: string }) => {
+        if (!idbData.has(storeName)) {
+          idbData.set(storeName, new Map());
+        }
+        storeNames.push(storeName);
+        return {
+          createIndex: () => ({ /* mock index */ }),
+        };
+      },
+      deleteObjectStore: (storeName: string) => {
+        const idx = storeNames.indexOf(storeName);
+        if (idx > -1) {
+          storeNames.splice(idx, 1);
+          idbData.delete(storeName);
+        }
+      },
+      transaction: (storeNamesArg: string | string[], mode?: string) => {
+        const stores = Array.isArray(storeNamesArg) ? storeNamesArg : [storeNamesArg];
+
+        return {
+          objectStore: (storeName: string) => {
+            if (!idbData.has(storeName)) {
+              idbData.set(storeName, new Map());
+            }
+            const store = idbData.get(storeName)!;
+
+            return {
+              put: (value: unknown, key?: string) => {
+                const k = key ?? (value as Record<string, string>).id ?? `${Date.now()}-${Math.random()}`;
+                store.set(k, value);
+                return { set onsuccess(cb: () => void) { cb(); } };
+              },
+              get: (key: string) => {
+                const result = store.get(key);
+                return { set onsuccess(cb: () => void) { cb(); }, result };
+              },
+              getAll: () => {
+                const result = Array.from(store.values());
+                return { set onsuccess(cb: () => void) { cb(); }, result };
+              },
+              delete: (key: string) => {
+                store.delete(key);
+                return { set onsuccess(cb: () => void) { cb(); } };
+              },
+              clear: () => {
+                store.clear();
+                return { set onsuccess(cb: () => void) { cb(); } };
+              },
+            };
+          },
+          set oncomplete(cb: () => void) { setTimeout(cb, 0); },
+          set onerror(_cb: () => void) { /* no-op */ },
+        };
+      },
+    };
+
+    req.result = db;
+
+    // Trigger onupgradeneeded then onsuccess asynchronously
+    setTimeout(() => {
+      if (req.onupgradeneeded) {
+        req.onupgradeneeded(new Event('upgradeneeded'));
+      }
+      if (req.onsuccess) {
+        req.onsuccess(new Event('success'));
+      }
+    }, 0);
+
+    return req;
+  }),
+
+  deleteDatabase: vi.fn((_name: string) => {
+    idbData.clear();
+    return { set onsuccess(cb: () => void) { setTimeout(cb, 0); } };
+  }),
+};
+
+(global as unknown as { indexedDB: typeof mockIndexedDB }).indexedDB = mockIndexedDB;
+
 // Mock chrome APIs
 global.chrome = {
   runtime: {
@@ -141,6 +253,7 @@ beforeEach(() => {
   Object.keys(mockSessionStorage).forEach((key) => delete mockSessionStorage[key]);
   mockAlarms.clear();
   mockNotifications.length = 0;
+  idbData.clear();
 
   vi.clearAllMocks();
 });

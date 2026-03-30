@@ -10,8 +10,6 @@ export const STORAGE_KEYS = {
   CLIPBOARD_MONITORING: 'sonto_clipboard_monitoring',
   MAX_HISTORY_SIZE: 'sonto_max_history_size',
   CUSTOM_JSON_SOURCES: 'sonto_custom_json_sources',
-  DAILY_NOTIFICATION_ENABLED: 'sonto_daily_notification_enabled',
-  DAILY_NOTIFICATION_TIME: 'sonto_daily_notification_time',
   BADGE_COUNTER_ENABLED: 'sonto_badge_counter_enabled',
   READING_COMPANION_ENABLED: 'sonto_reading_companion_enabled',
   COLLECTIONS: 'sonto_collections',

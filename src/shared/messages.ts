@@ -7,6 +7,9 @@ export const MSG = {
   CAPTURE_CLIP: 'CAPTURE_CLIP',
   CAPTURE_SUCCESS: 'CAPTURE_SUCCESS',
   CAPTURE_ERROR: 'CAPTURE_ERROR',
+  SAVE_PROMPT: 'SAVE_PROMPT',
+  GET_ALL_PROMPTS: 'GET_ALL_PROMPTS',
+  DELETE_PROMPT: 'DELETE_PROMPT',
   DELETE_CLIP: 'DELETE_CLIP',
   GET_ALL_CLIPS: 'GET_ALL_CLIPS',
   SEARCH_CLIPS: 'SEARCH_CLIPS',
@@ -21,7 +24,6 @@ export const MSG = {
   EXTRACT_CATEGORIES: 'EXTRACT_CATEGORIES',
   GENERATE_ZEN_FACT: 'GENERATE_ZEN_FACT',
   GENERATE_ZEN_STAT: 'GENERATE_ZEN_STAT',
-  UPDATE_DAILY_ALARM: 'UPDATE_DAILY_ALARM',
   QUICK_SEARCH: 'SONTO_QUICK_SEARCH',
   GET_RELATED_CLIPS: 'GET_RELATED_CLIPS',
 } as const;
@@ -77,13 +79,23 @@ export interface GetReadLaterMessage {
   type: typeof MSG.GET_READ_LATER;
 }
 
-export interface UpdateDailyAlarmMessage {
-  type: typeof MSG.UPDATE_DAILY_ALARM;
-}
-
 export interface GetRelatedClipsMessage {
   type: typeof MSG.GET_RELATED_CLIPS;
   domain: string;
+}
+
+export interface SavePromptMessage {
+  type: typeof MSG.SAVE_PROMPT;
+  text: string;
+}
+
+export interface GetAllPromptsMessage {
+  type: typeof MSG.GET_ALL_PROMPTS;
+}
+
+export interface DeletePromptMessage {
+  type: typeof MSG.DELETE_PROMPT;
+  id: string;
 }
 
 export type RuntimeMessage =
@@ -97,8 +109,10 @@ export type RuntimeMessage =
   | AddReadLaterMessage
   | RemoveReadLaterMessage
   | GetReadLaterMessage
-  | UpdateDailyAlarmMessage
-  | GetRelatedClipsMessage;
+  | GetRelatedClipsMessage
+  | SavePromptMessage
+  | GetAllPromptsMessage
+  | DeletePromptMessage;
 
 export interface CaptureSuccessResult {
   ok: true;

@@ -1,7 +1,7 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import { MSG } from '../../shared/messages';
+import { savePrompt } from '../../shared/storage';
 
 interface PromptModalDeps {
   modal: HTMLElement;
@@ -47,17 +47,9 @@ export class PromptModalController {
     }
 
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: MSG.CAPTURE_CLIP,
-        text,
-        source: 'manual',
-        contentType: 'prompt',
-      });
-
-      if (response?.ok) {
-        await this.deps.onSaved?.();
-        this.hide();
-      }
+      await savePrompt(text);
+      await this.deps.onSaved?.();
+      this.hide();
     } catch (err) {
       console.error('[Sonto] Failed to save prompt:', err);
     }

@@ -20,18 +20,15 @@ import {
   saveCustomFeeds,
   getCustomJsonSources,
   saveCustomJsonSources,
-  getDailyNotificationEnabled,
-  setDailyNotificationEnabled,
-  getDailyNotificationTime,
-  setDailyNotificationTime,
   getBadgeCounterEnabled,
   setBadgeCounterEnabled,
   getReadingCompanionEnabled,
   setReadingCompanionEnabled,
 } from '../shared/storage';
 import { parseFeed } from '../shared/rss-parser';
-import { clearAllClips, getClipCount } from '../shared/embeddings/vector-store';
+import { clearAllClips, getClipCount, getAllClips, addClip } from '../shared/embeddings/vector-store';
 import { setLocale, applyI18n } from '../shared/i18n';
+import type { ClipItem } from '../shared/types';
 
 const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'philosophyEssay', label: '1000-Word Philosophy' },
@@ -274,17 +271,13 @@ async function initClipboardTab(): Promise<void> {
   const monitoringToggle = qs<HTMLInputElement>('#clipboard-monitoring-toggle');
   const maxSizeInput = qs<HTMLInputElement>('#max-history-size');
   const clipCountEl = document.getElementById('clip-count-display');
-  const dailyToggle = qs<HTMLInputElement>('#daily-notification-toggle');
-  const dailyTimeInput = qs<HTMLInputElement>('#daily-notification-time');
   const badgeToggle = qs<HTMLInputElement>('#badge-counter-toggle');
   const companionToggle = qs<HTMLInputElement>('#reading-companion-toggle');
 
-  const [monitoring, maxSize, count, dailyEnabled, dailyTime, badgeEnabled, companionEnabled] = await Promise.all([
+  const [monitoring, maxSize, count, badgeEnabled, companionEnabled] = await Promise.all([
     getClipboardMonitoring(),
     getMaxHistorySize(),
     getClipCount(),
-    getDailyNotificationEnabled(),
-    getDailyNotificationTime(),
     getBadgeCounterEnabled(),
     getReadingCompanionEnabled(),
   ]);
@@ -292,8 +285,6 @@ async function initClipboardTab(): Promise<void> {
   monitoringToggle.checked = monitoring;
   maxSizeInput.value = String(maxSize);
   if (clipCountEl) clipCountEl.textContent = String(count);
-  dailyToggle.checked = dailyEnabled;
-  dailyTimeInput.value = dailyTime;
   badgeToggle.checked = badgeEnabled;
   companionToggle.checked = companionEnabled;
 
@@ -310,18 +301,6 @@ async function initClipboardTab(): Promise<void> {
     } else {
       maxSizeInput.value = String(maxSize);
     }
-  });
-
-  dailyToggle.addEventListener('change', async () => {
-    await setDailyNotificationEnabled(dailyToggle.checked);
-    await chrome.runtime.sendMessage({ type: 'UPDATE_DAILY_ALARM' });
-    showStatus('status-daily');
-  });
-
-  dailyTimeInput.addEventListener('change', async () => {
-    await setDailyNotificationTime(dailyTimeInput.value);
-    await chrome.runtime.sendMessage({ type: 'UPDATE_DAILY_ALARM' });
-    showStatus('status-daily');
   });
 
   badgeToggle.addEventListener('change', async () => {
@@ -345,6 +324,49 @@ async function initDataTab(): Promise<void> {
   const manifest = chrome.runtime.getManifest();
   versionEl.textContent = manifest.version;
 
+  qs<HTMLButtonElement>('#btn-export').addEventListener('click', async () => {
+    const clips = await getAllClips();
+    const data = JSON.stringify(clips, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sonto-export-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showStatus('status-export');
+  });
+
+  const importFile = qs<HTMLInputElement>('#import-file');
+  qs<HTMLButtonElement>('#btn-import').addEventListener('click', () => {
+    importFile.click();
+  });
+
+  importFile.addEventListener('change', async () => {
+    const file = importFile.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const clips = JSON.parse(text) as ClipItem[];
+
+      if (!Array.isArray(clips)) {
+        throw new Error('Invalid format');
+      }
+
+      const validClips = clips.filter((c) => c.id && c.text);
+      await Promise.all(validClips.map((clip) => addClip(clip)));
+
+      const newCount = await getClipCount();
+      countEl.textContent = String(newCount);
+      showStatus('status-import');
+    } catch (err) {
+      alert('Failed to import: invalid file format');
+    }
+
+    importFile.value = '';
+  });
+
   qs<HTMLButtonElement>('#btn-delete-all').addEventListener('click', async () => {
     const current = await getClipCount();
     if (current === 0) return;
@@ -355,6 +377,16 @@ async function initDataTab(): Promise<void> {
   });
 }
 
+async function initLanguageTab(): Promise<void> {
+  const settings = await getSettings();
+  const setLanguage = initSegmented('language-segmented', async (lang) => {
+    await saveSettings({ language: lang as 'en' | 'de' });
+    setLocale(lang);
+    applyI18n();
+  });
+  setLanguage(settings.language);
+}
+
 async function init(): Promise<void> {
   const [settings, theme] = await Promise.all([getSettings(), getTheme()]);
 
@@ -363,16 +395,15 @@ async function init(): Promise<void> {
 
   document.documentElement.dataset.theme = theme;
 
+  chrome.storage.local.onChanged.addListener((changes) => {
+    if (changes.sonto_theme) {
+      document.documentElement.dataset.theme = changes.sonto_theme.newValue as string;
+    }
+  });
+
   initTabs();
 
-  const setLanguage = initSegmented('language-segmented', async (lang) => {
-    await saveSettings({ language: lang as 'en' | 'de' });
-    setLocale(lang);
-    applyI18n();
-  });
-  setLanguage(settings.language);
-
-  await Promise.all([initFeedTab(), initClipboardTab(), initDataTab()]);
+  await Promise.all([initLanguageTab(), initFeedTab(), initClipboardTab(), initDataTab()]);
 }
 
 void init();

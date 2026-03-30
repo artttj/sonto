@@ -60,24 +60,6 @@ export async function setMaxHistorySize(size: number): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.MAX_HISTORY_SIZE]: size });
 }
 
-export async function getDailyNotificationEnabled(): Promise<boolean> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.DAILY_NOTIFICATION_ENABLED);
-  return (result[STORAGE_KEYS.DAILY_NOTIFICATION_ENABLED] as boolean | undefined) ?? false;
-}
-
-export async function setDailyNotificationEnabled(enabled: boolean): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEYS.DAILY_NOTIFICATION_ENABLED]: enabled });
-}
-
-export async function getDailyNotificationTime(): Promise<string> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.DAILY_NOTIFICATION_TIME);
-  return (result[STORAGE_KEYS.DAILY_NOTIFICATION_TIME] as string | undefined) ?? '18:00';
-}
-
-export async function setDailyNotificationTime(time: string): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEYS.DAILY_NOTIFICATION_TIME]: time });
-}
-
 export async function getBadgeCounterEnabled(): Promise<boolean> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.BADGE_COUNTER_ENABLED);
   return (result[STORAGE_KEYS.BADGE_COUNTER_ENABLED] as boolean | undefined) ?? true;
@@ -263,4 +245,36 @@ export async function getRecentlySeenBySource(source: string, withinMs: number):
   }
 
   return result;
+}
+
+const PROMPTS_KEY = 'sonto_prompts';
+
+export interface PromptItem {
+  id: string;
+  text: string;
+  createdAt: number;
+}
+
+export async function getAllPrompts(): Promise<PromptItem[]> {
+  const result = await chrome.storage.local.get(PROMPTS_KEY);
+  const prompts = result[PROMPTS_KEY] as PromptItem[] | undefined;
+  return prompts?.sort((a, b) => b.createdAt - a.createdAt) ?? [];
+}
+
+export async function savePrompt(text: string): Promise<PromptItem> {
+  const prompts = await getAllPrompts();
+  const newPrompt: PromptItem = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    text,
+    createdAt: Date.now(),
+  };
+  prompts.push(newPrompt);
+  await chrome.storage.local.set({ [PROMPTS_KEY]: prompts });
+  return newPrompt;
+}
+
+export async function deletePrompt(id: string): Promise<void> {
+  const prompts = await getAllPrompts();
+  const filtered = prompts.filter((p) => p.id !== id);
+  await chrome.storage.local.set({ [PROMPTS_KEY]: filtered });
 }

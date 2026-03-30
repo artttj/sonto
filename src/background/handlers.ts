@@ -4,14 +4,12 @@
 import { registerHandler } from './message-router';
 import { registerClipHandlers } from './clip-handler';
 import { registerReadLaterHandlers } from './read-later-handler';
-import { registerNotificationHandlers } from './notification-handler';
 import { registerRelatedClipsHandlers } from './related-clips-handler';
 import { MSG } from '../shared/messages';
 
 export function registerAllHandlers(): void {
   registerClipHandlers(registerHandler);
   registerReadLaterHandlers(registerHandler);
-  registerNotificationHandlers(registerHandler);
   registerRelatedClipsHandlers(registerHandler);
 
   registerHandler(MSG.OPEN_SETTINGS, async () => {

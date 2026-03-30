@@ -12,39 +12,31 @@ interface SpiroParams {
   Crota: number; HBx: number; HBy: number; Hdist: number;
   Lrota: number; Larm1: number; Larm2: number;
   Rrota: number; Rarm1: number; Rarm2: number; Ext: number;
-  Loffset?: number; // initial angle offset for left arm in degrees
+  Loffset?: number;
 }
 
-// Dense center — from htmlspirograph.com/#0,50,4,0,1,0.8,-90,-535,631,-0.005,145,476,-3.2,142,501,3
 const BASE_DENSE: SpiroParams = {
   Crota: 0.8, HBx: -90, HBy: -535, Hdist: 631,
   Lrota: -0.005, Larm1: 145, Larm2: 476,
   Rrota: -3.2, Rarm1: 142, Rarm2: 501, Ext: 3,
 };
 
-// Geometric lobe — from htmlspirograph.com/#0,50,0,0,1,-0.8,52,-760,508,0.0125,94,534,3.2,188,560,56,102
 const BASE_DIAMOND: SpiroParams = {
   Crota: -0.8, HBx: 52, HBy: -760, Hdist: 508,
   Lrota: 0.0125, Larm1: 94, Larm2: 534,
   Rrota: 3.2, Rarm1: 188, Rarm2: 560, Ext: 56, Loffset: 102,
 };
 
-// Open ring — from htmlspirograph.com/#0,50,0,1,1,-1.44,30,-700,1174,2.5,120,860,-3.6,100,1050,75
 const BASE_OPEN: SpiroParams = {
   Crota: -1.44, HBx: 30, HBy: -700, Hdist: 1174,
   Lrota: 2.5, Larm1: 120, Larm2: 860,
   Rrota: -3.6, Rarm1: 100, Rarm2: 1050, Ext: 75,
 };
 
-// Gallery patterns from htmlspirograph.com/uploads — used as fallbacks
 const GALLERY_BASES: SpiroParams[] = [
-  // #1,9,4,...,3.6,-17,-336,322,-12.6,140,290,-0.02353,79,317,78,18
   { Crota: 3.6, HBx: -17, HBy: -336, Hdist: 322, Lrota: -12.6, Larm1: 140, Larm2: 290, Rrota: -0.02353, Rarm1: 79, Rarm2: 317, Ext: 78, Loffset: 18 },
-  // #0,200,0,...,0.4,-44,-232,288,-4.4,21,232,0.003571,129,325,67,331
   { Crota: 0.4, HBx: -44, HBy: -232, Hdist: 288, Lrota: -4.4, Larm1: 21, Larm2: 232, Rrota: 0.003571, Rarm1: 129, Rarm2: 325, Ext: 67, Loffset: 331 },
-  // #0,200,4,...,0.91,-52,-203,317,4.1,93,313,3.8,127,327,80,156
   { Crota: 0.91, HBx: -52, HBy: -203, Hdist: 317, Lrota: 4.1, Larm1: 93, Larm2: 313, Rrota: 3.8, Rarm1: 127, Rarm2: 327, Ext: 80, Loffset: 156 },
-  // #0,200,4,...,1,-76,-224,281,0.007692,98,299,-2.3333,104,332,75,7
   { Crota: 1, HBx: -76, HBy: -224, Hdist: 281, Lrota: 0.007692, Larm1: 98, Larm2: 299, Rrota: -2.3333, Rarm1: 104, Rarm2: 332, Ext: 75, Loffset: 7 },
 ];
 
@@ -63,7 +55,6 @@ function generateDenseParams(): SpiroParams {
     if (DMin < 30) continue;
 
     const armSum = rnd(DMax + 40, DMax + 300);
-    // Keep arm lengths close together for dense center fill (small void)
     const diffMax = Math.min(DMin - 20, armSum * 0.08);
     if (diffMax <= 0) continue;
 
@@ -76,7 +67,6 @@ function generateDenseParams(): SpiroParams {
     const Lrota = rnd(-6, 6);
     const Rrota = rnd(-6, 6);
     if (Math.abs(Crota) < 0.1 || Math.abs(Lrota) < 0.05 || Math.abs(Rrota) < 0.05) continue;
-    // Avoid both rotation rates being nearly equal (produces degenerate straight lines)
     if (Math.abs(Math.abs(Lrota) - Math.abs(Rrota)) < 0.05) continue;
 
     const HBx = rnd(-100, 100);
@@ -741,8 +731,7 @@ export class CosmosMode {
     if (saveText) {
       const saveBtn = document.createElement('button');
       saveBtn.className = 'cosmos-save';
-      const SAVE_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h10l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="14 2 14 8 20 8"/></svg>`;
-      saveBtn.innerHTML = `${SAVE_ICON} <span>Save</span>`;
+      saveBtn.innerHTML = '<span>Save</span>';
       saveBtn.addEventListener('click', () => {
         void chrome.runtime.sendMessage({
           type: MSG.CAPTURE_CLIP,
@@ -751,7 +740,7 @@ export class CosmosMode {
           source: 'manual',
         }).then((res) => {
           saveBtn.innerHTML = res?.ok ? 'Saved' : 'Already saved';
-          setTimeout(() => { saveBtn.innerHTML = `${SAVE_ICON} <span>Save</span>`; }, 2000);
+          setTimeout(() => { saveBtn.innerHTML = '<span>Save</span>'; }, 2000);
         });
       });
       this.msgEl.appendChild(saveBtn);

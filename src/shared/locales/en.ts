@@ -4,6 +4,7 @@
 const en: Record<string, string> = {
   nav_feed: 'Feed',
   nav_clipboard: 'Clipboard',
+  nav_language: 'Language',
   nav_data: 'Data',
   nav_about: 'About',
   brand_sub: 'Settings',
@@ -38,10 +39,6 @@ const en: Record<string, string> = {
   related_popup: 'Related clips popup',
   related_popup_desc: 'Show a floating card with related clips from your saves when visiting a page',
 
-  daily_summary: 'Daily Summary',
-  daily_notification: 'Daily wrap-up notification',
-  daily_notification_desc: 'Get a summary of your saved items at the end of each day',
-  daily_time: 'Notification time',
   badge_counter: 'Badge counter',
   badge_counter_desc: 'Show daily capture count on the extension icon',
 

@@ -18,14 +18,6 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-tab="feed" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="2" width="12" height="16" rx="2"/>
-            <path d="M7 6h6M7 9.5h6M7 13h4"/>
-          </svg>
-          <span data-i18n="nav_feed">Feed</span>
-        </button>
-
         <button class="nav-item" data-tab="clipboard" type="button">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <rect x="6" y="2" width="8" height="4" rx="1"/>
@@ -33,6 +25,22 @@
             <path d="M8 11h4M8 14h2"/>
           </svg>
           <span data-i18n="nav_clipboard">Clipboard</span>
+        </button>
+
+        <button class="nav-item active" data-tab="language" type="button">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="10" cy="10" r="7.5"/>
+            <path d="M4 10h12M10 2.5c2.5 3 3.5 6.5 3.5 10M10 17.5c-2.5-3-3.5-6.5-3.5-10"/>
+          </svg>
+          <span data-i18n="nav_language">Language</span>
+        </button>
+
+        <button class="nav-item" data-tab="feed" type="button">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2" width="12" height="16" rx="2"/>
+            <path d="M7 6h6M7 9.5h6M7 13h4"/>
+          </svg>
+          <span data-i18n="nav_feed">Feed</span>
         </button>
 
         <button class="nav-item" data-tab="data" type="button">
@@ -56,10 +64,10 @@
     </aside>
 
     <main class="tab-content">
-      <!-- FEED -->
-      <section id="tab-feed" class="tab-panel">
+      <!-- LANGUAGE -->
+      <section id="tab-language" class="tab-panel">
         <div class="panel-header">
-          <h1 data-i18n="feed_heading">Feed</h1>
+          <h1 data-i18n="general_language">Language</h1>
         </div>
 
         <div class="setting-group">
@@ -73,6 +81,13 @@
               <button class="seg-btn" data-value="de" type="button">Deutsch</button>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- FEED -->
+      <section id="tab-feed" class="tab-panel hidden">
+        <div class="panel-header">
+          <h1 data-i18n="feed_heading">Feed</h1>
         </div>
 
         <div class="setting-group">
@@ -95,11 +110,11 @@
               <div class="setting-desc" data-i18n="zen_speed_desc">Seconds between each new item in the feed</div>
             </div>
             <div class="drip-interval-control">
-              <input type="range" id="drip-interval-slider" min="5" max="100" step="5" value="30" />
+              <input type="range" id="drip-interval-slider" min="30" max="300" step="10" value="30" />
               <div class="drip-labels">
-                <span>5s</span>
+                <span>30s</span>
                 <span id="drip-current-value">30s</span>
-                <span>100s</span>
+                <span>300s</span>
               </div>
             </div>
           </div>
@@ -141,7 +156,7 @@
       </section>
 
       <!-- CLIPBOARD -->
-      <section id="tab-clipboard" class="tab-panel hidden">
+      <section id="tab-clipboard" class="tab-panel">
         <div class="panel-header">
           <h1 data-i18n="clipboard_heading">Clipboard</h1>
           <p data-i18n="clipboard_desc">Configure how Sonto captures and stores clipboard history.</p>
@@ -191,24 +206,7 @@
         </div>
 
         <div class="setting-group">
-          <div class="setting-group-header" data-i18n="daily_summary">Daily Summary</div>
-          <div class="setting-row">
-            <div class="setting-label">
-              <div class="setting-title" data-i18n="daily_notification">Daily wrap-up notification</div>
-              <div class="setting-desc" data-i18n="daily_notification_desc">Get a summary of your saved items at the end of each day</div>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="daily-notification-toggle" />
-              <span class="toggle-track"></span>
-            </label>
-          </div>
-          <div class="setting-row" id="daily-notification-time-row">
-            <div class="setting-label">
-              <div class="setting-title" data-i18n="daily_time">Notification time</div>
-            </div>
-            <input type="time" id="daily-notification-time" class="setting-input-sm" value="18:00" />
-            <span id="status-daily" class="saved-msg hidden" data-i18n="status_saved">Saved</span>
-          </div>
+          <div class="setting-group-header" data-i18n="badge_counter">Badge Counter</div>
           <div class="setting-row">
             <div class="setting-label">
               <div class="setting-title" data-i18n="badge_counter">Badge counter</div>
@@ -258,6 +256,20 @@
         <div class="panel-header">
           <h1>Data</h1>
           <p>Manage your clipboard history.</p>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-group-header">Data Management</div>
+          <div class="setting-body">
+            <p class="setting-hint">Export your clipboard history to a JSON file or import from a previous export.</p>
+            <div class="setting-body-action">
+              <button id="btn-export" class="btn btn-secondary" type="button">Export Data</button>
+              <button id="btn-import" class="btn btn-secondary" type="button">Import Data</button>
+              <input type="file" id="import-file" accept=".json" class="hidden" />
+              <span id="status-export" class="saved-msg hidden">Exported</span>
+              <span id="status-import" class="saved-msg hidden">Imported</span>
+            </div>
+          </div>
         </div>
 
         <div class="setting-group">
@@ -323,3 +335,4 @@
   <script type="module" src="settings.js"></script>
 </body>
 </html>
+/html>
