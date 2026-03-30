@@ -233,19 +233,11 @@ export class ClipboardManager {
     }
 
     const pinned = this.clips.filter((c) => c.pinned);
-    const prompts = this.clips.filter((c) => c.contentType === 'prompt' && !c.pinned);
-    const regular = this.clips.filter((c) => c.contentType !== 'prompt' && !c.pinned);
+    const regular = this.clips.filter((c) => !c.pinned);
 
     if (pinned.length > 0) {
       this.addSeparator('Pinned', 'pinned-separator');
       for (const clip of pinned) {
-        this.listEl.appendChild(this.buildCard(clip));
-      }
-    }
-
-    if (prompts.length > 0) {
-      this.addSeparator('Prompts', 'prompts-separator');
-      for (const clip of prompts) {
         this.listEl.appendChild(this.buildCard(clip));
       }
     }

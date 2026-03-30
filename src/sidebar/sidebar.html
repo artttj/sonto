@@ -56,6 +56,26 @@
         </svg>
         <label for="clipboard-search" class="visually-hidden">Search clipboard history</label>
         <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." aria-label="Search clipboard history" />
+      </div>
+
+      <div id="read-later-bar" class="read-later-bar hidden">
+        <span id="read-later-count"></span>
+        <button id="btn-view-later" class="rl-btn" type="button">View queue</button>
+      </div>
+      <div id="read-later-list" class="read-later-list hidden"></div>
+
+      <div id="clip-list" class="clip-list"></div>
+    </div>
+
+    <!-- PROMPTS VIEW -->
+    <div id="view-prompts" class="view hidden">
+      <div class="browse-search-bar">
+        <svg class="search-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="9" cy="9" r="5" />
+          <path d="M12.5 12.5L16 16" stroke-linecap="round" />
+        </svg>
+        <label for="prompts-search" class="visually-hidden">Search prompts</label>
+        <input type="search" id="prompts-search" class="browse-search-input" placeholder="Search prompts..." aria-label="Search prompts" />
         <button id="btn-add-prompt" class="icon-btn-small" type="button" title="Add prompt" aria-label="Add new prompt">
           <i data-lucide="plus"></i>
         </button>
@@ -72,14 +92,18 @@
         </div>
       </div>
 
-      <div id="read-later-bar" class="read-later-bar hidden">
-        <span id="read-later-count"></span>
-        <button id="btn-view-later" class="rl-btn" type="button">View queue</button>
-      </div>
-      <div id="read-later-list" class="read-later-list hidden"></div>
-
-      <div id="clip-list" class="clip-list"></div>
+      <div id="prompts-list" class="clip-list"></div>
     </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+      <button id="nav-browse" class="bnav-btn active" type="button" aria-label="Browse" title="Browse">
+        <i data-lucide="clock"></i>
+      </button>
+      <button id="nav-prompts" class="bnav-btn" type="button" aria-label="Prompts" title="Prompts">
+        <i data-lucide="sparkles"></i>
+      </button>
+    </nav>
   </div>
 
   <script type="module" src="sidebar.js"></script>

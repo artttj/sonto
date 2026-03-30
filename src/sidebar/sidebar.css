@@ -1247,12 +1247,14 @@ html, body {
 .clip-badge-code  { background: rgba(200,140,255,0.12); color: rgba(200,140,255,0.9); }
 .clip-badge-email { background: rgba(255,180,100,0.12); color: rgba(255,180,100,0.9); }
 .clip-badge-image { background: rgba(255,140,180,0.12); color: rgba(255,140,180,0.9); }
+.clip-badge-prompt { background: rgba(232,185,49,0.12); color: rgba(232,185,49,0.9); }
 
 [data-theme="light"] .clip-badge-text  { background: rgba(30,100,200,0.10); color: #1b6fce; }
 [data-theme="light"] .clip-badge-link  { background: rgba(20,130,60,0.10);  color: #157a3c; }
 [data-theme="light"] .clip-badge-code  { background: rgba(120,50,200,0.10); color: #7330c8; }
 [data-theme="light"] .clip-badge-email { background: rgba(200,100,20,0.10); color: #c0641a; }
 [data-theme="light"] .clip-badge-image { background: rgba(200,50,100,0.10); color: #c03260; }
+[data-theme="light"] .clip-badge-prompt { background: rgba(200,150,20,0.10); color: #b8860b; }
 
 .clip-type-icon {
   font-size: 9px;
@@ -1461,7 +1463,15 @@ html, body {
   color: rgba(255,200,50,0.7);
 }
 
+.prompts-separator {
+  color: rgba(232,185,49,0.7);
+}
+
 [data-theme="light"] .pinned-separator {
+  color: #b8860b;
+}
+
+[data-theme="light"] .prompts-separator {
   color: #b8860b;
 }
 

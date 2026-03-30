@@ -10,6 +10,7 @@ import {
 } from '../shared/storage';
 import type { ReadLaterItem } from '../shared/types';
 import { ClipboardManager } from './clipboard-manager';
+import { PromptsManager } from './prompts-manager';
 import {
   ThemeController,
   ViewController,
@@ -28,14 +29,20 @@ class SontoSidebar {
   private readonly backBtn = qs<HTMLButtonElement>('#btn-back');
   private readonly themeBtn = qs<HTMLButtonElement>('#btn-theme');
   private readonly settingsBtn = qs<HTMLButtonElement>('#btn-settings');
+  private readonly navBrowse = qs<HTMLButtonElement>('#nav-browse');
+  private readonly navPrompts = qs<HTMLButtonElement>('#nav-prompts');
   private readonly viewZen = qs<HTMLElement>('#view-zen');
   private readonly viewClipboard = qs<HTMLElement>('#view-clipboard');
+  private readonly viewPrompts = qs<HTMLElement>('#view-prompts');
   private readonly zenFeedEl = qs<HTMLElement>('#zen-feed');
   private readonly cosmosViewEl = qs<HTMLElement>('#cosmos-view');
   private readonly clipListEl = qs<HTMLElement>('#clip-list');
+  private readonly promptsListEl = qs<HTMLElement>('#prompts-list');
   private readonly searchInputEl = qs<HTMLInputElement>('#clipboard-search');
+  private readonly promptsSearchEl = qs<HTMLInputElement>('#prompts-search');
 
   private readonly clipManager = new ClipboardManager(this.clipListEl);
+  private readonly promptsManager = new PromptsManager(this.promptsListEl, this.promptsSearchEl);
   private readonly themeController = new ThemeController(this.themeBtn);
   private viewController!: ViewController;
   private promptModalController!: PromptModalController;
@@ -61,6 +68,8 @@ class SontoSidebar {
             await this.refreshDomain();
             await this.clipManager.load(this.currentDomain);
           })();
+        } else if (mode === 'prompts') {
+          void this.promptsManager.load();
         }
       }
     });
@@ -76,6 +85,13 @@ class SontoSidebar {
         if (document.activeElement === this.searchInputEl) return;
         if (this.clipManager.handleKey(e)) {
           e.preventDefault();
+          return;
+        }
+      }
+      if (mode === 'prompts') {
+        if (e.key === '/' && document.activeElement !== this.promptsSearchEl) {
+          e.preventDefault();
+          this.promptsSearchEl.focus();
           return;
         }
       }
@@ -95,6 +111,20 @@ class SontoSidebar {
       }
     });
 
+    let promptsSearchDebounce: ReturnType<typeof setTimeout> | null = null;
+    const doPromptsSearch = () => void this.promptsManager.search(this.promptsSearchEl.value);
+    this.promptsSearchEl.addEventListener('input', () => {
+      if (promptsSearchDebounce) clearTimeout(promptsSearchDebounce);
+      promptsSearchDebounce = setTimeout(doPromptsSearch, 400);
+    });
+    this.promptsSearchEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (promptsSearchDebounce) clearTimeout(promptsSearchDebounce);
+        doPromptsSearch();
+      }
+    });
+
     await this.initControllers();
 
     chrome.storage.onChanged.addListener((changes, area) => {
@@ -106,6 +136,11 @@ class SontoSidebar {
         const newTheme = changes.sonto_theme.newValue as 'dark' | 'light';
         this.themeController.setTheme(newTheme);
         this.viewController?.setZenTheme(newTheme);
+      }
+      if (area === 'local' && changes.sonto_prompts) {
+        if (this.viewController?.getMode() === 'prompts') {
+          void this.promptsManager.load();
+        }
       }
     });
 
@@ -155,8 +190,7 @@ class SontoSidebar {
       saveBtn: qs('#prompt-save'),
       addBtn: qs('#btn-add-prompt'),
       onSaved: async () => {
-        await this.refreshDomain();
-        await this.clipManager.load(this.currentDomain);
+        await this.promptsManager.load();
       },
     });
     this.promptModalController.init();
@@ -164,11 +198,15 @@ class SontoSidebar {
     this.viewController = new ViewController({
       viewZen: this.viewZen,
       viewClipboard: this.viewClipboard,
+      viewPrompts: this.viewPrompts,
       feedBtn: this.feedBtn,
       backBtn: this.backBtn,
+      navBrowse: this.navBrowse,
+      navPrompts: this.navPrompts,
       zenFeedEl: this.zenFeedEl,
       cosmosViewEl: this.cosmosViewEl,
       clipManager: this.clipManager,
+      promptsManager: this.promptsManager,
       language: this.language,
     }, this.language);
 

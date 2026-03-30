@@ -7,12 +7,19 @@ import { handleMessage } from './message-router';
 import { clipHandler } from './clip-handler';
 import { readLaterHandler } from './read-later-handler';
 import { badgeHandler } from './badge-handler';
+import { savePrompt } from '../shared/storage';
 import type { RuntimeMessage } from '../shared/messages';
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'sonto-save',
     title: 'Save to Clipboard History',
+    contexts: ['selection'],
+  });
+
+  chrome.contextMenus.create({
+    id: 'sonto-save-prompt',
+    title: 'Save as Prompt',
     contexts: ['selection'],
   });
 
@@ -34,6 +41,25 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         await clipHandler.capture(text, 'context-menu', url, title);
         if (tab?.id) {
           void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: 'Saved to clipboard history.' }).catch(() => {});
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Save failed.';
+        if (tab?.id) {
+          void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: msg, isError: true }).catch(() => {});
+        }
+      }
+    })();
+    return;
+  }
+
+  if (info.menuItemId === 'sonto-save-prompt') {
+    const text = info.selectionText ?? '';
+    if (!text.trim()) return;
+    void (async () => {
+      try {
+        await savePrompt(text);
+        if (tab?.id) {
+          void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: 'Saved as prompt.' }).catch(() => {});
         }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Save failed.';
