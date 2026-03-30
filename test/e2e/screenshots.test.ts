@@ -16,7 +16,7 @@ async function ensureScreenshotDir(): Promise<void> {
   }
 }
 
-async function setViewport(page: Page, width: number, height: number, scale: number = 2): Promise<void> {
+async function setViewport(page: Page, width: number, height: number, scale: number = 3): Promise<void> {
   await page.setViewport({ width, height, deviceScaleFactor: scale });
 }
 
