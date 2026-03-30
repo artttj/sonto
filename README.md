@@ -64,23 +64,23 @@ No API keys needed. The extension works entirely in your browser.
 
 | Source | Content |
 |---|---|
-| 1000-Word Philosophy | Philosophy essays |
-| Art from Cleveland Museum | Artworks and facts |
-| Art from The Met | Public domain paintings |
-| Atlas Obscura | Curious places and stories |
-| Getty Museum Art | Paintings and sculptures |
-| Hacker News Headlines | Top tech stories |
+| [1000-Word Philosophy](https://1000wordphilosophy.com) | Philosophy essays |
+| [Cleveland Museum of Art](https://clevelandart.org) | Open access artworks |
+| [The Met](https://metmuseum.org) | Public domain paintings |
+| [Atlas Obscura](https://atlasobscura.com) | Curious places and stories |
+| [Getty Museum](https://getty.edu/museum) | Paintings and sculptures |
+| [Hacker News](https://news.ycombinator.com) | Top tech stories |
 | Haiku | Japanese haiku poems |
-| Japanese Proverbs | With English translation |
-| Oblique Strategies | Creative prompts |
-| Perseverance Rover Photos | Mars surface photos |
-| Wikimedia Commons Paintings | Random paintings from curated categories |
-| Album of a Day | A rare daily pick from 200 Pitchfork and 500 Rolling Stone albums |
-| Reddit | Science, space, philosophy |
-| Rijksmuseum | Dutch Golden Age paintings |
-| Smithsonian Smart News | Science and smart news |
-| Custom RSS Feeds | Your own feeds |
-| Custom JSON API Sources | Any endpoint returning items |
+| Japanese Proverbs | Kotowaza with English translation |
+| Oblique Strategies | Creative prompts by Brian Eno |
+| [NASA Perseverance](https://mars.nasa.gov/mars2020) | Mars surface photos |
+| [Wikimedia Commons](https://commons.wikimedia.org) | Paintings from curated categories |
+| Album of a Day | Picks from Pitchfork and Rolling Stone top albums |
+| [Reddit](https://reddit.com) | Science, space, philosophy subreddits |
+| [Rijksmuseum](https://rijksmuseum.nl) | Dutch Golden Age paintings |
+| [Smithsonian Magazine](https://smithsonianmag.com/smart-news) | Science and smart news |
+| Custom RSS | Your own feeds |
+| Custom JSON API | Any endpoint returning items |
 
 Toggle sources in **Settings > Feed > Sources**.
 
