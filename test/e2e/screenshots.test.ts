@@ -16,8 +16,8 @@ async function ensureScreenshotDir(): Promise<void> {
   }
 }
 
-async function setViewport(page: Page, width: number, height: number): Promise<void> {
-  await page.setViewport({ width, height });
+async function setViewport(page: Page, width: number, height: number, scale: number = 2): Promise<void> {
+  await page.setViewport({ width, height, deviceScaleFactor: scale });
 }
 
 async function setZenDisplay(page: Page, mode: 'feed' | 'cosmos'): Promise<void> {
