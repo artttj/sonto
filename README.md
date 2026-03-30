@@ -8,12 +8,16 @@ A calm Chrome sidebar that works as a clipboard manager with an optional zen fee
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/webstore_00001.png" alt="Sonto screenshot 1" width="420" /></td>
-    <td><img src="docs/screenshots/webstore_new.png" alt="Sonto screenshot 2" width="420" /></td>
+    <td><img src="docs/screenshots/e2e_zen_cosmos.png" alt="Zen cosmos mode" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_zen_feed.png" alt="Zen feed mode" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/webstore_00004.png" alt="Sonto screenshot 3" width="420" /></td>
-    <td><img src="docs/screenshots/webstore_00005.png" alt="Sonto screenshot 4" width="420" /></td>
+    <td><img src="docs/screenshots/e2e_sidebar_dark.png" alt="Clipboard dark theme" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_sidebar_light.png" alt="Clipboard light theme" width="400" /></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/e2e_settings_clipboard.png" alt="Clipboard settings" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_settings_feed.png" alt="Feed settings" width="400" /></td>
   </tr>
 </table>
 
