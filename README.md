@@ -68,8 +68,6 @@ No API keys needed. The extension works entirely in your browser.
 | Album of a Day | Picks from Pitchfork and Rolling Stone top albums |
 | [Atlas Obscura](https://atlasobscura.com) | Curious places and stories |
 | [Cleveland Museum of Art](https://clevelandart.org) | Open access artworks |
-| Custom JSON API | Any endpoint returning items |
-| Custom RSS | Your own feeds |
 | [Getty Museum](https://getty.edu/museum) | Paintings and sculptures |
 | [Hacker News](https://news.ycombinator.com) | Top tech stories |
 | Haiku | Japanese haiku poems |
@@ -81,6 +79,10 @@ No API keys needed. The extension works entirely in your browser.
 | [Smithsonian Magazine](https://smithsonianmag.com/smart-news) | Science and smart news |
 | [The Met](https://metmuseum.org) | Public domain paintings |
 | [Wikimedia Commons](https://commons.wikimedia.org) | Paintings from curated categories |
+
+**Custom sources:**
+- **Custom RSS** — Add your own RSS/Atom feeds in Settings
+- **Custom JSON API** — Connect any JSON endpoint returning items with `text`, `image`, `link`, `attribution` fields
 
 Toggle sources in **Settings > Feed > Sources**.
 
