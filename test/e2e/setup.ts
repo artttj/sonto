@@ -67,14 +67,20 @@ async function getExtensionId(browser: Browser): Promise<string> {
     }
   }
 
-  // Method 3: Check service worker
-  const serviceWorkers = browser.serviceWorkers();
-  for (const sw of serviceWorkers) {
-    const url = sw.url();
-    if (url.includes('service-worker')) {
-      const match = url.match(/chrome-extension:\/\/([a-p]{32})\//);
-      if (match) return match[1];
+  // Method 3: Check service worker (if available)
+  try {
+    const serviceWorkers = browser.serviceWorkers?.();
+    if (serviceWorkers) {
+      for (const sw of serviceWorkers) {
+        const url = sw.url();
+        if (url.includes('service-worker')) {
+          const match = url.match(/chrome-extension:\/\/([a-p]{32})\//);
+          if (match) return match[1];
+        }
+      }
     }
+  } catch {
+    // Method not available in this browser version
   }
 
   return '';
