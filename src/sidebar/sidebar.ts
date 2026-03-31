@@ -7,6 +7,7 @@ import {
   getSettings,
   isOnboardingDone,
   setOnboardingDone,
+  getDefaultClipboardTab,
 } from '../shared/storage';
 import type { ReadLaterItem } from '../shared/types';
 import { ClipboardManager } from './clipboard-manager';
@@ -151,14 +152,19 @@ class SontoSidebar {
     });
 
     try {
-      const [settings, onboardingDone] = await Promise.all([
+      const [settings, onboardingDone, defaultTab] = await Promise.all([
         getSettings(),
         isOnboardingDone(),
+        getDefaultClipboardTab(),
       ]);
       this.language = settings.language ?? 'en';
 
       if (!onboardingDone) {
         await setOnboardingDone();
+      }
+
+      if (defaultTab === 'prompts') {
+        this.switchTab('prompts');
       }
 
       createIcons({ icons, attrs: { strokeWidth: 1.5 } });

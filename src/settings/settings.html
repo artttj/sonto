@@ -19,45 +19,27 @@
 
       <nav class="sidebar-nav">
         <button class="nav-item active" data-tab="clipboard" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="6" y="2" width="8" height="4" rx="1"/>
-            <path d="M6 4H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1"/>
-            <path d="M8 11h4M8 14h2"/>
-          </svg>
+          <i data-lucide="clipboard-list"></i>
           <span data-i18n="nav_clipboard">Clipboard</span>
         </button>
 
         <button class="nav-item" data-tab="language" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="10" cy="10" r="7.5"/>
-            <path d="M4 10h12M10 2.5c2.5 3 3.5 6.5 3.5 10M10 17.5c-2.5-3-3.5-6.5-3.5-10"/>
-          </svg>
+          <i data-lucide="globe"></i>
           <span data-i18n="nav_language">Language</span>
         </button>
 
         <button class="nav-item" data-tab="feed" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="2" width="12" height="16" rx="2"/>
-            <path d="M7 6h6M7 9.5h6M7 13h4"/>
-          </svg>
+          <i data-lucide="rss"></i>
           <span data-i18n="nav_feed">Feed</span>
         </button>
 
         <button class="nav-item" data-tab="data" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-            <ellipse cx="10" cy="5" rx="7" ry="2.5"/>
-            <path d="M3 5v10c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5"/>
-            <path d="M3 10c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/>
-          </svg>
+          <i data-lucide="database"></i>
           <span data-i18n="nav_data">Data</span>
         </button>
 
         <button class="nav-item" data-tab="about" type="button">
-          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="10" cy="10" r="7.5"/>
-            <line x1="10" y1="9" x2="10" y2="14"/>
-            <circle cx="10" cy="6.5" r="0.8" fill="currentColor" stroke="none"/>
-          </svg>
+          <i data-lucide="info"></i>
           <span data-i18n="nav_about">About</span>
         </button>
       </nav>
@@ -203,6 +185,17 @@
               <span class="toggle-track"></span>
             </label>
           </div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <div class="setting-title">Default clipboard tab</div>
+              <div class="setting-desc">Which tab to show first when opening clipboard view</div>
+            </div>
+            <div class="segmented" id="default-clipboard-tab-segmented">
+              <button class="seg-btn active" data-value="browse" type="button">Browse</button>
+              <button class="seg-btn" data-value="prompts" type="button">Prompts</button>
+            </div>
+          </div>
         </div>
 
         <div class="setting-group">
@@ -322,9 +315,7 @@
 
         <div class="info-footer-links">
           <a href="https://github.com/artttj/sonto" target="_blank" rel="noopener" class="btn-github">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="github-icon">
-              <path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.34-3.369-1.34-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0 1 12 6.844a9.57 9.57 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.744 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
-            </svg>
+            <i data-lucide="github"></i>
             <span data-i18n="about_github">View on GitHub</span>
           </a>
         </div>

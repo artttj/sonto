@@ -1,6 +1,7 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
+import { createIcons, icons } from 'lucide';
 import { escapeHtml } from '../shared/utils';
 import {
   getSettings,
@@ -24,6 +25,8 @@ import {
   setBadgeCounterEnabled,
   getReadingCompanionEnabled,
   setReadingCompanionEnabled,
+  getDefaultClipboardTab,
+  saveDefaultClipboardTab,
 } from '../shared/storage';
 import { parseFeed } from '../shared/rss-parser';
 import { clearAllClips, getClipCount, getAllClips, addClip } from '../shared/embeddings/vector-store';
@@ -274,12 +277,13 @@ async function initClipboardTab(): Promise<void> {
   const badgeToggle = qs<HTMLInputElement>('#badge-counter-toggle');
   const companionToggle = qs<HTMLInputElement>('#reading-companion-toggle');
 
-  const [monitoring, maxSize, count, badgeEnabled, companionEnabled] = await Promise.all([
+  const [monitoring, maxSize, count, badgeEnabled, companionEnabled, defaultTab] = await Promise.all([
     getClipboardMonitoring(),
     getMaxHistorySize(),
     getClipCount(),
     getBadgeCounterEnabled(),
     getReadingCompanionEnabled(),
+    getDefaultClipboardTab(),
   ]);
 
   monitoringToggle.checked = monitoring;
@@ -287,6 +291,11 @@ async function initClipboardTab(): Promise<void> {
   if (clipCountEl) clipCountEl.textContent = String(count);
   badgeToggle.checked = badgeEnabled;
   companionToggle.checked = companionEnabled;
+
+  const defaultTabSegmented = initSegmented('default-clipboard-tab-segmented', async (val) => {
+    await saveDefaultClipboardTab(val as 'browse' | 'prompts');
+  });
+  defaultTabSegmented(defaultTab);
 
   monitoringToggle.addEventListener('change', async () => {
     await setClipboardMonitoring(monitoringToggle.checked);
@@ -404,6 +413,8 @@ async function init(): Promise<void> {
   initTabs();
 
   await Promise.all([initLanguageTab(), initFeedTab(), initClipboardTab(), initDataTab()]);
+
+  createIcons({ icons, attrs: { strokeWidth: 1.5 } });
 }
 
 void init();

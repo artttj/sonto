@@ -100,6 +100,18 @@ export async function saveDefaultView(mode: 'zen' | 'clipboard'): Promise<void> 
   await chrome.storage.local.set({ [DEFAULT_VIEW_KEY]: mode });
 }
 
+const DEFAULT_CLIPBOARD_TAB_KEY = 'sonto_default_clipboard_tab';
+
+export async function getDefaultClipboardTab(): Promise<'browse' | 'prompts'> {
+  const result = await chrome.storage.local.get(DEFAULT_CLIPBOARD_TAB_KEY);
+  const val = result[DEFAULT_CLIPBOARD_TAB_KEY] as string | undefined;
+  return val === 'prompts' ? 'prompts' : 'browse';
+}
+
+export async function saveDefaultClipboardTab(tab: 'browse' | 'prompts'): Promise<void> {
+  await chrome.storage.local.set({ [DEFAULT_CLIPBOARD_TAB_KEY]: tab });
+}
+
 const DISABLED_SOURCES_KEY = 'sonto_disabled_sources';
 const DRIP_INTERVAL_KEY = 'sonto_drip_interval_ms';
 const CUSTOM_FEEDS_KEY = 'sonto_custom_feeds';
