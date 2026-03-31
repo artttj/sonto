@@ -56,6 +56,28 @@ function openDb(): Promise<IDBDatabase> {
         store.createIndex('zenified', 'zenified', { unique: false });
         store.createIndex('lastSeenAt', 'lastSeenAt', { unique: false });
         store.createIndex('origin', 'origin', { unique: false });
+      } else {
+        // Store exists - create any missing indexes on upgrade
+        const store = req.transaction.objectStore(STORE_NAME);
+        const existingIndexes = [...store.indexNames];
+
+        const requiredIndexes = [
+          { name: 'type', keyPath: 'type', options: { unique: false } },
+          { name: 'contentType', keyPath: 'contentType', options: { unique: false } },
+          { name: 'source', keyPath: 'source', options: { unique: false } },
+          { name: 'tags', keyPath: 'tags', options: { unique: false, multiEntry: true } },
+          { name: 'createdAt', keyPath: 'createdAt', options: { unique: false } },
+          { name: 'pinned', keyPath: 'pinned', options: { unique: false } },
+          { name: 'zenified', keyPath: 'zenified', options: { unique: false } },
+          { name: 'lastSeenAt', keyPath: 'lastSeenAt', options: { unique: false } },
+          { name: 'origin', keyPath: 'origin', options: { unique: false } },
+        ];
+
+        for (const idx of requiredIndexes) {
+          if (!existingIndexes.includes(idx.name)) {
+            store.createIndex(idx.name, idx.keyPath, idx.options);
+          }
+        }
       }
     };
 

@@ -30,5 +30,5 @@ export const LEGACY_STORE_NAME = 'clips';
 
 // New unified storage constants
 export const DB_NAME = 'sonto_db_v2';
-export const DB_VERSION = 2; // Bumped to force schema upgrade
+export const DB_VERSION = 3; // Bumped to force schema upgrade and create missing indexes
 export const STORE_NAME = 'sonto_items';
