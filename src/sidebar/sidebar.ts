@@ -152,7 +152,31 @@ class SontoSidebar {
       }
     });
 
-    await this.initControllers();
+    let defaultTab: 'browse' | 'prompts' = 'browse';
+    try {
+      const [settings, onboardingDone, savedTab] = await Promise.all([
+        getSettings(),
+        isOnboardingDone(),
+        getDefaultClipboardTab(),
+      ]);
+      this.language = settings.language ?? 'en';
+      defaultTab = savedTab;
+
+      if (!onboardingDone) {
+        await setOnboardingDone();
+      }
+
+      this.updatePinState(defaultTab);
+      if (defaultTab === 'prompts') {
+        this.switchTab('prompts');
+      }
+
+      createIcons({ icons, attrs: { strokeWidth: 1.5 } });
+    } catch (err) {
+      console.error('[Sonto] Failed to initialize settings:', err);
+    }
+
+    await this.initControllers(defaultTab);
 
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'local' && changes.sonto_drip_interval_ms) {
@@ -170,31 +194,9 @@ class SontoSidebar {
         }
       }
     });
-
-    try {
-      const [settings, onboardingDone, defaultTab] = await Promise.all([
-        getSettings(),
-        isOnboardingDone(),
-        getDefaultClipboardTab(),
-      ]);
-      this.language = settings.language ?? 'en';
-
-      if (!onboardingDone) {
-        await setOnboardingDone();
-      }
-
-      this.updatePinState(defaultTab);
-      if (defaultTab === 'prompts') {
-        this.switchTab('prompts');
-      }
-
-      createIcons({ icons, attrs: { strokeWidth: 1.5 } });
-    } catch (err) {
-      console.error('[Sonto] Failed to initialize settings:', err);
-    }
   }
 
-  private async initControllers(): Promise<void> {
+  private async initControllers(defaultTab: 'browse' | 'prompts'): Promise<void> {
     await this.themeController.init();
 
     const readLaterBar = new ReadLaterBarController({
@@ -205,13 +207,6 @@ class SontoSidebar {
     });
     void readLaterBar.init();
 
-    const settingsPromise = Promise.all([
-      getSettings(),
-      isOnboardingDone(),
-    ]);
-
-    const [settings, _onboardingDone] = await settingsPromise;
-    this.language = settings.language ?? 'en';
     const theme = this.themeController.getTheme();
 
     await this.refreshDomain();
@@ -242,7 +237,11 @@ class SontoSidebar {
 
     await this.viewController.init('clipboard', theme);
 
-    await this.clipManager.load(this.currentDomain);
+    if (defaultTab === 'prompts') {
+      await this.promptsManager.load();
+    } else {
+      await this.clipManager.load(this.currentDomain);
+    }
   }
 
   private async refreshDomain(): Promise<void> {
