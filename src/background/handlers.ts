@@ -3,14 +3,14 @@
 
 import { registerHandler } from './message-router';
 import { registerClipHandlers } from './clip-handler';
-import { registerReadLaterHandlers } from './read-later-handler';
+import { registerClipPageHandlers } from './clip-page-handler';
 import { registerRelatedClipsHandlers } from './related-clips-handler';
 import { registerSontoItemHandlers } from './sonto-item-handler';
 import { MSG } from '../shared/messages';
 
 export function registerAllHandlers(): void {
   registerClipHandlers(registerHandler);
-  registerReadLaterHandlers(registerHandler);
+  registerClipPageHandlers(registerHandler);
   registerRelatedClipsHandlers(registerHandler);
   registerSontoItemHandlers(registerHandler);
 

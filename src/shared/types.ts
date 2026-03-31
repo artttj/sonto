@@ -94,12 +94,6 @@ export interface PromptItem {
 }
 
 
-export interface ReadLaterItem {
-  url: string;
-  title?: string;
-  addedAt: number;
-}
-
 export interface Collection {
   id: string;
   name: string;

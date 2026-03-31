@@ -11,7 +11,6 @@ import {
   saveDefaultClipboardTab,
   getDefaultView,
 } from '../shared/storage';
-import type { ReadLaterItem } from '../shared/types';
 import { ClipboardManager, PROMPT_COLORS } from './clipboard-manager';
 import type { PromptColor } from '../shared/storage';
 import { PromptsManager } from './prompts-manager';
@@ -19,7 +18,6 @@ import {
   ThemeController,
   ViewController,
   PromptModalController,
-  ReadLaterBarController,
 } from './controllers';
 
 function qs<T extends HTMLElement>(sel: string): T {
@@ -35,6 +33,7 @@ class SontoSidebar {
   private readonly settingsBtn = qs<HTMLButtonElement>('#btn-settings');
   private readonly navBrowse = qs<HTMLButtonElement>('#nav-browse');
   private readonly navPrompts = qs<HTMLButtonElement>('#nav-prompts');
+  private readonly clipPageBtn = qs<HTMLButtonElement>('#btn-clip-page');
   private readonly viewZen = qs<HTMLElement>('#view-zen');
   private readonly viewClipboard = qs<HTMLElement>('#view-clipboard');
   private readonly browseContent = qs<HTMLElement>('#browse-content');
@@ -63,6 +62,8 @@ class SontoSidebar {
 
     this.navBrowse.addEventListener('click', () => this.switchTab('browse'));
     this.navPrompts.addEventListener('click', () => this.switchTab('prompts'));
+
+    this.clipPageBtn.addEventListener('click', () => this.handleClipPage());
 
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
       if (message.type === MSG.CLIP_ADDED) {
@@ -184,14 +185,6 @@ class SontoSidebar {
   private async initControllers(defaultTab: 'browse' | 'prompts'): Promise<void> {
     await this.themeController.init();
 
-    const readLaterBar = new ReadLaterBarController({
-      bar: qs('#read-later-bar'),
-      countEl: qs('#read-later-count'),
-      listEl: qs('#read-later-list'),
-      viewBtn: qs('#btn-view-later'),
-    });
-    void readLaterBar.init();
-
     const theme = this.themeController.getTheme();
 
     await this.refreshDomain();
@@ -307,6 +300,26 @@ class SontoSidebar {
       this.currentDomain = tab?.url ? new URL(tab.url).hostname.replace(/^www\./, '') : '';
     } catch {
       this.currentDomain = '';
+    }
+  }
+
+  private async handleClipPage(): Promise<void> {
+    this.clipPageBtn.disabled = true;
+    const originalTitle = this.clipPageBtn.getAttribute('title');
+    this.clipPageBtn.setAttribute('title', 'Clipping...');
+
+    try {
+      const result = await chrome.runtime.sendMessage({ type: MSG.CLIP_PAGE });
+      if (result?.ok) {
+        await this.clipManager.load(this.currentDomain);
+      } else {
+        console.error('[Sonto] Clip page failed:', result?.message);
+      }
+    } catch (err) {
+      console.error('[Sonto] Clip page error:', err);
+    } finally {
+      this.clipPageBtn.disabled = false;
+      this.clipPageBtn.setAttribute('title', originalTitle ?? 'Clip current page');
     }
   }
 

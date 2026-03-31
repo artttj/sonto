@@ -1,7 +1,7 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import type { ClipItem, ReadLaterItem, SontoItem, SontoItemFilter, SontoItemType, SontoContentType, SontoSource } from './types';
+import type { ClipItem, SontoItem, SontoItemFilter, SontoItemType, SontoContentType, SontoSource } from './types';
 
 export const MSG = {
   CAPTURE_CLIP: 'CAPTURE_CLIP',
@@ -18,9 +18,6 @@ export const MSG = {
   CLIP_ADDED: 'CLIP_ADDED',
   PROMPT_ADDED: 'PROMPT_ADDED',
   OPEN_SETTINGS: 'OPEN_SETTINGS',
-  ADD_READ_LATER: 'ADD_READ_LATER',
-  REMOVE_READ_LATER: 'REMOVE_READ_LATER',
-  GET_READ_LATER: 'GET_READ_LATER',
   CAPTURE_SNIPPET: 'CAPTURE_SNIPPET',
   EXTRACT_CATEGORIES: 'EXTRACT_CATEGORIES',
   GENERATE_ZEN_FACT: 'GENERATE_ZEN_FACT',
@@ -40,6 +37,7 @@ export const MSG = {
   ADD_TAG: 'ADD_TAG',
   REMOVE_TAG: 'REMOVE_TAG',
   GET_ALL_TAGS: 'GET_ALL_TAGS',
+  CLIP_PAGE: 'CLIP_PAGE',
 } as const;
 
 export interface CaptureClipMessage {
@@ -76,21 +74,6 @@ export interface ClearClipsMessage {
 
 export interface OpenSettingsMessage {
   type: typeof MSG.OPEN_SETTINGS;
-}
-
-export interface AddReadLaterMessage {
-  type: typeof MSG.ADD_READ_LATER;
-  url: string;
-  title?: string;
-}
-
-export interface RemoveReadLaterMessage {
-  type: typeof MSG.REMOVE_READ_LATER;
-  url: string;
-}
-
-export interface GetReadLaterMessage {
-  type: typeof MSG.GET_READ_LATER;
 }
 
 export interface GetRelatedClipsMessage {
@@ -180,6 +163,10 @@ export interface GetAllTagsMessage {
   type: typeof MSG.GET_ALL_TAGS;
 }
 
+export interface ClipPageMessage {
+  type: typeof MSG.CLIP_PAGE;
+}
+
 export type RuntimeMessage =
   | CaptureClipMessage
   | DeleteClipMessage
@@ -188,9 +175,6 @@ export type RuntimeMessage =
   | UpdateClipMessage
   | ClearClipsMessage
   | OpenSettingsMessage
-  | AddReadLaterMessage
-  | RemoveReadLaterMessage
-  | GetReadLaterMessage
   | GetRelatedClipsMessage
   | SavePromptMessage
   | GetAllPromptsMessage
@@ -207,7 +191,8 @@ export type RuntimeMessage =
   | MarkItemSeenInZenMessage
   | AddTagMessage
   | RemoveTagMessage
-  | GetAllTagsMessage;
+  | GetAllTagsMessage
+  | ClipPageMessage;
 
 export interface CaptureSuccessResult {
   ok: true;
@@ -228,11 +213,6 @@ export interface AllClipsResult {
 export interface SearchClipsResult {
   ok: true;
   clips: ClipItem[];
-}
-
-export interface ReadLaterResult {
-  ok: true;
-  items: ReadLaterItem[];
 }
 
 export interface SontoItemsResult {

@@ -5,7 +5,7 @@ import { MSG } from '../shared/messages';
 import { registerAllHandlers } from './handlers';
 import { handleMessage } from './message-router';
 import { clipHandler } from './clip-handler';
-import { readLaterHandler } from './read-later-handler';
+import { clipPageHandler } from './clip-page-handler';
 import { badgeHandler } from './badge-handler';
 import { sontoItemHandler } from './sonto-item-handler';
 import { runMigrationIfNeeded } from './migration';
@@ -28,9 +28,9 @@ chrome.runtime.onInstalled.addListener((details) => {
     });
 
     chrome.contextMenus.create({
-      id: 'sonto-read-later',
-      title: 'Read Later in Sonto',
-      contexts: ['page', 'link'],
+      id: 'sonto-clip-page',
+      title: 'Clip Page',
+      contexts: ['page'],
     });
   });
 });
@@ -77,12 +77,26 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     return;
   }
 
-  if (info.menuItemId === 'sonto-read-later') {
-    const url = info.linkUrl ?? tab?.url ?? '';
-    const title = info.linkUrl ? undefined : tab?.title;
-    if (!url) return;
+  if (info.menuItemId === 'sonto-clip-page') {
     void (async () => {
-      await readLaterHandler.add(url, title);
+      try {
+        const result = await clipPageHandler.clipPage();
+        if (result.ok) {
+          if (tab?.id) {
+            void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: 'Page clipped.' }).catch(() => {});
+          }
+          void chrome.runtime.sendMessage({ type: MSG.CLIP_ADDED }).catch(() => {});
+        } else {
+          if (tab?.id) {
+            void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: result.message, isError: true }).catch(() => {});
+          }
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Clip failed.';
+        if (tab?.id) {
+          void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: msg, isError: true }).catch(() => {});
+        }
+      }
     })();
     return;
   }
@@ -111,20 +125,6 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 });
 
-chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url) {
-    void (async () => {
-      const item = await readLaterHandler.checkUrl(tab.url!);
-      if (item) {
-        try {
-          await clipHandler.capture(item.title ? `${item.title} — ${tab.url}` : tab.url!, 'manual', tab.url, item.title);
-        } catch (err) {
-          console.error('[Sonto] read-later capture failed:', err);
-        }
-      }
-    })();
-  }
-});
 
 chrome.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendResponse) => {
   return handleMessage(message, sender, sendResponse);

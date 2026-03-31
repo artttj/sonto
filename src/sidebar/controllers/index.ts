@@ -4,4 +4,3 @@
 export { ThemeController } from './theme-controller';
 export { ViewController } from './view-controller';
 export { PromptModalController } from './prompt-modal-controller';
-export { ReadLaterBarController } from './read-later-bar-controller';

@@ -62,16 +62,13 @@
           </svg>
           <label for="clipboard-search" class="visually-hidden">Search clipboard history</label>
           <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." aria-label="Search clipboard history" />
+          <button id="btn-clip-page" class="icon-btn-small" type="button" title="Clip current page" aria-label="Clip current page">
+            <i data-lucide="scissors"></i>
+          </button>
           <button id="btn-add-clip" class="icon-btn-small" type="button" title="Add clip" aria-label="Add new clip">
             <i data-lucide="plus"></i>
           </button>
         </div>
-
-        <div id="read-later-bar" class="read-later-bar hidden">
-          <span id="read-later-count"></span>
-          <button id="btn-view-later" class="rl-btn" type="button">View queue</button>
-        </div>
-        <div id="read-later-list" class="read-later-list hidden"></div>
 
         <div id="clip-list" class="clip-list"></div>
 

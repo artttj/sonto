@@ -6,7 +6,6 @@ import type { AppSettings } from './types';
 export const STORAGE_KEYS = {
   SETTINGS: 'sonto_settings',
   THEME: 'sonto_theme',
-  READ_LATER: 'sonto_read_later',
   CLIPBOARD_MONITORING: 'sonto_clipboard_monitoring',
   MAX_HISTORY_SIZE: 'sonto_max_history_size',
   CUSTOM_JSON_SOURCES: 'sonto_custom_json_sources',

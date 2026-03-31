@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_MAX_HISTORY_SIZE } from './constants';
-import type { AppLanguage, AppSettings, ReadLaterItem } from './types';
+import type { AppLanguage, AppSettings } from './types';
 
 function isAppLanguage(value: string): value is AppLanguage {
   return value === 'en' || value === 'de';
@@ -31,15 +31,6 @@ export async function getTheme(): Promise<'dark' | 'light'> {
 
 export async function saveTheme(theme: 'dark' | 'light'): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.THEME]: theme });
-}
-
-export async function getReadLater(): Promise<ReadLaterItem[]> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.READ_LATER);
-  return (result[STORAGE_KEYS.READ_LATER] as ReadLaterItem[] | undefined) ?? [];
-}
-
-export async function saveReadLater(items: ReadLaterItem[]): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEYS.READ_LATER]: items });
 }
 
 export async function getClipboardMonitoring(): Promise<boolean> {
