@@ -27,9 +27,12 @@ import {
   setReadingCompanionEnabled,
 } from '../shared/storage';
 import { parseFeed } from '../shared/rss-parser';
-import { clearAllClips, getClipCount, getAllClips, addClip } from '../shared/embeddings/vector-store';
+import {
+  getSontoItemCount,
+  clearAllSontoItems,
+} from '../shared/storage/items';
+import { exportBackup, importBackup, downloadBackup } from '../shared/backup';
 import { setLocale, applyI18n } from '../shared/i18n';
-import type { ClipItem } from '../shared/types';
 
 const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'philosophyEssay', label: '1000-Word Philosophy' },
@@ -318,7 +321,7 @@ async function initClipboardTab(): Promise<void> {
 
 async function initDataTab(): Promise<void> {
   const countEl = document.getElementById('snippet-count-data')!;
-  const count = await getClipCount();
+  const count = await getSontoItemCount();
   countEl.textContent = String(count);
 
   const versionEl = document.getElementById('about-version')!;
@@ -326,15 +329,8 @@ async function initDataTab(): Promise<void> {
   versionEl.textContent = manifest.version;
 
   qs<HTMLButtonElement>('#btn-export').addEventListener('click', async () => {
-    const clips = await getAllClips();
-    const data = JSON.stringify(clips, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `sonto-export-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const json = await exportBackup();
+    downloadBackup(json);
     showStatus('status-export');
   });
 
@@ -349,18 +345,18 @@ async function initDataTab(): Promise<void> {
 
     try {
       const text = await file.text();
-      const clips = JSON.parse(text) as ClipItem[];
+      const merge = confirm(
+        'Merge with existing data?\n\nClick OK to merge (imported items will be added to existing data).\nClick Cancel to replace all existing data.',
+      );
 
-      if (!Array.isArray(clips)) {
-        throw new Error('Invalid format');
-      }
+      const result = await importBackup(text, merge);
 
-      const validClips = clips.filter((c) => c.id && c.text);
-      await Promise.all(validClips.map((clip) => addClip(clip)));
-
-      const newCount = await getClipCount();
+      const newCount = await getSontoItemCount();
       countEl.textContent = String(newCount);
       showStatus('status-import');
+      alert(
+        `Import successful!\n${result.items} items imported:\n- ${result.clips} clips\n- ${result.prompts} prompts\n- ${result.zen} zen items`,
+      );
     } catch (err) {
       alert('Failed to import: invalid file format');
     }
@@ -369,10 +365,10 @@ async function initDataTab(): Promise<void> {
   });
 
   qs<HTMLButtonElement>('#btn-delete-all').addEventListener('click', async () => {
-    const current = await getClipCount();
+    const current = await getSontoItemCount();
     if (current === 0) return;
-    if (!confirm(`Delete all ${current} clipboard entries? This cannot be undone.`)) return;
-    await clearAllClips();
+    if (!confirm(`Delete all ${current} items? This cannot be undone.`)) return;
+    await clearAllSontoItems();
     countEl.textContent = '0';
     showStatus('status-delete');
   });

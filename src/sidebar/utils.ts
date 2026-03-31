@@ -110,10 +110,6 @@ export function showTagEditor(options: TagEditorOptions): void {
   });
 }
 
-// ============================================================================
-// SHARED CARD UTILITIES
-// ============================================================================
-
 export async function loadAllTags(): Promise<string[]> {
   try {
     const response = await chrome.runtime.sendMessage({ type: MSG.GET_ALL_TAGS });
@@ -151,7 +147,15 @@ export async function toggleZenify(
 
 export function moveCardToTop(card: HTMLElement, listEl: HTMLElement): void {
   card.style.transition = 'none';
-  listEl.insertBefore(card, listEl.firstChild);
+  const pinnedSep = listEl.querySelector('.pinned-separator');
+  const firstPinned = listEl.querySelector('.clip-pinned');
+  if (pinnedSep) {
+    listEl.insertBefore(card, pinnedSep.nextSibling);
+  } else if (firstPinned) {
+    listEl.insertBefore(card, firstPinned);
+  } else {
+    listEl.insertBefore(card, listEl.firstChild);
+  }
   requestAnimationFrame(() => {
     card.style.transition = '';
   });

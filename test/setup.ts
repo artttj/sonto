@@ -89,6 +89,58 @@ const mockIndexedDB = {
                 store.clear();
                 return { set onsuccess(cb: () => void) { cb(); } };
               },
+              index: () => {
+                const tagsSet: Set<string> = new Set();
+                for (const [, value] of store.entries()) {
+                  const item = value as { tags?: string[] };
+                  if (item.tags && Array.isArray(item.tags)) {
+                    for (const tag of item.tags) {
+                      tagsSet.add(tag);
+                    }
+                  }
+                }
+
+                return {
+                  openCursor: () => {
+                    const tags = Array.from(tagsSet);
+                    let currentIdx = -1;
+                    const cursor = {
+                      key: '',
+                      value: null,
+                      continue: () => void 0,
+                    };
+                    const req = {
+                      result: null as typeof cursor | null,
+                      onsuccess: null as ((e: Event) => void) | null,
+                      onerror: null as (() => void) | null,
+                    };
+
+                    const advance = (): void => {
+                      currentIdx++;
+                      if (currentIdx < tags.length) {
+                        cursor.key = tags[currentIdx];
+                        req.result = cursor;
+                      } else {
+                        req.result = null;
+                      }
+                      if (req.onsuccess) {
+                        const event = new Event('success') as Event & { target: { result: typeof cursor | null } };
+                        Object.defineProperty(event, 'target', {
+                          value: { result: req.result },
+                          writable: false,
+                        });
+                        req.onsuccess(event);
+                      }
+                    };
+
+                    cursor.continue = advance;
+
+                    setTimeout(advance, 0);
+
+                    return req;
+                  },
+                };
+              },
             };
           },
           set oncomplete(cb: () => void) { setTimeout(cb, 0); },

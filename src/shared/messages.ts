@@ -28,6 +28,7 @@ export const MSG = {
   QUICK_SEARCH: 'SONTO_QUICK_SEARCH',
   GET_RELATED_CLIPS: 'GET_RELATED_CLIPS',
   INSERT_TEXT: 'INSERT_TEXT',
+  CHECK_INPUT_AVAILABLE: 'CHECK_INPUT_AVAILABLE',
   SAVE_SONTO_ITEM: 'SAVE_SONTO_ITEM',
   GET_SONTO_ITEMS: 'GET_SONTO_ITEMS',
   SEARCH_SONTO_ITEMS: 'SEARCH_SONTO_ITEMS',
@@ -116,6 +117,10 @@ export interface InsertTextMessage {
   text: string;
 }
 
+export interface CheckInputAvailableMessage {
+  type: typeof MSG.CHECK_INPUT_AVAILABLE;
+}
+
 export interface SaveSontoItemMessage {
   type: typeof MSG.SAVE_SONTO_ITEM;
   item: Omit<SontoItem, 'id' | 'createdAt'>;
@@ -191,6 +196,7 @@ export type RuntimeMessage =
   | GetAllPromptsMessage
   | DeletePromptMessage
   | InsertTextMessage
+  | CheckInputAvailableMessage
   | SaveSontoItemMessage
   | GetSontoItemsMessage
   | SearchSontoItemsMessage

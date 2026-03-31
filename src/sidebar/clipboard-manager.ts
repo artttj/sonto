@@ -136,9 +136,43 @@ export class ClipboardManager {
   private selectedIndex = -1;
   private activeDomain = '';
   private allTags: string[] = [];
+  private inputAvailable = false;
 
   constructor(listEl: HTMLElement) {
     this.listEl = listEl;
+    void this.checkInputAvailability();
+    this.setupTabChangeListener();
+  }
+
+  private setupTabChangeListener(): void {
+    chrome.tabs?.onActivated.addListener(() => {
+      void this.checkInputAvailability();
+    });
+  }
+
+  private async checkInputAvailability(): Promise<void> {
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const activeTab = tabs[0];
+      if (!activeTab?.id) {
+        this.inputAvailable = false;
+        this.updateInsertButtons();
+        return;
+      }
+
+      const response = await chrome.tabs.sendMessage(activeTab.id, { type: MSG.CHECK_INPUT_AVAILABLE });
+      this.inputAvailable = !!response?.available;
+    } catch {
+      this.inputAvailable = false;
+    }
+    this.updateInsertButtons();
+  }
+
+  private updateInsertButtons(): void {
+    const insertButtons = this.listEl.querySelectorAll<HTMLButtonElement>('.clip-btn-insert');
+    insertButtons.forEach((btn) => {
+      btn.classList.toggle('active', this.inputAvailable);
+    });
   }
 
   async load(domain?: string, tagFilter?: string): Promise<void> {
@@ -343,11 +377,11 @@ export class ClipboardManager {
         ${tagsHtml}
       </div>
       <div class="clip-card-actions">
+        <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this clip to clipboard"><i data-lucide="clipboard"></i></button>
+        <button class="clip-btn clip-btn-insert${this.inputAvailable ? ' active' : ''}" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
         <button class="clip-btn clip-btn-pin${clip.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this clip"><i data-lucide="star"></i></button>
         <button class="clip-btn clip-btn-zenify${clip.zenified ? ' zenified' : ''}" title="${zenifyLabel}" aria-label="${zenifyLabel} this clip"><i data-lucide="flower-2"></i></button>
         <button class="clip-btn clip-btn-tags" title="Edit tags" aria-label="Edit tags"><i data-lucide="tag"></i></button>
-        <button class="clip-btn clip-btn-insert" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
-        <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this clip to clipboard"><i data-lucide="clipboard"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
         <button class="clip-btn clip-btn-delete" title="Delete" aria-label="Delete this clip"><i data-lucide="trash-2"></i></button>
       </div>
@@ -487,6 +521,9 @@ export class ClipboardManager {
 
     if (newPinned) {
       moveCardToTop(card, this.listEl);
+    } else {
+      // Re-render to move unpinned card to correct chronological position
+      this.render();
     }
   }
 

@@ -138,6 +138,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       sendResponse({ ok: true });
     }
   }
+  if (message && message.type === MSG.CHECK_INPUT_AVAILABLE) {
+    const hasInput = !!findBestInput();
+    sendResponse({ available: hasInput });
+  }
   return false;
 });
 
