@@ -8,6 +8,7 @@ import {
   isOnboardingDone,
   setOnboardingDone,
   getDefaultClipboardTab,
+  saveDefaultClipboardTab,
 } from '../shared/storage';
 import type { ReadLaterItem } from '../shared/types';
 import { ClipboardManager } from './clipboard-manager';
@@ -58,28 +59,8 @@ class SontoSidebar {
       void chrome.runtime.openOptionsPage();
     });
 
-    this.navBrowse.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      const isPinClick = target.id === 'pin-browse' || target.closest('#pin-browse') !== null;
-      if (isPinClick) {
-        e.preventDefault();
-        e.stopPropagation();
-        void this.pinTab('browse');
-      } else {
-        this.switchTab('browse');
-      }
-    });
-    this.navPrompts.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      const isPinClick = target.id === 'pin-prompts' || target.closest('#pin-prompts') !== null;
-      if (isPinClick) {
-        e.preventDefault();
-        e.stopPropagation();
-        void this.pinTab('prompts');
-      } else {
-        this.switchTab('prompts');
-      }
-    });
+    this.navBrowse.addEventListener('click', () => this.switchTab('browse'));
+    this.navPrompts.addEventListener('click', () => this.switchTab('prompts'));
 
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
       if (message.type === MSG.CLIP_ADDED) {
@@ -270,33 +251,8 @@ class SontoSidebar {
     } else {
       void this.promptsManager.load();
     }
-  }
 
-  private async pinTab(tab: 'browse' | 'prompts'): Promise<void> {
-    const { saveDefaultClipboardTab } = await import('../shared/storage');
-    await saveDefaultClipboardTab(tab);
-    this.updatePinState(tab);
-    console.log('[Sonto] Pinned tab:', tab);
-  }
-
-  private updatePinState(pinnedTab: 'browse' | 'prompts'): void {
-    const isBrowsePinned = pinnedTab === 'browse';
-    const isPromptsPinned = pinnedTab === 'prompts';
-
-    this.navBrowse.classList.toggle('pinned', isBrowsePinned);
-    this.navPrompts.classList.toggle('pinned', isPromptsPinned);
-
-    const browsePin = this.navBrowse.querySelector('.tab-pin');
-    const promptsPin = this.navPrompts.querySelector('.tab-pin');
-
-    if (browsePin) {
-      browsePin.setAttribute('title', isBrowsePinned ? 'Default tab' : 'Set as default');
-      browsePin.setAttribute('aria-label', isBrowsePinned ? 'Browse is default tab' : 'Pin Browse as default');
-    }
-    if (promptsPin) {
-      promptsPin.setAttribute('title', isPromptsPinned ? 'Default tab' : 'Set as default');
-      promptsPin.setAttribute('aria-label', isPromptsPinned ? 'Prompts is default tab' : 'Pin Prompts as default');
-    }
+    void saveDefaultClipboardTab(tab);
   }
 }
 
