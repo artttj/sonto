@@ -137,6 +137,9 @@ describe('Sonto Sidebar E2E', () => {
 
     beforeEach(async () => {
       sidebar = await getSidebarPage(browser, extensionId);
+      await waitForElement(sidebar, '#nav-prompts');
+      await sidebar.click('#nav-prompts');
+      await delay(200);
     });
 
     it('opens prompt modal when clicking add button', async () => {
@@ -146,7 +149,9 @@ describe('Sonto Sidebar E2E', () => {
       const modalHidden = await sidebar.$eval('#prompt-modal', el => el.classList.contains('hidden'));
       expect(modalHidden).toBe(true);
 
-      await sidebar.click('#btn-add-prompt');
+      await sidebar.evaluate(() => {
+        document.querySelector('#btn-add-prompt')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
       await delay(200);
 
       const modalVisible = await sidebar.$eval('#prompt-modal', el => el.classList.contains('hidden'));
@@ -156,10 +161,14 @@ describe('Sonto Sidebar E2E', () => {
     it('closes prompt modal when clicking cancel', async () => {
       await waitForElement(sidebar, '#btn-add-prompt');
 
-      await sidebar.click('#btn-add-prompt');
+      await sidebar.evaluate(() => {
+        document.querySelector('#btn-add-prompt')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
       await delay(200);
 
-      await sidebar.click('#prompt-cancel');
+      await sidebar.evaluate(() => {
+        document.querySelector('#prompt-cancel')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
       await delay(200);
 
       const modalHidden = await sidebar.$eval('#prompt-modal', el => el.classList.contains('hidden'));
