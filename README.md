@@ -8,16 +8,16 @@ A calm Chrome sidebar that works as a clipboard manager with an optional zen fee
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/e2e_clipboard_dark.png" alt="Clipboard dark theme" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_clipboard_dark.png" alt="Clipboard history with pins, tags, and actions" width="400" /></td>
     <td><img src="docs/screenshots/e2e_clipboard_light.png" alt="Clipboard light theme" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/e2e_zen_cosmos.png" alt="Zen cosmos mode" width="400" /></td>
-    <td><img src="docs/screenshots/e2e_zen_feed.png" alt="Zen feed mode" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_zen_feed.png" alt="Zen feed with art, quotes, and news" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_zen_cosmos_light.png" alt="Cosmos mode with spirograph animations" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/e2e_settings_clipboard.png" alt="Clipboard settings" width="400" /></td>
-    <td><img src="docs/screenshots/e2e_settings_feed.png" alt="Feed settings" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_settings_clipboard.png" alt="Settings with backup and customization" width="400" /></td>
+    <td><img src="docs/screenshots/e2e_prompt_modal.png" alt="Add prompt modal with color labels" width="400" /></td>
   </tr>
 </table>
 
@@ -41,10 +41,13 @@ No API keys needed. The extension works entirely in your browser.
 ### Clipboard Manager (Main View)
 
 - **Clipboard history**: Automatically saves copied text. Press Alt+Shift+C or right-click to capture manually
-- **Prompt management**: Save and organize your favorite AI prompts with the + button
+- **Prompt management**: Save and organize your favorite AI prompts with color labels
 - **Pin important items**: Keep frequently used snippets at the top
+- **Tags**: Organize clips and prompts with custom tags
+- **Zenify**: Add items to your zen feed rotation
 - **Search**: Quickly find items in your history with the search bar
 - **Domain filtering**: See related clips when visiting a page
+- **Quick insert**: Insert snippets directly into web page inputs
 
 ### Zen Feed (Secondary View)
 
