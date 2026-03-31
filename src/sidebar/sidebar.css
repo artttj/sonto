@@ -540,40 +540,31 @@ html, body {
 
 .view-tab .tab-pin {
   position: absolute;
-  top: 2px;
-  right: 4px;
-  width: 18px;
-  height: 18px;
+  top: 3px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
   padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
+  background: var(--c-text-4);
   border: none;
   border-radius: 50%;
-  color: var(--c-text-4);
   opacity: 0;
   cursor: pointer;
-  transition: opacity var(--t) var(--ease), color var(--t) var(--ease), background var(--t) var(--ease);
+  transition: opacity var(--t) var(--ease), background var(--t) var(--ease), transform var(--t) var(--ease);
 }
 
 .view-tab:hover .tab-pin {
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .view-tab .tab-pin:hover {
   opacity: 1;
-  background: var(--c-toggle-bg);
-}
-
-.view-tab .tab-pin svg {
-  width: 12px;
-  height: 12px;
+  transform: scale(1.2);
 }
 
 .view-tab.pinned .tab-pin {
   opacity: 1;
-  color: var(--c-accent);
+  background: #e8b931;
 }
 
 /* ═══ BOTTOM NAV ══════════════════════════════════════════════════════════ */
