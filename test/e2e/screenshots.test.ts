@@ -34,80 +34,123 @@ async function setTheme(page: Page, theme: 'dark' | 'light'): Promise<void> {
 
 async function addSampleClips(page: Page): Promise<void> {
   await page.evaluate(() => {
+    const now = Date.now();
     const clips = [
       {
-        id: 'clip-1',
-        text: 'The best way to predict the future is to create it. — Peter Drucker',
+        id: `${now}-1`,
+        type: 'clip',
+        content: 'The best way to predict the future is to create it. — Peter Drucker',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now() - 3600000,
+        origin: 'manual',
+        tags: [],
+        createdAt: now - 3600000,
         pinned: true,
+        zenified: false,
       },
       {
-        id: 'clip-2',
-        text: 'function debounce(fn: Function, ms: number) {\n  let timeout: ReturnType<typeof setTimeout>;\n  return (...args: unknown[]) => {\n    clearTimeout(timeout);\n    timeout = setTimeout(() => fn(...args), ms);\n  };\n}',
+        id: `${now}-2`,
+        type: 'clip',
+        content: 'function debounce(fn: Function, ms: number) {\n  let timeout: ReturnType<typeof setTimeout>;\n  return (...args: unknown[]) => {\n    clearTimeout(timeout);\n    timeout = setTimeout(() => fn(...args), ms);\n  };\n}',
         contentType: 'code',
         source: 'clipboard',
-        timestamp: Date.now() - 7200000,
+        origin: 'clipboard',
+        tags: [],
+        createdAt: now - 7200000,
+        pinned: false,
+        zenified: false,
       },
       {
-        id: 'clip-3',
-        text: 'https://github.com/artttj/sonto',
+        id: `${now}-3`,
+        type: 'clip',
+        content: 'https://github.com/artttj/sonto',
         contentType: 'link',
         source: 'clipboard',
+        origin: 'clipboard',
         url: 'https://github.com/artttj/sonto',
         title: 'artttj/sonto - GitHub',
-        timestamp: Date.now() - 10800000,
+        tags: [],
+        createdAt: now - 10800000,
+        pinned: false,
+        zenified: false,
       },
       {
-        id: 'clip-4',
-        text: 'Simplicity is the ultimate sophistication. — Leonardo da Vinci',
+        id: `${now}-4`,
+        type: 'clip',
+        content: 'Simplicity is the ultimate sophistication. — Leonardo da Vinci',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now() - 14400000,
+        origin: 'manual',
+        tags: [],
+        createdAt: now - 14400000,
+        pinned: false,
+        zenified: false,
       },
       {
-        id: 'clip-5',
-        text: 'npm install --save-dev typescript esbuild vitest',
+        id: `${now}-5`,
+        type: 'clip',
+        content: 'npm install --save-dev typescript esbuild vitest',
         contentType: 'code',
         source: 'clipboard',
-        timestamp: Date.now() - 18000000,
+        origin: 'clipboard',
+        tags: [],
+        createdAt: now - 18000000,
+        pinned: false,
+        zenified: false,
       },
       {
-        id: 'clip-6',
-        text: 'contact@example.com',
+        id: `${now}-6`,
+        type: 'clip',
+        content: 'contact@example.com',
         contentType: 'email',
         source: 'clipboard',
-        timestamp: Date.now() - 21600000,
+        origin: 'clipboard',
+        tags: [],
+        createdAt: now - 21600000,
+        pinned: false,
+        zenified: false,
       },
       {
-        id: 'clip-7',
-        text: 'Write code that is easy to delete, not easy to extend.',
+        id: `${now}-7`,
+        type: 'clip',
+        content: 'Write code that is easy to delete, not easy to extend.',
         contentType: 'text',
         source: 'manual',
-        timestamp: Date.now() - 25200000,
+        origin: 'manual',
+        tags: [],
+        createdAt: now - 25200000,
+        pinned: false,
+        zenified: false,
       },
       {
-        id: 'clip-8',
-        text: 'const result = await fetch(url).then(r => r.json());',
+        id: `${now}-8`,
+        type: 'clip',
+        content: 'const result = await fetch(url).then(r => r.json());',
         contentType: 'code',
         source: 'clipboard',
-        timestamp: Date.now() - 28800000,
+        origin: 'clipboard',
+        tags: [],
+        createdAt: now - 28800000,
+        pinned: false,
+        zenified: false,
       },
     ];
 
-    // Open IndexedDB with correct database name
-    const request = indexedDB.open('sonto_db', 3);
+    // Open new unified IndexedDB
+    const request = indexedDB.open('sonto_db_v2', 2);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains('clips')) {
-        db.createObjectStore('clips', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('sonto_items')) {
+        const store = db.createObjectStore('sonto_items', { keyPath: 'id' });
+        store.createIndex('type', 'type', { unique: false });
+        store.createIndex('createdAt', 'createdAt', { unique: false });
+        store.createIndex('pinned', 'pinned', { unique: false });
       }
     };
     request.onsuccess = () => {
       const db = request.result;
-      const tx = db.transaction('clips', 'readwrite');
-      const store = tx.objectStore('clips');
+      const tx = db.transaction('sonto_items', 'readwrite');
+      const store = tx.objectStore('sonto_items');
       for (const clip of clips) {
         store.put(clip);
       }
@@ -199,8 +242,13 @@ describe('Screenshot Generation', () => {
     await waitForElement(sidebar, '.header');
 
     // Click feed button to enter zen mode
-    await sidebar.click('#btn-feed');
-    await delay(1500);
+    await waitForElement(sidebar, '#btn-feed');
+    await delay(100);
+    await sidebar.evaluate(() => {
+  const btn = document.querySelector('#btn-feed');
+  if (btn) btn.click();
+});
+    await delay(2000);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos');
     expect(fs.existsSync(screenshotPath)).toBe(true);
@@ -214,7 +262,12 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await sidebar.click('#btn-feed');
+    await waitForElement(sidebar, '#btn-feed');
+    await delay(100);
+    await sidebar.evaluate(() => {
+  const btn = document.querySelector('#btn-feed');
+  if (btn) btn.click();
+});
     await delay(3000);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos_2');
@@ -229,7 +282,12 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await sidebar.click('#btn-feed');
+    await waitForElement(sidebar, '#btn-feed');
+    await delay(100);
+    await sidebar.evaluate(() => {
+  const btn = document.querySelector('#btn-feed');
+  if (btn) btn.click();
+});
     await delay(4500);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos_3');
@@ -245,7 +303,12 @@ describe('Screenshot Generation', () => {
     await waitForElement(sidebar, '.header');
 
     // Click feed button to enter zen mode
-    await sidebar.click('#btn-feed');
+    await waitForElement(sidebar, '#btn-feed');
+    await delay(100);
+    await sidebar.evaluate(() => {
+  const btn = document.querySelector('#btn-feed');
+  if (btn) btn.click();
+});
     await delay(2000);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed');
@@ -260,7 +323,12 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await sidebar.click('#btn-feed');
+    await waitForElement(sidebar, '#btn-feed');
+    await delay(100);
+    await sidebar.evaluate(() => {
+  const btn = document.querySelector('#btn-feed');
+  if (btn) btn.click();
+});
     await delay(4000);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed_2');
@@ -275,7 +343,12 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await sidebar.click('#btn-feed');
+    await waitForElement(sidebar, '#btn-feed');
+    await delay(100);
+    await sidebar.evaluate(() => {
+  const btn = document.querySelector('#btn-feed');
+  if (btn) btn.click();
+});
     await delay(6000);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed_3');
@@ -290,7 +363,12 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await sidebar.click('#btn-feed');
+    await waitForElement(sidebar, '#btn-feed');
+    await delay(100);
+    await sidebar.evaluate(() => {
+  const btn = document.querySelector('#btn-feed');
+  if (btn) btn.click();
+});
     await delay(3000);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed_light');
@@ -305,7 +383,12 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await sidebar.click('#btn-feed');
+    await waitForElement(sidebar, '#btn-feed');
+    await delay(100);
+    await sidebar.evaluate(() => {
+  const btn = document.querySelector('#btn-feed');
+  if (btn) btn.click();
+});
     await delay(2500);
 
     const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos_light');
@@ -358,7 +441,12 @@ describe('Screenshot Generation', () => {
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await sidebar.click('#btn-feed');
+    await waitForElement(sidebar, '#btn-feed');
+    await delay(100);
+    await sidebar.evaluate(() => {
+  const btn = document.querySelector('#btn-feed');
+  if (btn) btn.click();
+});
     await delay(3000);
 
     const screenshotPath = await takeScreenshot(sidebar, 'webstore_promo_1280x800');

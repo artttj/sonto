@@ -24,7 +24,7 @@ interface ViewControllerDeps {
 
 export class ViewController {
   private mode: ViewMode = 'clipboard';
-  private zenDisplay: ZenDisplay = 'cosmos';
+  private zenDisplay: ZenDisplay = 'feed';
   private language: string;
 
   private deps: ViewControllerDeps;

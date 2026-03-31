@@ -7,26 +7,31 @@ import { handleMessage } from './message-router';
 import { clipHandler } from './clip-handler';
 import { readLaterHandler } from './read-later-handler';
 import { badgeHandler } from './badge-handler';
-import { savePrompt } from '../shared/storage';
+import { sontoItemHandler } from './sonto-item-handler';
+import { runMigrationIfNeeded } from './migration';
 import type { RuntimeMessage } from '../shared/messages';
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: 'sonto-save',
-    title: 'Save to Clipboard History',
-    contexts: ['selection'],
-  });
+chrome.runtime.onInstalled.addListener((details) => {
+  void runMigrationIfNeeded();
 
-  chrome.contextMenus.create({
-    id: 'sonto-save-prompt',
-    title: 'Save as Prompt',
-    contexts: ['selection'],
-  });
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: 'sonto-save',
+      title: 'Save to Clipboard History',
+      contexts: ['selection'],
+    });
 
-  chrome.contextMenus.create({
-    id: 'sonto-read-later',
-    title: 'Read Later in Sonto',
-    contexts: ['page', 'link'],
+    chrome.contextMenus.create({
+      id: 'sonto-save-prompt',
+      title: 'Save as Prompt',
+      contexts: ['selection'],
+    });
+
+    chrome.contextMenus.create({
+      id: 'sonto-read-later',
+      title: 'Read Later in Sonto',
+      contexts: ['page', 'link'],
+    });
   });
 });
 
@@ -57,7 +62,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (!text.trim()) return;
     void (async () => {
       try {
-        await savePrompt(text);
+        await sontoItemHandler.create(text, 'prompt', 'context-menu');
+        void chrome.runtime.sendMessage({ type: MSG.PROMPT_ADDED }).catch(() => {});
         if (tab?.id) {
           void chrome.tabs.sendMessage(tab.id, { type: 'SONTO_TOAST', message: 'Saved as prompt.' }).catch(() => {});
         }

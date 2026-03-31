@@ -2,25 +2,14 @@
 // Licensed under the MIT License.
 
 import { createIcons, icons } from 'lucide';
-import { getAllPrompts, deletePrompt, updatePrompt, type PromptItem, type PromptColor } from '../shared/storage';
+import { type PromptColor } from '../shared/storage';
 import { escapeHtml, formatDate } from '../shared/utils';
 import { insertTextToActiveTab } from '../shared/tab-operations';
 import { MSG } from '../shared/messages';
+import type { SontoItem, SontoItemFilter } from '../shared/types';
+import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify, moveCardToTop } from './utils';
 
 const COPY_FEEDBACK_MS = 1500;
-
-function showToast(message: string, isError = false): void {
-  const existing = document.getElementById('sonto-sidebar-toast');
-  if (existing) existing.remove();
-
-  const toast = document.createElement('div');
-  toast.id = 'sonto-sidebar-toast';
-  toast.className = 'sidebar-toast' + (isError ? ' sidebar-toast-error' : '');
-  toast.textContent = message;
-  document.body.appendChild(toast);
-
-  setTimeout(() => toast.remove(), 2500);
-}
 
 const PROMPT_COLORS: Record<PromptColor, { bg: string; border: string; hex: string }> = {
   red:    { bg: 'rgba(255,90,90,0.18)', border: 'rgba(255,90,90,0.9)', hex: '#ff5a5a' },
@@ -47,6 +36,7 @@ function initEditModal(): void {
       <h3 class="prompt-modal-title">Edit Prompt</h3>
       <textarea id="prompt-edit-input" class="prompt-textarea" rows="6"></textarea>
       <input type="text" id="prompt-edit-label" class="prompt-label-input" placeholder="Label (optional)" maxlength="30" />
+      <input type="text" id="prompt-edit-tags" class="prompt-tags-input" placeholder="Tags (comma separated)" />
       <div class="prompt-color-picker">
         ${COLOR_ORDER.map(c => `<button type="button" class="color-dot color-dot-${c}" data-color="${c}" title="${c}"></button>`).join('')}
       </div>
@@ -59,7 +49,7 @@ function initEditModal(): void {
   document.body.appendChild(editModal);
 }
 
-function showEditModal(prompt: PromptItem, onSave: (updates: { text: string; label?: string; color?: PromptColor }) => void): void {
+function showEditModal(prompt: SontoItem, allTags: string[], onSave: (updates: { content: string; title?: string; metadata?: Record<string, unknown>; tags?: string[] }) => void): void {
   initEditModal();
   if (!editModal) return;
 
@@ -67,10 +57,10 @@ function showEditModal(prompt: PromptItem, onSave: (updates: { text: string; lab
   const labelInput = editModal.querySelector('#prompt-edit-label') as HTMLInputElement;
   const colorDots = editModal.querySelectorAll('.color-dot');
 
-  input.value = prompt.text;
-  labelInput.value = prompt.label ?? '';
+  input.value = prompt.content;
+  labelInput.value = prompt.title ?? '';
 
-  let selectedColor: PromptColor | undefined = prompt.color;
+  let selectedColor: PromptColor | undefined = prompt.metadata?.color as PromptColor;
   colorDots.forEach(dot => {
     dot.classList.toggle('selected', (dot as HTMLElement).dataset.color === selectedColor);
     dot.addEventListener('click', () => {
@@ -91,10 +81,18 @@ function showEditModal(prompt: PromptItem, onSave: (updates: { text: string; lab
   editModal.onclick = (e) => { if (e.target === editModal) close(); };
 
   saveBtn.onclick = () => {
+    const tagsInput = (editModal?.querySelector('#prompt-edit-tags') as HTMLInputElement)?.value ?? '';
+    const tags = tagsInput
+      .split(',')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean)
+      .slice(0, 10);
+
     onSave({
-      text: input.value.trim(),
-      label: labelInput.value.trim() || undefined,
-      color: selectedColor,
+      content: input.value.trim(),
+      title: labelInput.value.trim() || undefined,
+      metadata: { color: selectedColor },
+      tags,
     });
     close();
   };
@@ -104,12 +102,13 @@ function showEditModal(prompt: PromptItem, onSave: (updates: { text: string; lab
 }
 
 export class PromptsManager {
-  private prompts: PromptItem[] = [];
+  private prompts: SontoItem[] = [];
   private listEl: HTMLElement;
   private filtersEl: HTMLElement;
   private searchEl: HTMLInputElement;
   private isLoading = false;
   private activeColor: PromptColor | null = null;
+  private allTags: string[] = [];
 
   constructor(listEl: HTMLElement, searchEl: HTMLInputElement, filtersEl: HTMLElement) {
     this.listEl = listEl;
@@ -117,10 +116,21 @@ export class PromptsManager {
     this.filtersEl = filtersEl;
   }
 
-  async load(): Promise<void> {
+  async load(tagFilter?: string): Promise<void> {
+    console.log('[Sonto] Loading prompts...');
+    this.allTags = await loadAllTags();
     this.setLoading(true);
     try {
-      this.prompts = await getAllPrompts();
+      const filter: SontoItemFilter = {
+        types: ['prompt'],
+      };
+      if (tagFilter) {
+        filter.tags = [tagFilter];
+      }
+      const response = await chrome.runtime.sendMessage({ type: MSG.GET_SONTO_ITEMS, filter });
+      console.log('[Sonto] Prompts load response:', response);
+      this.prompts = response?.ok ? (response.items as SontoItem[]) : [];
+      console.log('[Sonto] Loaded prompts:', this.prompts.length);
     } catch (err) {
       console.error('[Sonto] Failed to load prompts:', err);
     } finally {
@@ -130,16 +140,21 @@ export class PromptsManager {
     }
   }
 
+  async filterByTag(tag: string): Promise<void> {
+    await this.load(tag);
+  }
+
   private renderFilters(): void {
     const colorCounts = new Map<PromptColor, { count: number; label?: string }>();
 
     for (const p of this.prompts) {
-      if (p.color) {
-        const existing = colorCounts.get(p.color);
+      const color = p.metadata?.color as PromptColor;
+      if (color) {
+        const existing = colorCounts.get(color);
         if (existing) {
           existing.count++;
         } else {
-          colorCounts.set(p.color, { count: 1, label: p.label });
+          colorCounts.set(color, { count: 1, label: p.title });
         }
       }
     }
@@ -196,9 +211,12 @@ export class PromptsManager {
     }
     this.setLoading(true);
     try {
-      const all = await getAllPrompts();
-      const q = query.toLowerCase();
-      this.prompts = all.filter(p => p.text.toLowerCase().includes(q) || (p.label?.toLowerCase().includes(q) ?? false));
+      const response = await chrome.runtime.sendMessage({
+        type: MSG.SEARCH_SONTO_ITEMS,
+        query,
+        filter: { types: ['prompt'] },
+      });
+      this.prompts = response?.ok ? (response.items as SontoItem[]) : [];
     } catch (err) {
       console.error('[Sonto] Search failed:', err);
     } finally {
@@ -212,7 +230,7 @@ export class PromptsManager {
     this.listEl.innerHTML = '';
 
     const filtered = this.activeColor
-      ? this.prompts.filter(p => p.color === this.activeColor)
+      ? this.prompts.filter(p => p.metadata?.color === this.activeColor)
       : this.prompts;
 
     if (this.isLoading) {
@@ -259,19 +277,21 @@ export class PromptsManager {
     this.listEl.appendChild(separator);
   }
 
-  private buildCard(prompt: PromptItem): HTMLElement {
+  private buildCard(prompt: SontoItem): HTMLElement {
     const card = document.createElement('div');
-    card.className = 'clip-card clip-type-prompt' + (prompt.pinned ? ' clip-pinned' : '');
+    card.className = 'clip-card clip-type-prompt' + (prompt.pinned ? ' clip-pinned' : '') + (prompt.zenified ? ' clip-zenified' : '');
     card.dataset.id = prompt.id;
 
-    const preview = escapeHtml(prompt.text.slice(0, 280));
-    const needsExpand = prompt.text.length > 280;
-    const colorStyles = prompt.color ? PROMPT_COLORS[prompt.color] : null;
+    const preview = escapeHtml(prompt.content.slice(0, 280));
+    const needsExpand = prompt.content.length > 280;
+    const colorStyles = prompt.metadata?.color ? PROMPT_COLORS[prompt.metadata.color as PromptColor] : null;
     const colorDot = colorStyles
       ? `<span class="prompt-color-tag" style="background: ${colorStyles.hex};"></span>`
       : '';
 
     const pinLabel = prompt.pinned ? 'Unpin' : 'Pin';
+    const zenifyLabel = prompt.zenified ? 'Un-zenify' : 'Zenify';
+    const tagsHtml = renderTags(prompt.tags);
 
     card.innerHTML = `
       <div class="clip-header">
@@ -279,16 +299,19 @@ export class PromptsManager {
           ${colorDot}
           <span class="clip-type-badge clip-badge-prompt">
             <span class="clip-type-icon">✦</span>
-            ${prompt.label ? escapeHtml(prompt.label) : 'Prompt'}
+            ${prompt.title ? escapeHtml(prompt.title) : 'Prompt'}
           </span>
         </div>
         <span class="clip-time">${formatDate(prompt.createdAt)}</span>
       </div>
       <div class="clip-body${needsExpand ? ' clip-body-expandable' : ''}" ${needsExpand ? 'title="Click to view full text"' : ''}>
-        <p class="clip-text-preview">${preview}${prompt.text.length > 280 ? '…' : ''}</p>
+        <p class="clip-text-preview">${preview}${prompt.content.length > 280 ? '…' : ''}</p>
+        ${tagsHtml}
       </div>
       <div class="clip-card-actions">
         <button class="clip-btn clip-btn-pin${prompt.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this prompt"><i data-lucide="star"></i></button>
+        <button class="clip-btn clip-btn-zenify${prompt.zenified ? ' zenified' : ''}" title="${zenifyLabel}" aria-label="${zenifyLabel} this prompt"><i data-lucide="flower-2"></i></button>
+        <button class="clip-btn clip-btn-tags" title="Edit tags" aria-label="Edit tags"><i data-lucide="tag"></i></button>
         <button class="clip-btn clip-btn-insert" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
         <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this prompt"><i data-lucide="clipboard"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
@@ -298,7 +321,7 @@ export class PromptsManager {
     `;
 
     const copyPrompt = () => {
-      void navigator.clipboard.writeText(prompt.text).then(() => {
+      void navigator.clipboard.writeText(prompt.content).then(() => {
         const btn = card.querySelector<HTMLButtonElement>('.clip-btn-copy');
         btn?.classList.add('copied');
         setTimeout(() => btn?.classList.remove('copied'), COPY_FEEDBACK_MS);
@@ -309,7 +332,7 @@ export class PromptsManager {
     card.addEventListener('dblclick', copyPrompt);
 
     card.querySelector<HTMLButtonElement>('.clip-btn-insert')?.addEventListener('click', () => {
-      void this.insertText(prompt.text);
+      void this.insertText(prompt.content);
     });
 
     card.querySelector<HTMLButtonElement>('.clip-btn-pin')?.addEventListener('click', (e) => {
@@ -317,10 +340,29 @@ export class PromptsManager {
       void this.togglePin(prompt.id, card);
     });
 
+    card.querySelector<HTMLButtonElement>('.clip-btn-zenify')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void this.toggleZenify(prompt.id, card);
+    });
+
+    card.querySelector<HTMLButtonElement>('.clip-btn-tags')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showTagEditor(prompt);
+    });
+
     card.querySelector<HTMLButtonElement>('.clip-btn-edit')?.addEventListener('click', () => {
-      showEditModal(prompt, async (updates) => {
-        if (updates.text) {
-          await updatePrompt(prompt.id, updates);
+      showEditModal(prompt, this.allTags, async (updates) => {
+        if (updates.content) {
+          await chrome.runtime.sendMessage({
+            type: MSG.UPDATE_SONTO_ITEM,
+            id: prompt.id,
+            updates: {
+              content: updates.content,
+              title: updates.title,
+              metadata: updates.metadata,
+              tags: updates.tags ?? prompt.tags,
+            },
+          });
           await this.load();
         }
       });
@@ -330,12 +372,23 @@ export class PromptsManager {
       void this.deletePrompt(prompt.id, card);
     });
 
+    const tagElements = card.querySelectorAll('.clip-tag');
+    tagElements.forEach((tagEl) => {
+      tagEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tag = (e.currentTarget as HTMLElement).dataset.tag;
+        if (tag) {
+          void this.filterByTag(tag);
+        }
+      });
+    });
+
     return card;
   }
 
   private async deletePrompt(id: string, card: HTMLElement): Promise<void> {
     card.classList.add('clip-removing');
-    await deletePrompt(id);
+    await chrome.runtime.sendMessage({ type: MSG.DELETE_SONTO_ITEM, id });
     this.prompts = this.prompts.filter(p => p.id !== id);
 
     setTimeout(() => {
@@ -350,7 +403,11 @@ export class PromptsManager {
     if (!prompt) return;
 
     const newPinned = !prompt.pinned;
-    await updatePrompt(id, { pinned: newPinned });
+    await chrome.runtime.sendMessage({
+      type: MSG.UPDATE_SONTO_ITEM,
+      id,
+      updates: { pinned: newPinned },
+    });
 
     prompt.pinned = newPinned;
     card.classList.toggle('clip-pinned', newPinned);
@@ -362,24 +419,32 @@ export class PromptsManager {
       pinBtn.setAttribute('aria-label', `${newPinned ? 'Unpin' : 'Pin'} this prompt`);
     }
 
-    this.render();
+    if (newPinned) {
+      moveCardToTop(card, this.listEl);
+    }
   }
 
-  private async insertText(text: string): Promise<void> {
-    const result = await insertTextToActiveTab(text);
-    if (result.error) {
-      showToast(result.error, true);
-    }
+  private async toggleZenify(id: string, card: HTMLElement): Promise<void> {
+    await toggleZenify(id, card, this.prompts);
+  }
+
+  private showTagEditor(prompt: SontoItem): void {
+    showTagEditor({
+      currentTags: prompt.tags,
+      allTags: this.allTags,
+      onSave: async (tags) => {
+        await chrome.runtime.sendMessage({
+          type: MSG.UPDATE_SONTO_ITEM,
+          id: prompt.id,
+          updates: { tags },
+        });
+        prompt.tags = tags;
+        this.render();
+      },
+    });
   }
 
   private setLoading(loading: boolean): void {
     this.isLoading = loading;
-  }
-
-  private renderLoading(): void {
-    const loading = document.createElement('div');
-    loading.className = 'clips-loading';
-    loading.innerHTML = '<div class="spinner"></div>';
-    this.listEl.appendChild(loading);
   }
 }

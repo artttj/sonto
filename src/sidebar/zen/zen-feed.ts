@@ -3,6 +3,7 @@
 
 import { MSG } from '../../shared/messages';
 import { bumpZenSourceSignal, getDripInterval, getDisabledSources, getZenSourceSignals } from '../../shared/storage';
+import type { SontoItem } from '../../shared/types';
 import {
   AI_PATTERNS,
   SVG_BULB,
@@ -17,6 +18,10 @@ import { translateText } from './translator';
 
 const SVG_COPY = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
 const SVG_SAVE = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 1.5h7v8L5.5 7 2 9.5z"/></svg>';
+const SVG_ZENIFIED = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1.5c1 1.5 3 2.5 3 4.5a3 3 0 1 1-6 0c0-2 2-3 3-4.5z"/></svg>';
+
+// 30% of zen feed bubbles come from user's zenified collection (spaced repetition)
+const ZENIFIED_ITEM_PROBABILITY = 0.3;
 
 export class ZenFeed {
   private pastFacts: string[] = [];
@@ -71,20 +76,7 @@ export class ZenFeed {
         return;
       }
 
-      const cached = await chrome.storage.session.get(['sonto_zen_feed', 'sonto_zen_last_drip']);
-      const raw = (cached?.sonto_zen_feed as string[]) ?? [];
-
-      if (raw.length > 0) {
-        this.feedEl.innerHTML = '';
-        const recent = raw.slice(-6);
-        for (const item of recent) {
-          this.pastFacts.push(item);
-          this.appendBubbleElement(item);
-        }
-        this.scheduleDrip();
-        return;
-      }
-
+      // Load fresh bubbles on each session for consistent content
       this.feedEl.innerHTML = '';
       this.showLoader();
       await this.loadInitialBubbles(ZEN_INITIAL_BATCH);
@@ -149,6 +141,15 @@ export class ZenFeed {
   private async addBubble(): Promise<number> {
     this.dripCount++;
 
+    if (Math.random() < ZENIFIED_ITEM_PROBABILITY) {
+      const zenifiedItem = await this.getZenifiedItem();
+      if (zenifiedItem) {
+        this.hideLoader();
+        this.appendZenifiedBubble(zenifiedItem);
+        return 1.2;
+      }
+    }
+
     const fetcher = pickFetcherWithSignals(ZEN_FETCHERS, this.sourceSignals, this.disabledSources);
 
     const ctx = {
@@ -182,6 +183,65 @@ export class ZenFeed {
     }
 
     return 1;
+  }
+
+  private async getZenifiedItem(): Promise<SontoItem | null> {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: MSG.GET_ZENIFIED_ITEMS,
+        limit: 10,
+        excludeRecentMs: 24 * 60 * 60 * 1000,
+      });
+      if (!response?.ok || response.items.length === 0) return null;
+
+      // Pick random from top candidates (spaced repetition)
+      const candidates = response.items as SontoItem[];
+      const pickIndex = Math.floor(Math.random() * Math.min(candidates.length, 3));
+      const item = candidates[pickIndex];
+
+      // Mark as seen
+      void chrome.runtime.sendMessage({ type: MSG.MARK_ITEM_SEEN_IN_ZEN, id: item.id });
+
+      return item;
+    } catch {
+      return null;
+    }
+  }
+
+  private appendZenifiedBubble(item: SontoItem): HTMLElement {
+    const bubble = document.createElement('div');
+    bubble.className = 'zen-bubble zen-bubble--user';
+
+    const content = item.content;
+    const needsExpand = content.length > 280;
+    const preview = needsExpand ? escapeHtml(content.slice(0, 280)) + '…' : escapeHtml(content);
+
+    const tagsHtml = item.tags.length > 0
+      ? `<span class="zen-user-tags">${item.tags.slice(0, 3).map((t) => escapeHtml(t)).join(' · ')}</span>`
+      : '';
+
+    const typeLabel = item.type === 'prompt' ? 'Prompt' : 'Saved';
+
+    bubble.innerHTML = `
+      ${SVG_ZENIFIED}
+      <div class="zen-bubble-body">
+        <div class="zen-bubble-text">${preview}</div>
+        <span class="zen-source">${typeLabel} · from your collection</span>
+        ${tagsHtml}
+      </div>
+    `;
+
+    this.attachCopyButton(bubble, content);
+    this.attachSaveButton(bubble, content, item.url);
+
+    const first = this.feedEl.firstChild;
+    if (first) {
+      this.feedEl.insertBefore(bubble, first);
+    } else {
+      this.feedEl.appendChild(bubble);
+    }
+
+    return bubble;
   }
 
   private async loadInitialBubbles(count: number): Promise<void> {

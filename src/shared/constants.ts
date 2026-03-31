@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   BADGE_COUNTER_ENABLED: 'sonto_badge_counter_enabled',
   READING_COMPANION_ENABLED: 'sonto_reading_companion_enabled',
   COLLECTIONS: 'sonto_collections',
+  MIGRATION_VERSION: 'sonto_migration_version',
 } as const;
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -21,6 +22,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export const MAX_CAPTURE_CHARS = 10000;
 export const DEFAULT_MAX_HISTORY_SIZE = 500;
-export const DB_NAME = 'sonto_db';
-export const DB_VERSION = 3;
-export const STORE_NAME = 'clips';
+
+// Legacy constants (for migration)
+export const LEGACY_DB_NAME = 'sonto_db';
+export const LEGACY_DB_VERSION = 3;
+export const LEGACY_STORE_NAME = 'clips';
+
+// New unified storage constants
+export const DB_NAME = 'sonto_db_v2';
+export const DB_VERSION = 2; // Bumped to force schema upgrade
+export const STORE_NAME = 'sonto_items';

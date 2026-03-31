@@ -3,10 +3,11 @@
 
 import { createIcons, icons } from 'lucide';
 import { MSG } from '../shared/messages';
-import type { ClipItem, ClipContentType } from '../shared/types';
-import { escapeHtml, formatDate } from '../shared/utils';
+import type { SontoItem, SontoContentType, SontoItemFilter } from '../shared/types';
+import { escapeHtml, formatDate, extractDomain } from '../shared/utils';
 import { insertTextToActiveTab } from '../shared/tab-operations';
 import { highlightCode } from './syntax-highlight';
+import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify, moveCardToTop } from './utils';
 
 const TEXT_PREVIEW_CHARS = 280;
 const CODE_PREVIEW_CHARS = 300;
@@ -14,19 +15,6 @@ const COPY_FEEDBACK_MS = 1500;
 
 let fullTextModal: HTMLElement | null = null;
 let fullTextOverlay: HTMLElement | null = null;
-
-function showToast(message: string, isError = false): void {
-  const existing = document.getElementById('sonto-sidebar-toast');
-  if (existing) existing.remove();
-
-  const toast = document.createElement('div');
-  toast.id = 'sonto-sidebar-toast';
-  toast.className = 'sidebar-toast' + (isError ? ' sidebar-toast-error' : '');
-  toast.textContent = message;
-  document.body.appendChild(toast);
-
-  setTimeout(() => toast.remove(), 2500);
-}
 
 function initFullTextModal(): void {
   if (fullTextModal) return;
@@ -53,7 +41,7 @@ function initFullTextModal(): void {
   document.body.appendChild(fullTextModal);
 }
 
-function showFullText(text: string, contentType: ClipContentType): void {
+function showFullText(text: string, contentType: SontoContentType): void {
   initFullTextModal();
   if (!fullTextModal || !fullTextOverlay) return;
 
@@ -89,24 +77,34 @@ function qs<T extends Element>(selector: string, parent: ParentNode = document):
   return el;
 }
 
-function contentTypeLabel(type: ClipContentType): string {
+function contentTypeLabel(type: SontoContentType): string {
   switch (type) {
     case 'link': return 'Link';
     case 'code': return 'Code';
     case 'email': return 'Email';
     case 'image': return 'Image';
-    case 'prompt': return 'Prompt';
+    case 'quote': return 'Quote';
+    case 'art': return 'Art';
+    case 'idea': return 'Idea';
+    case 'haiku': return 'Haiku';
+    case 'proverb': return 'Proverb';
+    case 'strategy': return 'Strategy';
     default: return 'Text';
   }
 }
 
-function contentTypeIcon(type: ClipContentType): string {
+function contentTypeIcon(type: SontoContentType): string {
   switch (type) {
     case 'link': return '↗';
     case 'code': return '{}';
     case 'email': return '@';
     case 'image': return '▨';
-    case 'prompt': return '✦';
+    case 'quote': return '"';
+    case 'art': return '◈';
+    case 'idea': return '◐';
+    case 'haiku': return '❋';
+    case 'proverb': return '◉';
+    case 'strategy': return '⚇';
     default: return '¶';
   }
 }
@@ -120,31 +118,31 @@ function truncateUrl(url: string): string {
   }
 }
 
-function extractDomain(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return '';
-  }
-}
-
 export class ClipboardManager {
-  private clips: ClipItem[] = [];
+  private clips: SontoItem[] = [];
   private listEl: HTMLElement;
   private isLoading = false;
   private selectedIndex = -1;
   private activeDomain = '';
+  private allTags: string[] = [];
 
   constructor(listEl: HTMLElement) {
     this.listEl = listEl;
   }
 
-  async load(domain?: string): Promise<void> {
+  async load(domain?: string, tagFilter?: string): Promise<void> {
+    this.allTags = await loadAllTags();
     this.activeDomain = domain ?? '';
     this.setLoading(true);
     try {
-      const response = await chrome.runtime.sendMessage({ type: MSG.GET_ALL_CLIPS });
-      this.clips = response?.ok ? (response.clips as ClipItem[]) : [];
+      const filter: SontoItemFilter = {
+        types: ['clip'],
+      };
+      if (tagFilter) {
+        filter.tags = [tagFilter];
+      }
+      const response = await chrome.runtime.sendMessage({ type: MSG.GET_SONTO_ITEMS, filter });
+      this.clips = response?.ok ? (response.items as SontoItem[]) : [];
     } catch (err) {
       console.error('[Sonto] Failed to load clipboard:', err);
     } finally {
@@ -160,14 +158,22 @@ export class ClipboardManager {
     }
     this.setLoading(true);
     try {
-      const response = await chrome.runtime.sendMessage({ type: MSG.SEARCH_CLIPS, query });
-      this.clips = response?.ok ? response.clips : [];
+      const response = await chrome.runtime.sendMessage({
+        type: MSG.SEARCH_SONTO_ITEMS,
+        query,
+        filter: { types: ['clip'] },
+      });
+      this.clips = response?.ok ? response.items : [];
     } catch (err) {
       console.error('[Sonto] Search failed:', err);
     } finally {
       this.setLoading(false);
       this.render();
     }
+  }
+
+  async filterByTag(tag: string): Promise<void> {
+    await this.load(this.activeDomain, tag);
   }
 
   handleKey(e: KeyboardEvent): boolean {
@@ -188,7 +194,7 @@ export class ClipboardManager {
       const card = cards[this.selectedIndex];
       const clip = this.clips.find((c) => c.id === card.dataset.id);
       if (clip) {
-        void navigator.clipboard.writeText(clip.text).then(() => {
+        void navigator.clipboard.writeText(clip.content).then(() => {
           const btn = card.querySelector<HTMLButtonElement>('.clip-btn-copy');
           if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, COPY_FEEDBACK_MS); }
         }).catch(() => {});
@@ -258,16 +264,16 @@ export class ClipboardManager {
     createIcons({ icons, attrs: { strokeWidth: 1.5 } });
   }
 
-  private matchesDomain(clip: ClipItem): boolean {
+  private matchesDomain(clip: SontoItem): boolean {
     if (!clip.url || !this.activeDomain) return false;
     const clipDomain = extractDomain(clip.url);
     return clipDomain === this.activeDomain || clipDomain.endsWith('.' + this.activeDomain);
   }
 
-  private renderByDay(clips: ClipItem[]): void {
+  private renderByDay(clips: SontoItem[]): void {
     let currentDay = '';
     for (const clip of clips) {
-      const day = new Date(clip.timestamp).toLocaleDateString(undefined, {
+      const day = new Date(clip.createdAt).toLocaleDateString(undefined, {
         weekday: 'long',
         month: 'short',
         day: 'numeric',
@@ -287,23 +293,23 @@ export class ClipboardManager {
     this.listEl.appendChild(separator);
   }
 
-  private buildCard(clip: ClipItem): HTMLElement {
+  private buildCard(clip: SontoItem): HTMLElement {
     const card = document.createElement('div');
-    card.className = `clip-card clip-type-${clip.contentType}${clip.pinned ? ' clip-pinned' : ''}`;
+    card.className = `clip-card clip-type-${clip.contentType}${clip.pinned ? ' clip-pinned' : ''}${clip.zenified ? ' clip-zenified' : ''}`;
     card.dataset.id = clip.id;
 
     const preview = clip.contentType === 'code'
-      ? `<pre class="clip-code-preview"><code>${highlightCode(clip.text.slice(0, CODE_PREVIEW_CHARS))}</code></pre>`
-      : `<p class="clip-text-preview">${escapeHtml(clip.text.slice(0, TEXT_PREVIEW_CHARS))}${clip.text.length > TEXT_PREVIEW_CHARS ? '…' : ''}</p>`;
+      ? `<pre class="clip-code-preview"><code>${highlightCode(clip.content.slice(0, CODE_PREVIEW_CHARS))}</code></pre>`
+      : `<p class="clip-text-preview">${escapeHtml(clip.content.slice(0, TEXT_PREVIEW_CHARS))}${clip.content.length > TEXT_PREVIEW_CHARS ? '…' : ''}</p>`;
 
     const sourceInfo = clip.url
       ? `<a class="clip-source-url" href="${escapeHtml(clip.url)}" target="_blank" rel="noopener">${escapeHtml(truncateUrl(clip.url))}</a>`
       : '';
 
     const pinLabel = clip.pinned ? 'Unpin' : 'Pin';
-    const pinIcon = clip.pinned ? 'star' : 'star';
-
-    const needsExpand = clip.text.length > TEXT_PREVIEW_CHARS;
+    const zenifyLabel = clip.zenified ? 'Un-zenify' : 'Zenify';
+    const needsExpand = clip.content.length > TEXT_PREVIEW_CHARS;
+    const tagsHtml = renderTags(clip.tags);
 
     card.innerHTML = `
       <div class="clip-header">
@@ -311,14 +317,17 @@ export class ClipboardManager {
           <span class="clip-type-icon">${contentTypeIcon(clip.contentType)}</span>
           ${contentTypeLabel(clip.contentType)}
         </span>
-        <span class="clip-time">${formatDate(clip.timestamp)}</span>
+        <span class="clip-time">${formatDate(clip.createdAt)}</span>
       </div>
       <div class="clip-body${needsExpand ? ' clip-body-expandable' : ''}" ${needsExpand ? 'title="Click to view full text"' : ''}>
         ${preview}
         ${sourceInfo ? `<div class="clip-meta">${sourceInfo}</div>` : ''}
+        ${tagsHtml}
       </div>
       <div class="clip-card-actions">
-        <button class="clip-btn clip-btn-pin${clip.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this clip"><i data-lucide="${pinIcon}"></i></button>
+        <button class="clip-btn clip-btn-pin${clip.pinned ? ' pinned' : ''}" title="${pinLabel}" aria-label="${pinLabel} this clip"><i data-lucide="star"></i></button>
+        <button class="clip-btn clip-btn-zenify${clip.zenified ? ' zenified' : ''}" title="${zenifyLabel}" aria-label="${zenifyLabel} this clip"><i data-lucide="flower-2"></i></button>
+        <button class="clip-btn clip-btn-tags" title="Edit tags" aria-label="Edit tags"><i data-lucide="tag"></i></button>
         <button class="clip-btn clip-btn-insert" title="Insert to input" aria-label="Insert text into active input field"><i data-lucide="text-cursor-input"></i></button>
         <button class="clip-btn clip-btn-copy" title="Copy" aria-label="Copy this clip to clipboard"><i data-lucide="clipboard"></i></button>
         ${needsExpand ? `<button class="clip-btn clip-btn-expand" title="View full" aria-label="View full text"><i data-lucide="maximize-2"></i></button>` : ''}
@@ -329,7 +338,7 @@ export class ClipboardManager {
     if (needsExpand) {
       const bodyEl = card.querySelector('.clip-body');
       const expandBtn = card.querySelector('.clip-btn-expand');
-      const clickHandler = () => showFullText(clip.text, clip.contentType);
+      const clickHandler = () => showFullText(clip.content, clip.contentType);
       bodyEl?.addEventListener('click', clickHandler);
       expandBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -338,7 +347,7 @@ export class ClipboardManager {
     }
 
     const copyClip = () => {
-      void navigator.clipboard.writeText(clip.text).then(() => {
+      void navigator.clipboard.writeText(clip.content).then(() => {
         const btn = qs<HTMLButtonElement>('.clip-btn-copy', card);
         btn.classList.add('copied');
         setTimeout(() => btn.classList.remove('copied'), COPY_FEEDBACK_MS);
@@ -349,12 +358,33 @@ export class ClipboardManager {
     card.addEventListener('dblclick', copyClip);
 
     qs<HTMLButtonElement>('.clip-btn-insert', card).addEventListener('click', () => {
-      void this.insertText(clip.text);
+      void this.insertText(clip.content);
     });
 
     qs<HTMLButtonElement>('.clip-btn-pin', card).addEventListener('click', (e) => {
       e.stopPropagation();
       void this.togglePin(clip.id, card);
+    });
+
+    qs<HTMLButtonElement>('.clip-btn-zenify', card).addEventListener('click', (e) => {
+      e.stopPropagation();
+      void this.toggleZenify(clip.id, card);
+    });
+
+    qs<HTMLButtonElement>('.clip-btn-tags', card).addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showTagEditor(clip);
+    });
+
+    const tagElements = card.querySelectorAll('.clip-tag');
+    tagElements.forEach((tagEl) => {
+      tagEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tag = (e.currentTarget as HTMLElement).dataset.tag;
+        if (tag) {
+          void this.filterByTag(tag);
+        }
+      });
     });
 
     qs<HTMLButtonElement>('.clip-btn-delete', card).addEventListener('click', () => {
@@ -390,7 +420,7 @@ export class ClipboardManager {
 
   private async deleteClip(id: string, card: HTMLElement): Promise<void> {
     card.classList.add('clip-removing');
-    await chrome.runtime.sendMessage({ type: MSG.DELETE_CLIP, id });
+    await chrome.runtime.sendMessage({ type: MSG.DELETE_SONTO_ITEM, id });
     this.clips = this.clips.filter((c) => c.id !== id);
 
     setTimeout(() => {
@@ -414,8 +444,9 @@ export class ClipboardManager {
 
     const newPinned = !clip.pinned;
     await chrome.runtime.sendMessage({
-      type: MSG.UPDATE_CLIP,
-      clip: { ...clip, pinned: newPinned },
+      type: MSG.UPDATE_SONTO_ITEM,
+      id,
+      updates: { pinned: newPinned },
     });
 
     clip.pinned = newPinned;
@@ -436,7 +467,9 @@ export class ClipboardManager {
       }
     }
 
-    this.render();
+    if (newPinned) {
+      moveCardToTop(card, this.listEl);
+    }
   }
 
   private async insertText(text: string): Promise<void> {
@@ -444,5 +477,25 @@ export class ClipboardManager {
     if (result.error) {
       showToast(result.error, true);
     }
+  }
+
+  private async toggleZenify(id: string, card: HTMLElement): Promise<void> {
+    await toggleZenify(id, card, this.clips);
+  }
+
+  private showTagEditor(clip: SontoItem): void {
+    showTagEditor({
+      currentTags: clip.tags,
+      allTags: this.allTags,
+      onSave: async (tags) => {
+        await chrome.runtime.sendMessage({
+          type: MSG.UPDATE_SONTO_ITEM,
+          id: clip.id,
+          updates: { tags },
+        });
+        clip.tags = tags;
+        this.render();
+      },
+    });
   }
 }

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 import { MSG } from '../shared/messages';
+import { escapeHtml, extractDomain } from '../shared/utils';
 
 function showToast(message: string, isError = false): void {
   const existing = document.getElementById('sonto-toast');
@@ -65,6 +66,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 function sendClip(text: string, source: 'clipboard' | 'shortcut'): void {
+  if (!chrome.runtime?.sendMessage) return;
   chrome.runtime.sendMessage(
     {
       type: MSG.CAPTURE_CLIP,
@@ -284,7 +286,7 @@ function createQuickSearchOverlay(): void {
           <circle cx="9" cy="9" r="5"/>
           <path d="M12.5 12.5L16 16"/>
         </svg>
-        <input type="text" class="search-input" placeholder="Search your snippets..." autofocus />
+        <input type="text" class="search-input" placeholder="Search clips and prompts..." autofocus />
         <button class="close-btn">×</button>
       </div>
       <div class="results">
@@ -351,13 +353,24 @@ function createQuickSearchOverlay(): void {
 
     searchTimeout = setTimeout(async () => {
       try {
-        const response = await chrome.runtime.sendMessage({ type: 'SEARCH_CLIPS', query });
+        const [clipsResponse, promptsResponse] = await Promise.all([
+          chrome.runtime?.sendMessage?.({ type: MSG.SEARCH_SONTO_ITEMS, query, filter: { types: ['clip'] } }) || { ok: false },
+          chrome.runtime?.sendMessage?.({ type: MSG.SEARCH_SONTO_ITEMS, query, filter: { types: ['prompt'] } }) || { ok: false },
+        ]);
 
-        if (response?.ok && response.clips?.length > 0) {
-          results.innerHTML = response.clips.slice(0, 10).map((clip: { id: string; text: string; timestamp: number; url?: string }) => `
-            <button class="result-item" data-id="${clip.id}" data-text="${escapeHtml(clip.text.slice(0, 200))}">
-              <div class="preview">${escapeHtml(clip.text.slice(0, 150))}${clip.text.length > 150 ? '...' : ''}</div>
-              <div class="meta">${formatTime(clip.timestamp)}${clip.url ? ' · ' + new URL(clip.url).hostname : ''}</div>
+        const clips = clipsResponse?.ok ? (clipsResponse.items as import('../shared/types').SontoItem[]) : [];
+        const prompts = promptsResponse?.ok ? (promptsResponse.items as import('../shared/types').SontoItem[]) : [];
+
+        const allItems = [
+          ...clips.map((c) => ({ ...c, itemType: 'clip' as const })),
+          ...prompts.map((p) => ({ ...p, itemType: 'prompt' as const })),
+        ].slice(0, 10);
+
+        if (allItems.length > 0) {
+          results.innerHTML = allItems.map((item) => `
+            <button class="result-item" data-id="${item.id}" data-text="${escapeHtml(item.content.slice(0, 200))}" data-type="${item.itemType}">
+              <div class="preview">${escapeHtml(item.content.slice(0, 150))}${item.content.length > 150 ? '...' : ''}</div>
+              <div class="meta">${item.itemType === 'prompt' ? 'Prompt' : 'Clip'} · ${formatTime(item.createdAt)}${item.url ? ' · ' + extractDomain(item.url) : ''}</div>
             </button>
           `).join('');
 
@@ -397,10 +410,6 @@ function createQuickSearchOverlay(): void {
   });
 
   input.focus();
-}
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function formatTime(ts: number): string {
@@ -565,12 +574,13 @@ function insertTextToInput(text: string): { ok?: boolean; error?: string } {
 
 async function initReadingCompanion(): Promise<void> {
   try {
+    if (!chrome.runtime?.sendMessage) return;
     const domain = window.location.hostname.replace(/^www\./, '');
     if (!domain) return;
-    
-    const response = await chrome.runtime.sendMessage({ 
-      type: MSG.GET_RELATED_CLIPS, 
-      domain 
+
+    const response = await chrome.runtime.sendMessage({
+      type: MSG.GET_RELATED_CLIPS,
+      domain
     });
     
     if (response?.ok && response.clips?.length > 0) {

@@ -121,4 +121,11 @@ export async function waitForElement(page: Page, selector: string, timeout = 500
   await page.waitForSelector(selector, { timeout });
 }
 
+export async function waitForClickable(page: Page, selector: string, timeout = 5000): Promise<void> {
+  await page.waitForFunction((sel: string) => {
+    const el = document.querySelector(sel);
+    return el && el instanceof HTMLElement && el.offsetParent !== null;
+  }, { timeout }, selector);
+}
+
 export { Browser, Page };

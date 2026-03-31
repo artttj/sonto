@@ -1,7 +1,8 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import { savePrompt, type PromptColor } from '../../shared/storage';
+import { MSG } from '../../shared/messages';
+import type { PromptColor } from '../../shared/types';
 
 const COLOR_ORDER: PromptColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray'];
 
@@ -75,7 +76,25 @@ export class PromptModalController {
     const label = this.deps.labelInput.value.trim() || undefined;
 
     try {
-      await savePrompt(text, this.selectedColor, label);
+      const response = await chrome.runtime.sendMessage({
+        type: MSG.SAVE_SONTO_ITEM,
+        item: {
+          content: text,
+          type: 'prompt',
+          source: 'manual',
+          contentType: 'text',
+          title: label,
+          tags: [],
+          pinned: false,
+          zenified: false,
+          metadata: { color: this.selectedColor },
+        },
+      });
+      console.log('[Sonto] Save prompt response:', response);
+      if (!response?.ok) {
+        console.error('[Sonto] Save prompt failed:', response);
+        return;
+      }
       await this.deps.onSaved?.();
       this.hide();
     } catch (err) {

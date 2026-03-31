@@ -166,7 +166,7 @@ export async function bumpZenSourceSignal(sourceId: string, amount: number): Pro
 export async function getZenDisplay(): Promise<'feed' | 'cosmos'> {
   const result = await chrome.storage.local.get(ZEN_DISPLAY_KEY);
   const val = result[ZEN_DISPLAY_KEY] as string | undefined;
-  return val === 'feed' ? 'feed' : 'cosmos';
+  return val === 'cosmos' ? 'cosmos' : 'feed';
 }
 
 export async function saveZenDisplay(mode: 'feed' | 'cosmos'): Promise<void> {

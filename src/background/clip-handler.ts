@@ -14,6 +14,7 @@ import {
 import { getMaxHistorySize, getClipboardMonitoring } from '../shared/storage';
 import { buildTags } from '../shared/utils';
 import type { ClipItem, ClipContentType, ClipSource } from '../shared/types';
+import { sontoItemHandler } from './sonto-item-handler';
 
 const CHECK_RECENT_COUNT = 5;
 const MAX_CAPTURE_CHARS = 10000;
@@ -49,6 +50,15 @@ export class ClipHandler {
     };
 
     await addClip(clip);
+
+    // Also save to unified storage for sidebar v2
+    await sontoItemHandler.create(trimmed, 'clip', source, {
+      contentType: contentType === 'prompt' ? 'text' : contentType,
+      url,
+      title,
+      tags: tags.length ? tags : [],
+    });
+
     await this.enforceHistoryLimit();
     void chrome.runtime.sendMessage({ type: MSG.CLIP_ADDED }).catch(() => {});
   }

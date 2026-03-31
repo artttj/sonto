@@ -9,6 +9,7 @@ import {
   setOnboardingDone,
   getDefaultClipboardTab,
   saveDefaultClipboardTab,
+  getDefaultView,
 } from '../shared/storage';
 import type { ReadLaterItem } from '../shared/types';
 import { ClipboardManager } from './clipboard-manager';
@@ -65,6 +66,9 @@ class SontoSidebar {
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
       if (message.type === MSG.CLIP_ADDED) {
         void this.clipManager.load(this.currentDomain);
+      }
+      if (message.type === MSG.PROMPT_ADDED) {
+        void this.promptsManager.load();
       }
     });
 
@@ -147,7 +151,6 @@ class SontoSidebar {
         await setOnboardingDone();
       }
 
-      this.updatePinState(defaultTab);
       if (defaultTab === 'prompts') {
         this.switchTab('prompts');
       }
@@ -205,6 +208,57 @@ class SontoSidebar {
     });
     this.promptModalController.init();
 
+    // Add clip modal in browse tab
+    const addClipModal = qs('#add-clip-modal');
+    const addClipInput = qs('#add-clip-input') as HTMLTextAreaElement;
+    const addClipCancel = qs('#add-clip-cancel');
+    const addClipSave = qs('#add-clip-save');
+    const addClipBtn = qs('#btn-add-clip');
+
+    const showAddClipModal = () => {
+      addClipModal.classList.remove('hidden');
+      addClipInput.value = '';
+      addClipInput.focus();
+    };
+
+    const hideAddClipModal = () => {
+      addClipModal.classList.add('hidden');
+      addClipInput.value = '';
+    };
+
+    addClipBtn.addEventListener('click', showAddClipModal);
+    addClipCancel.addEventListener('click', hideAddClipModal);
+    addClipModal.addEventListener('click', (e) => {
+      if (e.target === addClipModal) hideAddClipModal();
+    });
+    addClipSave.addEventListener('click', () => {
+      const text = addClipInput.value.trim();
+      if (!text) {
+        hideAddClipModal();
+        return;
+      }
+      void chrome.runtime.sendMessage({
+        type: MSG.SAVE_SONTO_ITEM,
+        item: {
+          content: text,
+          type: 'clip',
+          source: 'manual',
+          contentType: 'text',
+          tags: [],
+          pinned: false,
+          zenified: false,
+        },
+      }).then((response) => {
+        console.log('[Sonto] Add clip response:', response);
+        void this.clipManager.load(this.currentDomain);
+      }).catch((err) => {
+        console.error('[Sonto] Failed to add clip:', err);
+      });
+      hideAddClipModal();
+    });
+
+    const defaultView = await getDefaultView();
+
     this.viewController = new ViewController({
       viewZen: this.viewZen,
       viewClipboard: this.viewClipboard,
@@ -216,7 +270,7 @@ class SontoSidebar {
       language: this.language,
     }, this.language);
 
-    await this.viewController.init('clipboard', theme);
+    await this.viewController.init(defaultView, theme);
 
     if (defaultTab === 'prompts') {
       await this.promptsManager.load();

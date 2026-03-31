@@ -1894,6 +1894,101 @@ html, body {
   display: none;
 }
 
+/* Clip Modal (add clip in browse) */
+.clip-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.clip-modal.hidden {
+  display: none;
+}
+
+.clip-modal-content {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 20px;
+  width: min(360px, 90vw);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.clip-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-text);
+  margin: 0 0 16px 0;
+}
+
+.clip-modal-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-elevated);
+  color: var(--c-text);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.clip-modal-textarea:focus {
+  outline: none;
+  border-color: var(--c-accent);
+}
+
+.clip-modal-textarea::placeholder {
+  color: var(--c-text-3);
+}
+
+.clip-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.clip-btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.clip-btn:active {
+  transform: scale(0.97);
+}
+
+.clip-btn-secondary {
+  background: var(--c-toggle-bg);
+  color: var(--c-text-2);
+}
+
+.clip-btn-secondary:hover {
+  background: var(--c-border);
+}
+
+.clip-btn-primary {
+  background: var(--c-accent);
+  color: #000;
+}
+
+.clip-btn-primary:hover {
+  background: #d4a82c;
+}
+
 .prompt-modal-content {
   background: var(--c-bg);
   border: 1px solid var(--c-border);
@@ -2113,6 +2208,242 @@ html, body {
 
 .prompt-label-input::placeholder {
   color: var(--c-text-3);
+}
+
+.prompt-tags-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  background: var(--c-input-bg);
+  color: var(--c-text);
+  font-family: var(--font);
+  font-size: 13px;
+  margin-top: 8px;
+  box-sizing: border-box;
+}
+
+.prompt-tags-input:focus {
+  outline: none;
+  border-color: var(--c-accent);
+}
+
+.prompt-tags-input::placeholder {
+  color: var(--c-text-3);
+}
+
+/* Tags */
+.clip-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.clip-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  background: var(--c-tag-bg);
+  color: var(--c-text-2);
+  cursor: pointer;
+  transition: background var(--t) var(--ease), color var(--t) var(--ease);
+}
+
+.clip-tag:hover {
+  background: var(--c-border-hi);
+  color: var(--c-text);
+}
+
+.clip-tag-more {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  color: var(--c-text-3);
+}
+
+/* Zenify Button */
+.clip-btn-zenify {
+  opacity: 0.4;
+  transition: opacity var(--t) var(--ease), color var(--t) var(--ease);
+}
+
+.clip-btn-zenify.zenified {
+  opacity: 1;
+  color: var(--c-accent);
+}
+
+.clip-card:hover .clip-btn-zenify {
+  opacity: 0.7;
+}
+
+.clip-card:hover .clip-btn-zenify:hover {
+  opacity: 1;
+}
+
+.clip-card.clip-zenified {
+  border-left: 2px solid var(--c-accent);
+}
+
+/* Tags Button */
+.clip-btn-tags {
+  opacity: 0.4;
+  transition: opacity var(--t) var(--ease);
+}
+
+.clip-card:hover .clip-btn-tags {
+  opacity: 0.7;
+}
+
+.clip-card:hover .clip-btn-tags:hover {
+  opacity: 1;
+  background: rgba(150,150,150,0.12);
+  color: var(--c-text);
+}
+
+/* Tag Editor Modal */
+.tag-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--c-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.tag-editor-modal {
+  width: 320px;
+  max-width: 90vw;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.tag-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--c-border);
+  font-weight: 500;
+  color: var(--c-text);
+}
+
+.tag-editor-close {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--c-text-3);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: background var(--t) var(--ease), color var(--t) var(--ease);
+}
+
+.tag-editor-close:hover {
+  background: var(--c-input-bg);
+  color: var(--c-text);
+}
+
+.tag-editor-body {
+  padding: 16px;
+}
+
+.tag-editor-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-input-bg);
+  color: var(--c-text);
+  font-family: var(--font);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.tag-editor-input:focus {
+  outline: none;
+  border-color: var(--c-accent);
+}
+
+.tag-editor-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.tag-suggestion {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  background: var(--c-tag-bg);
+  color: var(--c-text-2);
+  cursor: pointer;
+  transition: background var(--t) var(--ease), color var(--t) var(--ease);
+}
+
+.tag-suggestion:hover {
+  background: var(--c-border-hi);
+  color: var(--c-text);
+}
+
+.tag-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px 16px;
+  gap: 8px;
+}
+
+.tag-editor-save {
+  padding: 8px 16px;
+  background: var(--c-accent);
+  border: none;
+  border-radius: var(--r-md);
+  color: var(--c-bg);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--t) var(--ease);
+}
+
+.tag-editor-save:hover {
+  opacity: 0.9;
+}
+
+.zen-bubble--user {
+  border-left: 2px solid var(--c-accent);
+  background: linear-gradient(to right, rgba(232,185,49,0.05), transparent);
+}
+
+.zen-bubble--user .zen-source {
+  color: var(--c-accent);
+  opacity: 0.7;
+}
+
+.zen-user-tags {
+  display: block;
+  font-size: 10px;
+  color: var(--c-text-3);
+  margin-top: 4px;
+  opacity: 0.8;
 }
 
 /* Edit Button */

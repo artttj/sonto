@@ -62,6 +62,9 @@
           </svg>
           <label for="clipboard-search" class="visually-hidden">Search clipboard history</label>
           <input type="search" id="clipboard-search" class="browse-search-input" placeholder="Search clipboard history..." aria-label="Search clipboard history" />
+          <button id="btn-add-clip" class="icon-btn-small" type="button" title="Add clip" aria-label="Add new clip">
+            <i data-lucide="plus"></i>
+          </button>
         </div>
 
         <div id="read-later-bar" class="read-later-bar hidden">
@@ -71,6 +74,17 @@
         <div id="read-later-list" class="read-later-list hidden"></div>
 
         <div id="clip-list" class="clip-list"></div>
+
+        <div id="add-clip-modal" class="clip-modal hidden">
+          <div class="clip-modal-content">
+            <h3 class="clip-modal-title">Add Clip</h3>
+            <textarea id="add-clip-input" class="clip-modal-textarea" placeholder="Enter text to save..." rows="6"></textarea>
+            <div class="clip-modal-actions">
+              <button id="add-clip-cancel" class="clip-btn clip-btn-secondary" type="button">Cancel</button>
+              <button id="add-clip-save" class="clip-btn clip-btn-primary" type="button">Save</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="prompts-content" class="hidden">
