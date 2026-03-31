@@ -60,7 +60,9 @@ class SontoSidebar {
 
     this.navBrowse.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      if (target.id === 'pin-browse' || target.closest('#pin-browse')) {
+      const isPinClick = target.id === 'pin-browse' || target.closest('#pin-browse') !== null;
+      if (isPinClick) {
+        e.preventDefault();
         e.stopPropagation();
         void this.pinTab('browse');
       } else {
@@ -69,7 +71,9 @@ class SontoSidebar {
     });
     this.navPrompts.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      if (target.id === 'pin-prompts' || target.closest('#pin-prompts')) {
+      const isPinClick = target.id === 'pin-prompts' || target.closest('#pin-prompts') !== null;
+      if (isPinClick) {
+        e.preventDefault();
         e.stopPropagation();
         void this.pinTab('prompts');
       } else {
@@ -259,6 +263,9 @@ class SontoSidebar {
     this.navBrowse.classList.toggle('active', tab === 'browse');
     this.navPrompts.classList.toggle('active', tab === 'prompts');
 
+    this.navBrowse.setAttribute('aria-selected', tab === 'browse' ? 'true' : 'false');
+    this.navPrompts.setAttribute('aria-selected', tab === 'prompts' ? 'true' : 'false');
+
     if (tab === 'browse') {
       void this.clipManager.load(this.currentDomain);
     } else {
@@ -274,8 +281,23 @@ class SontoSidebar {
   }
 
   private updatePinState(pinnedTab: 'browse' | 'prompts'): void {
-    this.navBrowse.classList.toggle('pinned', pinnedTab === 'browse');
-    this.navPrompts.classList.toggle('pinned', pinnedTab === 'prompts');
+    const isBrowsePinned = pinnedTab === 'browse';
+    const isPromptsPinned = pinnedTab === 'prompts';
+
+    this.navBrowse.classList.toggle('pinned', isBrowsePinned);
+    this.navPrompts.classList.toggle('pinned', isPromptsPinned);
+
+    const browsePin = this.navBrowse.querySelector('.tab-pin');
+    const promptsPin = this.navPrompts.querySelector('.tab-pin');
+
+    if (browsePin) {
+      browsePin.setAttribute('title', isBrowsePinned ? 'Default tab' : 'Set as default');
+      browsePin.setAttribute('aria-label', isBrowsePinned ? 'Browse is default tab' : 'Pin Browse as default');
+    }
+    if (promptsPin) {
+      promptsPin.setAttribute('title', isPromptsPinned ? 'Default tab' : 'Set as default');
+      promptsPin.setAttribute('aria-label', isPromptsPinned ? 'Prompts is default tab' : 'Pin Prompts as default');
+    }
   }
 }
 

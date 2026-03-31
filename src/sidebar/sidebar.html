@@ -49,14 +49,14 @@
 
     <!-- CLIPBOARD VIEW -->
     <div id="view-clipboard" class="view hidden">
-      <div class="view-tabs">
-        <button id="nav-browse" class="view-tab active" type="button">
+      <div class="view-tabs" role="tablist" aria-label="Clipboard tabs">
+        <button id="nav-browse" class="view-tab active" type="button" role="tab" aria-selected="true" aria-controls="browse-content">
           <span class="tab-label">Browse</span>
-          <span id="pin-browse" class="tab-pin" title="Pin as default"></span>
+          <span id="pin-browse" class="tab-pin" role="button" aria-label="Pin Browse tab as default" title="Set as default"></span>
         </button>
-        <button id="nav-prompts" class="view-tab" type="button">
+        <button id="nav-prompts" class="view-tab" type="button" role="tab" aria-selected="false" aria-controls="prompts-content">
           <span class="tab-label">Prompts</span>
-          <span id="pin-prompts" class="tab-pin" title="Pin as default"></span>
+          <span id="pin-prompts" class="tab-pin" role="button" aria-label="Pin Prompts tab as default" title="Set as default"></span>
         </button>
       </div>
 

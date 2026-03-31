@@ -540,17 +540,17 @@ html, body {
 
 .view-tab .tab-pin {
   position: absolute;
-  top: 2px;
-  right: 4px;
-  width: 16px;
-  height: 16px;
+  top: 4px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
-  opacity: 0;
+  opacity: 0.4;
   cursor: pointer;
   pointer-events: auto;
   transition: opacity var(--t) var(--ease);
@@ -558,19 +558,21 @@ html, body {
 
 .view-tab .tab-pin::before {
   content: '';
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--c-text-4);
-  transition: background var(--t) var(--ease), transform var(--t) var(--ease);
+  border: 1.5px solid var(--c-text-3);
+  background: transparent;
+  transition: all var(--t) var(--ease);
+  box-sizing: border-box;
 }
 
 .view-tab:hover .tab-pin {
   opacity: 1;
 }
 
-.view-tab .tab-pin:hover::before {
-  transform: scale(1.2);
+.view-tab:hover .tab-pin::before {
+  border-color: var(--c-text-2);
 }
 
 .view-tab.pinned .tab-pin {
@@ -578,7 +580,8 @@ html, body {
 }
 
 .view-tab.pinned .tab-pin::before {
-  background: #e8b931;
+  background: var(--c-accent);
+  border-color: var(--c-accent);
 }
 
 /* ═══ BOTTOM NAV ══════════════════════════════════════════════════════════ */
