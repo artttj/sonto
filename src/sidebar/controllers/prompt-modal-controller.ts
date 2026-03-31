@@ -90,15 +90,12 @@ export class PromptModalController {
           metadata: { color: this.selectedColor },
         },
       });
-      console.log('[Sonto] Save prompt response:', response);
-      if (!response?.ok) {
-        console.error('[Sonto] Save prompt failed:', response);
-        return;
+      if (response?.ok) {
+        await this.deps.onSaved?.();
       }
-      await this.deps.onSaved?.();
       this.hide();
-    } catch (err) {
-      console.error('[Sonto] Failed to save prompt:', err);
+    } catch {
+      this.hide();
     }
   }
 }

@@ -214,17 +214,37 @@ class SontoSidebar {
     const addClipCancel = qs('#add-clip-cancel');
     const addClipSave = qs('#add-clip-save');
     const addClipBtn = qs('#btn-add-clip');
+    const addClipColors = qs('#add-clip-colors');
+    let selectedClipColor: string | undefined;
 
     const showAddClipModal = () => {
       addClipModal.classList.remove('hidden');
       addClipInput.value = '';
+      selectedClipColor = undefined;
+      updateClipColorSelection();
       addClipInput.focus();
     };
 
     const hideAddClipModal = () => {
       addClipModal.classList.add('hidden');
       addClipInput.value = '';
+      selectedClipColor = undefined;
+      updateClipColorSelection();
     };
+
+    const updateClipColorSelection = () => {
+      addClipColors.querySelectorAll('.color-dot').forEach((dot) => {
+        dot.classList.toggle('selected', (dot as HTMLElement).dataset.color === selectedClipColor);
+      });
+    };
+
+    addClipColors.querySelectorAll('.color-dot').forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const color = (dot as HTMLElement).dataset.color;
+        selectedClipColor = selectedClipColor === color ? undefined : color;
+        updateClipColorSelection();
+      });
+    });
 
     addClipBtn.addEventListener('click', showAddClipModal);
     addClipCancel.addEventListener('click', hideAddClipModal);
@@ -247,9 +267,9 @@ class SontoSidebar {
           tags: [],
           pinned: false,
           zenified: false,
+          metadata: selectedClipColor ? { color: selectedClipColor } : undefined,
         },
       }).then((response) => {
-        console.log('[Sonto] Add clip response:', response);
         void this.clipManager.load(this.currentDomain);
       }).catch((err) => {
         console.error('[Sonto] Failed to add clip:', err);

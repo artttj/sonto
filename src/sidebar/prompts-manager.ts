@@ -117,7 +117,6 @@ export class PromptsManager {
   }
 
   async load(tagFilter?: string): Promise<void> {
-    console.log('[Sonto] Loading prompts...');
     this.allTags = await loadAllTags();
     this.setLoading(true);
     try {
@@ -128,9 +127,7 @@ export class PromptsManager {
         filter.tags = [tagFilter];
       }
       const response = await chrome.runtime.sendMessage({ type: MSG.GET_SONTO_ITEMS, filter });
-      console.log('[Sonto] Prompts load response:', response);
       this.prompts = response?.ok ? (response.items as SontoItem[]) : [];
-      console.log('[Sonto] Loaded prompts:', this.prompts.length);
     } catch (err) {
       console.error('[Sonto] Failed to load prompts:', err);
     } finally {

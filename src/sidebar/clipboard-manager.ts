@@ -2,12 +2,23 @@
 // Licensed under the MIT License.
 
 import { createIcons, icons } from 'lucide';
+import { type PromptColor } from '../shared/storage';
 import { MSG } from '../shared/messages';
 import type { SontoItem, SontoContentType, SontoItemFilter } from '../shared/types';
 import { escapeHtml, formatDate, extractDomain } from '../shared/utils';
 import { insertTextToActiveTab } from '../shared/tab-operations';
 import { highlightCode } from './syntax-highlight';
 import { showToast, renderTags, showTagEditor, loadAllTags, toggleZenify, moveCardToTop } from './utils';
+
+const PROMPT_COLORS: Record<PromptColor, { bg: string; border: string; hex: string }> = {
+  red:    { bg: 'rgba(255,90,90,0.18)', border: 'rgba(255,90,90,0.9)', hex: '#ff5a5a' },
+  orange: { bg: 'rgba(255,160,60,0.18)', border: 'rgba(255,160,60,0.9)', hex: '#ffa03c' },
+  yellow: { bg: 'rgba(200,160,20,0.25)', border: 'rgba(200,160,20,0.9)', hex: '#c8a014' },
+  green:  { bg: 'rgba(60,200,100,0.18)', border: 'rgba(60,200,100,0.9)', hex: '#3cc864' },
+  blue:   { bg: 'rgba(60,140,255,0.18)', border: 'rgba(60,140,255,0.9)', hex: '#3c8cff' },
+  purple: { bg: 'rgba(140,90,220,0.18)', border: 'rgba(140,90,220,0.9)', hex: '#8c5adc' },
+  gray:   { bg: 'rgba(140,140,140,0.18)', border: 'rgba(140,140,140,0.9)', hex: '#8c8c8c' },
+};
 
 const TEXT_PREVIEW_CHARS = 280;
 const CODE_PREVIEW_CHARS = 300;
@@ -310,13 +321,20 @@ export class ClipboardManager {
     const zenifyLabel = clip.zenified ? 'Un-zenify' : 'Zenify';
     const needsExpand = clip.content.length > TEXT_PREVIEW_CHARS;
     const tagsHtml = renderTags(clip.tags);
+    const colorStyles = clip.metadata?.color ? PROMPT_COLORS[clip.metadata.color as PromptColor] : null;
+    const colorDot = colorStyles
+      ? `<span class="prompt-color-tag" style="background: ${colorStyles.hex};"></span>`
+      : '';
 
     card.innerHTML = `
       <div class="clip-header">
-        <span class="clip-type-badge clip-badge-${clip.contentType}">
-          <span class="clip-type-icon">${contentTypeIcon(clip.contentType)}</span>
-          ${contentTypeLabel(clip.contentType)}
-        </span>
+        <div class="clip-header-left">
+          ${colorDot}
+          <span class="clip-type-badge clip-badge-${clip.contentType}">
+            <span class="clip-type-icon">${contentTypeIcon(clip.contentType)}</span>
+            ${contentTypeLabel(clip.contentType)}
+          </span>
+        </div>
         <span class="clip-time">${formatDate(clip.createdAt)}</span>
       </div>
       <div class="clip-body${needsExpand ? ' clip-body-expandable' : ''}" ${needsExpand ? 'title="Click to view full text"' : ''}>

@@ -126,30 +126,23 @@ export function registerSontoItemHandlers(
   register: (type: string, handler: import('./message-router').MessageHandler) => void,
 ): void {
   register(MSG.SAVE_SONTO_ITEM, async (msg) => {
-    console.log('[Sonto] SAVE_SONTO_ITEM received:', msg);
     const { item } = msg as SaveSontoItemMessage;
-    try {
-      const created = await sontoItemHandler.create(
-        item.content,
-        item.type,
-        item.source,
-        {
-          contentType: item.contentType,
-          origin: item.origin,
-          url: item.url,
-          title: item.title,
-          tags: item.tags,
-          pinned: item.pinned,
-          zenified: item.zenified,
-          metadata: item.metadata,
-        },
-      );
-      console.log('[Sonto] Item created:', created);
-      return { ok: true, item: created };
-    } catch (err) {
-      console.error('[Sonto] Failed to create item:', err);
-      throw err;
-    }
+    const created = await sontoItemHandler.create(
+      item.content,
+      item.type,
+      item.source,
+      {
+        contentType: item.contentType,
+        origin: item.origin,
+        url: item.url,
+        title: item.title,
+        tags: item.tags,
+        pinned: item.pinned,
+        zenified: item.zenified,
+        metadata: item.metadata,
+      },
+    );
+    return { ok: true, item: created };
   });
 
   register(MSG.GET_SONTO_ITEMS, async (msg) => {
