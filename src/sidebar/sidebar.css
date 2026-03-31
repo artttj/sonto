@@ -550,6 +550,7 @@ html, body {
   border-radius: 50%;
   opacity: 0;
   cursor: pointer;
+  pointer-events: auto;
   transition: opacity var(--t) var(--ease), background var(--t) var(--ease), transform var(--t) var(--ease);
 }
 

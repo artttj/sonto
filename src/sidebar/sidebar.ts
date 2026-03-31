@@ -32,8 +32,6 @@ class SontoSidebar {
   private readonly settingsBtn = qs<HTMLButtonElement>('#btn-settings');
   private readonly navBrowse = qs<HTMLButtonElement>('#nav-browse');
   private readonly navPrompts = qs<HTMLButtonElement>('#nav-prompts');
-  private readonly pinBrowse = qs<HTMLSpanElement>('#pin-browse');
-  private readonly pinPrompts = qs<HTMLSpanElement>('#pin-prompts');
   private readonly viewZen = qs<HTMLElement>('#view-zen');
   private readonly viewClipboard = qs<HTMLElement>('#view-clipboard');
   private readonly browseContent = qs<HTMLElement>('#browse-content');
@@ -60,16 +58,19 @@ class SontoSidebar {
       void chrome.runtime.openOptionsPage();
     });
 
-    this.navBrowse.addEventListener('click', () => this.switchTab('browse'));
-    this.navPrompts.addEventListener('click', () => this.switchTab('prompts'));
-
-    this.pinBrowse.addEventListener('click', (e) => {
-      e.stopPropagation();
-      void this.pinTab('browse');
+    this.navBrowse.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('.tab-pin')) {
+        void this.pinTab('browse');
+      } else {
+        this.switchTab('browse');
+      }
     });
-    this.pinPrompts.addEventListener('click', (e) => {
-      e.stopPropagation();
-      void this.pinTab('prompts');
+    this.navPrompts.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('.tab-pin')) {
+        void this.pinTab('prompts');
+      } else {
+        this.switchTab('prompts');
+      }
     });
 
     chrome.runtime.onMessage.addListener((message: { type: string }) => {
