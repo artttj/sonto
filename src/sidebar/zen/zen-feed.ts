@@ -25,6 +25,7 @@ import { translateText } from './translator';
 const SVG_COPY = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6" height="6" rx="1.2"/><path d="M1.5 7.5V1.5h6"/></svg>';
 const SVG_SAVE = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 1.5h7v8L5.5 7 2 9.5z"/></svg>';
 const SVG_ZENIFIED = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1.5c1 1.5 3 2.5 3 4.5a3 3 0 1 1-6 0c0-2 2-3 3-4.5z"/></svg>';
+const SVG_DISMISS = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l7 7M9 2l-7 7"/></svg>';
 
 // 30% of zen feed bubbles come from user's zenified collection (spaced repetition)
 const ZENIFIED_ITEM_PROBABILITY = 0.3;
@@ -160,6 +161,10 @@ export class ZenFeed {
 
   setDripInterval(ms: number): void {
     this.dripIntervalMs = ms;
+    if (this.zenDripTimer) {
+      clearTimeout(this.zenDripTimer);
+      this.scheduleDrip();
+    }
   }
 
   async restorePastFacts(): Promise<void> {
@@ -469,7 +474,7 @@ export class ZenFeed {
     btn.className = 'zen-dismiss';
     btn.title = 'Dismiss (see less like this)';
     btn.setAttribute('aria-label', 'Dismiss this content');
-    btn.innerHTML = '×';
+    btn.innerHTML = SVG_DISMISS;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (sourceId) {

@@ -447,10 +447,8 @@
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  padding: 2px 6px;
+  padding: 2px 0 2px 6px;
   line-height: 1;
-  font-size: 16px;
-  font-weight: 300;
   transition: opacity 0.2s, color 0.2s;
 }
 
@@ -486,6 +484,10 @@
 .zen-bubble--surprise {
   border-left: 2px solid var(--c-accent);
   background: linear-gradient(to right, rgba(232,185,49,0.04) 0%, rgba(232,185,49,0.02) 30%, transparent 60%);
+  padding-left: 10px;
+}
+.zen-bubble--surprise.zen-bubble.spotlight {
+  padding-left: 10px;
 }
 
 /* Cosmos save button */
