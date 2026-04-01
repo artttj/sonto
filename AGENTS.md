@@ -155,6 +155,24 @@ Host permissions: `*://*/*` (content script injection)
 - NEVER add comments to the code unless absolutely necessary to explain complex logic. The code should be self-documenting.
 - NEVER add co-authorship tags (e.g., `Co-authored-by:`) to Git commit messages.
 
+## Adding Styles
+
+Styles are modular in `src/sidebar/styles/`. Files are combined in numeric order during build.
+
+| File | Purpose |
+|------|---------|
+| `00-variables.css` | CSS custom properties (colors, fonts, spacing) |
+| `10-base.css` | Base styles, resets, typography |
+| `15-views.css` | View container layouts |
+| `20-cosmos.css` | Cosmos mode (visualization) styles |
+| `30-zen-tabs.css` | Zen feed and tab styles |
+| `35-nav.css` | Navigation (header, bottom nav) |
+| `40-browse.css` | Browse/clipboard view styles |
+| `60-components.css` | Reusable components (cards, buttons, toasts, chips) |
+| `70-theme-light.css` | Light theme overrides |
+
+**Rule:** Add component styles to `60-components.css`. Add light theme overrides to `70-theme-light.css`. Never edit `src/sidebar/sidebar.css` directly - it is rebuilt from the modular files.
+
 ## Privacy Model
 
 No accounts, no backend, no analytics, no telemetry. All data stays in browser storage. Feed content comes from public third-party APIs.

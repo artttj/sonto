@@ -1240,29 +1240,32 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border: none;
-  background: rgba(255,255,255,0.08);
-  border-radius: 3px;
-  color: rgba(255,255,255,0.5);
+  background: transparent;
+  border-radius: 4px;
+  color: rgba(255,255,255,0.45);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.1s;
+  margin-left: 4px;
+  margin-right: -4px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 .tag-filter-clear:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.12);
   color: rgba(255,255,255,0.9);
 }
 
 .tag-filter-clear:active {
-  transform: scale(0.9);
+  transform: scale(0.92);
 }
 
 .tag-filter-clear svg {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.75;
 }
 
 [data-theme="light"] .tag-filter {
@@ -1275,13 +1278,13 @@ html, body {
 }
 
 [data-theme="light"] .tag-filter-clear {
-  background: rgba(0,0,0,0.06);
-  color: rgba(0,0,0,0.5);
+  background: transparent;
+  color: rgba(0,0,0,0.4);
 }
 
 [data-theme="light"] .tag-filter-clear:hover {
-  background: rgba(0,0,0,0.12);
-  color: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.08);
+  color: rgba(0,0,0,0.85);
 }
 
 .clip-list {

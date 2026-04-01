@@ -108,3 +108,22 @@
   color: rgba(0,0,0,0.42);
 }
 
+[data-theme="light"] .tag-filter {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.1);
+}
+
+[data-theme="light"] .tag-filter-text {
+  color: rgba(0,0,0,0.8);
+}
+
+[data-theme="light"] .tag-filter-clear {
+  background: transparent;
+  color: rgba(0,0,0,0.4);
+}
+
+[data-theme="light"] .tag-filter-clear:hover {
+  background: rgba(0,0,0,0.08);
+  color: rgba(0,0,0,0.85);
+}
+
