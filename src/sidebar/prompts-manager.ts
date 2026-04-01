@@ -1,7 +1,7 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import { createIcons, icons } from 'lucide';
+import { createIcons, icons } from '../shared/icons';
 import { type PromptColor } from '../shared/storage';
 import { escapeHtml, formatDate } from '../shared/utils';
 import { insertTextToActiveTab } from '../shared/tab-operations';
