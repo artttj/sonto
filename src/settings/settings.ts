@@ -36,7 +36,6 @@ import { setLocale, applyI18n } from '../shared/i18n';
 
 const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'philosophyEssay', label: '1000-Word Philosophy' },
-  { id: 'albumOfDay', label: 'Album of a Day' },
   { id: 'clevelandArtwork', label: 'Art from Cleveland Museum' },
   { id: 'metArtwork', label: 'Art from The Met (New York)' },
   { id: 'atlasObscura', label: 'Atlas Obscura' },
@@ -46,14 +45,24 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'kotowaza', label: 'Japanese Proverbs' },
   { id: 'obliqueStrategies', label: 'Oblique Strategies' },
   { id: 'marsRover', label: 'Perseverance Rover Photos' },
+  { id: 'wikimediaPaintings', label: 'Wikimedia Commons Paintings' },
+  { id: 'albumOfDay', label: 'Album of a Day' },
   { id: 'reddit', label: 'Reddit (Science, Space, Philosophy)' },
   { id: 'rijksmuseumArtwork', label: 'Rijksmuseum (Amsterdam)' },
   { id: 'smithsonianNews', label: 'Smithsonian Smart News' },
   { id: 'theVerge', label: 'The Verge' },
-  { id: 'wikimediaPaintings', label: 'Wikimedia Commons Paintings' },
   { id: 'customRss', label: 'Custom RSS Feeds' },
   { id: 'customJson', label: 'Custom JSON API Sources' },
 ];
+
+const CUSTOM_SOURCE_IDS = new Set(['customRss', 'customJson']);
+
+const ZEN_SOURCES_SORTED = [...ZEN_SOURCES].sort((a, b) => {
+  const aCustom = CUSTOM_SOURCE_IDS.has(a.id);
+  const bCustom = CUSTOM_SOURCE_IDS.has(b.id);
+  if (aCustom !== bCustom) return aCustom ? 1 : -1;
+  return a.label.localeCompare(b.label);
+});
 
 function qs<T extends HTMLElement>(selector: string): T {
   return document.querySelector<T>(selector)!;
@@ -122,7 +131,7 @@ async function initFeedTab(): Promise<void> {
   const disabledSources = new Set(await getDisabledSources());
   const sourcesList = document.getElementById('zen-sources-list')!;
 
-  for (const source of ZEN_SOURCES) {
+  for (const source of ZEN_SOURCES_SORTED) {
     const row = document.createElement('div');
     row.className = 'zen-source-row';
 
