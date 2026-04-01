@@ -1216,10 +1216,10 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px 4px 12px;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
+  padding: 5px 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
   flex-shrink: 0;
   animation: tag-filter-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1232,7 +1232,7 @@ html, body {
 .tag-filter-text {
   font-size: 11px;
   font-weight: 500;
-  color: var(--c-text);
+  color: rgba(255,255,255,0.85);
   white-space: nowrap;
 }
 
@@ -1240,24 +1240,24 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   border: none;
-  background: var(--c-toggle-bg);
-  border-radius: 4px;
-  color: var(--c-text-3);
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  color: rgba(255,255,255,0.5);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, transform 0.1s;
 }
 
 .tag-filter-clear:hover {
-  background: var(--c-border-hi);
-  color: var(--c-text);
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.9);
 }
 
 .tag-filter-clear:active {
-  transform: scale(0.92);
+  transform: scale(0.9);
 }
 
 .tag-filter-clear svg {
@@ -1266,16 +1266,22 @@ html, body {
 }
 
 [data-theme="light"] .tag-filter {
-  background: rgba(0,0,0,0.04);
+  background: rgba(0,0,0,0.05);
   border-color: rgba(0,0,0,0.1);
+}
+
+[data-theme="light"] .tag-filter-text {
+  color: rgba(0,0,0,0.8);
 }
 
 [data-theme="light"] .tag-filter-clear {
   background: rgba(0,0,0,0.06);
+  color: rgba(0,0,0,0.5);
 }
 
 [data-theme="light"] .tag-filter-clear:hover {
-  background: rgba(0,0,0,0.1);
+  background: rgba(0,0,0,0.12);
+  color: rgba(0,0,0,0.8);
 }
 
 .clip-list {
