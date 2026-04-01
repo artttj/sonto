@@ -2420,7 +2420,7 @@ html, body {
 
 .zen-bubble--user {
   border-left: 2px solid var(--c-accent);
-  background: linear-gradient(to right, rgba(232,185,49,0.05), transparent);
+  background: linear-gradient(to right, rgba(232,185,49,0.06) 0%, rgba(232,185,49,0.03) 30%, transparent 60%);
   padding-left: 10px;
 }
 

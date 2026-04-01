@@ -485,7 +485,7 @@
 /* Surprise bubble highlight */
 .zen-bubble--surprise {
   border-left: 2px solid var(--c-accent);
-  background: linear-gradient(to right, rgba(232,185,49,0.03), transparent);
+  background: linear-gradient(to right, rgba(232,185,49,0.04) 0%, rgba(232,185,49,0.02) 30%, transparent 60%);
 }
 
 /* Cosmos save button */
