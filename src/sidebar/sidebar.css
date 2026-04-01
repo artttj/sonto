@@ -1215,49 +1215,49 @@ html, body {
 .tag-filter {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 6px 3px 10px;
-  background: rgba(100,180,255,0.12);
-  border: 1px solid rgba(100,180,255,0.25);
-  border-radius: 12px;
+  gap: 6px;
+  padding: 4px 8px 4px 12px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
   flex-shrink: 0;
-  animation: tag-filter-in 0.15s ease-out;
+  animation: tag-filter-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes tag-filter-in {
-  from { opacity: 0; transform: scale(0.9); }
+  from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
 
 .tag-filter-text {
   font-size: 11px;
   font-weight: 500;
-  color: rgba(100,180,255,0.95);
+  color: var(--c-text);
   white-space: nowrap;
 }
 
 .tag-filter-clear {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border: none;
-  background: rgba(100,180,255,0.2);
-  border-radius: 50%;
-  color: rgba(100,180,255,0.8);
+  background: var(--c-toggle-bg);
+  border-radius: 4px;
+  color: var(--c-text-3);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, transform 0.1s;
 }
 
 .tag-filter-clear:hover {
-  background: rgba(100,180,255,0.35);
-  color: rgba(100,180,255,1);
+  background: var(--c-border-hi);
+  color: var(--c-text);
 }
 
 .tag-filter-clear:active {
-  transform: scale(0.9);
+  transform: scale(0.92);
 }
 
 .tag-filter-clear svg {
@@ -1266,22 +1266,16 @@ html, body {
 }
 
 [data-theme="light"] .tag-filter {
-  background: rgba(100,180,255,0.1);
-  border-color: rgba(100,180,255,0.3);
-}
-
-[data-theme="light"] .tag-filter-text {
-  color: rgba(60,140,255,1);
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.1);
 }
 
 [data-theme="light"] .tag-filter-clear {
-  background: rgba(60,140,255,0.15);
-  color: rgba(60,140,255,0.7);
+  background: rgba(0,0,0,0.06);
 }
 
 [data-theme="light"] .tag-filter-clear:hover {
-  background: rgba(60,140,255,0.25);
-  color: rgba(60,140,255,1);
+  background: rgba(0,0,0,0.1);
 }
 
 .clip-list {
