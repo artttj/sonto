@@ -29,7 +29,8 @@ export type SontoSource =
   | 'context-menu'
   | 'zen-fetcher'
   | 'rss'
-  | 'api';
+  | 'api'
+  | 'page-clip';
 
 export interface SontoItem {
   id: string;

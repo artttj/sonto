@@ -282,7 +282,7 @@ async function initClipboardTab(): Promise<void> {
   const [monitoring, maxSize, count, badgeEnabled, companionEnabled] = await Promise.all([
     getClipboardMonitoring(),
     getMaxHistorySize(),
-    getClipCount(),
+    getSontoItemCount(),
     getBadgeCounterEnabled(),
     getReadingCompanionEnabled(),
   ]);

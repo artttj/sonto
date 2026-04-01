@@ -131,7 +131,7 @@ export async function toggleZenify(
       if (item) {
         item.zenified = response.zenified;
         card.classList.toggle('clip-zenified', response.zenified);
-        const btn = card.querySelector('.clip-btn-zenify');
+        const btn = card.querySelector<HTMLElement>('.clip-btn-zenify');
         if (btn) {
           btn.classList.toggle('zenified', response.zenified);
           btn.title = response.zenified ? 'Un-zenify' : 'Zenify';

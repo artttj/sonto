@@ -58,6 +58,7 @@ function openDb(): Promise<IDBDatabase> {
         store.createIndex('origin', 'origin', { unique: false });
       } else {
         // Store exists - create any missing indexes on upgrade
+        if (!req.transaction) return;
         const store = req.transaction.objectStore(STORE_NAME);
         const existingIndexes = [...store.indexNames];
 

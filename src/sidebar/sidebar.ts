@@ -77,7 +77,7 @@ class SontoSidebar {
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) {
         const mode = this.viewController?.getMode();
-        if (mode === 'clipboard' || mode === 'prompts') {
+        if (mode === 'clipboard') {
           void (async () => {
             await this.refreshDomain();
             if (this.currentTab === 'browse') {
@@ -92,7 +92,7 @@ class SontoSidebar {
 
     document.addEventListener('keydown', (e) => {
       const mode = this.viewController?.getMode();
-      if (mode === 'clipboard' || mode === 'prompts') {
+      if (mode === 'clipboard') {
         if (e.key === '/' && document.activeElement !== this.searchInputEl && document.activeElement !== this.promptsSearchEl) {
           e.preventDefault();
           if (this.currentTab === 'browse') {

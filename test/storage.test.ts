@@ -7,8 +7,6 @@ import {
   saveSettings,
   getTheme,
   saveTheme,
-  getReadLater,
-  saveReadLater,
   getClipboardMonitoring,
   setClipboardMonitoring,
   getMaxHistorySize,
@@ -56,23 +54,6 @@ describe('Storage Operations', () => {
 
       const theme = await getTheme();
       expect(theme).toBe('light');
-    });
-  });
-
-  describe('Read Later', () => {
-    it('should return empty array when no items', async () => {
-      const items = await getReadLater();
-      expect(items).toEqual([]);
-    });
-
-    it('should save and retrieve read later items', async () => {
-      const items = [
-        { url: 'https://example.com', title: 'Test', addedAt: Date.now() },
-      ];
-      await saveReadLater(items);
-
-      const retrieved = await getReadLater();
-      expect(retrieved).toEqual(items);
     });
   });
 
