@@ -53,7 +53,7 @@ No API keys needed. The extension works entirely in your browser.
 
 - **Zen mode**: A slow feed with art, quotes, and interesting content when you need a break
 - **Two display modes**: Scrolling feed or Cosmos mode with procedural spirograph animations
-- **16 content sources**: Museums, philosophy, news, and more
+- **17 content sources**: Museums, philosophy, news, and more
 - **Customizable**: Toggle sources in Settings > Feed
 
 ### General
@@ -80,6 +80,7 @@ No API keys needed. The extension works entirely in your browser.
 | [Reddit](https://reddit.com) | Science, space, philosophy subreddits |
 | [Rijksmuseum](https://rijksmuseum.nl) | Dutch Golden Age paintings |
 | [Smithsonian Magazine](https://smithsonianmag.com/smart-news) | Science and smart news |
+| [The Verge](https://theverge.com) | Tech news and reviews |
 | [The Met](https://metmuseum.org) | Public domain paintings |
 | [Wikimedia Commons](https://commons.wikimedia.org) | Paintings from curated categories |
 

@@ -677,6 +677,34 @@ export const ZEN_FETCHERS: ZenFetcher[] = [
     },
   },
   {
+    id: 'theVerge',
+    label: 'The Verge',
+    weight: 6,
+    fetch: async (ctx) => {
+      let vergeCache: Array<{ title: string; link?: string; imageUrl?: string; id: string }> = [];
+      try {
+        const res = await fetch('https://www.theverge.com/rss/index.xml', {
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return null;
+        const items = parseFeed(await res.text()).filter((it) => ctx.isValidFact(it.title));
+        const recentlySeen = await getRecentlySeenBySource('theVerge', 1 * DAY_MS);
+        for (const it of items) {
+          if (recentlySeen.has(it.link)) continue;
+          const validImage = it.imageUrl && isValidHttpUrl(it.imageUrl) ? it.imageUrl : undefined;
+          vergeCache.push({ title: it.title, link: it.link, imageUrl: validImage, id: it.link });
+        }
+        if (vergeCache.length === 0) return null;
+        const pick = vergeCache[Math.floor(Math.random() * Math.min(vergeCache.length, 15))];
+        await markItemSeen(pick.link!, 'theVerge');
+        if (pick.imageUrl) return { imageUrl: pick.imageUrl, caption: pick.title, link: pick.link };
+        return { text: pick.title, link: pick.link, icon: '<img class="zen-icon-img" src="https://cdn.sanity.io/images/81nw7bw0/production/463382c99793994629d4912539168be40cc739b2-500x500.png" alt="The Verge" />', hideLabel: true };
+      } catch {
+        return null;
+      }
+    },
+  },
+  {
     id: 'atlasObscura',
     label: 'Atlas Obscura',
     weight: 8,

@@ -50,6 +50,7 @@ const ZEN_SOURCES: Array<{ id: string; label: string }> = [
   { id: 'reddit', label: 'Reddit (Science, Space, Philosophy)' },
   { id: 'rijksmuseumArtwork', label: 'Rijksmuseum (Amsterdam)' },
   { id: 'smithsonianNews', label: 'Smithsonian Smart News' },
+  { id: 'theVerge', label: 'The Verge' },
   { id: 'customRss', label: 'Custom RSS Feeds' },
   { id: 'customJson', label: 'Custom JSON API Sources' },
 ];

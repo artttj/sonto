@@ -140,7 +140,7 @@ src/
 │   │   └── 70-theme-light.css # Light theme overrides
 │   └── zen/
 │       ├── zen-feed.ts        # Feed orchestration
-│       ├── zen-fetchers.ts    # 17 content sources
+│       ├── zen-fetchers.ts    # 18 content sources
 │       ├── zen-content.ts     # Content scoring/selection
 │       ├── zen-scoring.ts     # User preference tracking
 │       ├── zen-shared.ts      # Shared types/helpers
@@ -323,7 +323,7 @@ Manages CSS custom properties for theming. Persists to `chrome.storage.local`.
 │                                                                │
 │   ┌──────────────┐      ┌──────────────┐      ┌─────────────┐ │
 │   │  Drip Cycle  │◄────►│ Content Pool │◄────►│   Sources   │ │
-│   │  (30s timer) │      │ (scored)     │      │ (17 fetchers)│ │
+│   │  (30s timer) │      │ (scored)     │      │ (18 fetchers)│ │
 │   └──────┬───────┘      └──────────────┘      └─────────────┘ │
 │          │                                                     │
 │          ▼                                                     │
@@ -335,9 +335,9 @@ Manages CSS custom properties for theming. Persists to `chrome.storage.local`.
 └────────────────────────────────────────────────────────────────┘
 ```
 
-**Content Sources (17 total):**
+**Content Sources (18 total):**
 - **Art APIs:** Met Museum, Cleveland Museum, Getty, Rijksmuseum, Wikimedia Commons
-- **News/Discussion:** Hacker News, Reddit (r/science, r/space, r/philosophy), Smithsonian Smart News, Atlas Obscura
+- **News/Discussion:** Hacker News, Reddit (r/science, r/space, r/philosophy), Smithsonian Smart News, Atlas Obscura, The Verge
 - **Knowledge:** 1000-Word Philosophy, Japanese Proverbs (kotowaza), Haiku, Oblique Strategies
 - **Music:** Album of Day (MusicBrainz API)
 - **Science:** NASA Perseverance Rover Photos
