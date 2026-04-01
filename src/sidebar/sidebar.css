@@ -590,9 +590,12 @@ html, body {
   font-weight: 400;
   line-height: 1.55;
   color: rgba(255,255,255,0.18);
-  transition: font-size 0.35s cubic-bezier(0.4,0,0.2,1),
-              font-weight 0.35s cubic-bezier(0.4,0,0.2,1),
-              color 0.35s cubic-bezier(0.4,0,0.2,1);
+  transition: font-size 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              font-weight 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              line-height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              letter-spacing 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   animation: lyricIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
   cursor: default;
   user-select: text;
@@ -663,7 +666,11 @@ html, body {
   margin-top: 3px;
   color: #e8b931;
   opacity: 0.3;
-  transition: opacity 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s, height 0.35s;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              width 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              margin-top 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .zen-bulb--challenge { color: #f97316; }
 .zen-bulb--affirm    { color: #2dd4bf; }
@@ -678,7 +685,7 @@ html, body {
   border-radius: 3px;
   object-fit: contain;
   opacity: 0.7;
-  transition: opacity 0.35s cubic-bezier(0.4,0,0.2,1);
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .zen-bubble:first-child .zen-icon-img,
 .zen-bubble.spotlight .zen-icon-img { opacity: 1; }
