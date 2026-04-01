@@ -127,3 +127,8 @@
   color: rgba(0,0,0,0.85);
 }
 
+[data-theme="light"] .tag-editor-modal {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.15);
+}
+
