@@ -31,7 +31,7 @@ No accounts. No sync. No tracking. Everything stays on your machine.
 
 ## Install
 
-**Chrome Web Store** — *coming soon*
+**Chrome Web Store** — https://chromewebstore.google.com/detail/oddalendfcaonkemohpokibgndnnogag?utm_source=item-share-cb
 
 **Manual install:**
 
