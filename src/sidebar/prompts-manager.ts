@@ -12,6 +12,41 @@ import { PROMPT_COLORS, COLOR_ORDER } from './prompt-colors';
 
 const COPY_FEEDBACK_MS = 1500;
 
+const PIN_PAD_TEMPLATE = `
+  <div class="pin-pad-container">
+    <div class="pin-pad-header">
+      <i data-lucide="lock" class="pin-pad-icon"></i>
+      <h2 class="pin-pad-title">Prompts are locked</h2>
+      <p class="pin-pad-subtitle">Enter PIN to access your prompts</p>
+    </div>
+    <div class="pin-display">
+      <span class="pin-dot" data-index="0"></span>
+      <span class="pin-dot" data-index="1"></span>
+      <span class="pin-dot" data-index="2"></span>
+      <span class="pin-dot" data-index="3"></span>
+    </div>
+    <div class="pin-error-message hidden"></div>
+    <div class="pin-keypad">
+      <button class="pin-key" data-digit="1" type="button">1</button>
+      <button class="pin-key" data-digit="2" type="button">2</button>
+      <button class="pin-key" data-digit="3" type="button">3</button>
+      <button class="pin-key" data-digit="4" type="button">4</button>
+      <button class="pin-key" data-digit="5" type="button">5</button>
+      <button class="pin-key" data-digit="6" type="button">6</button>
+      <button class="pin-key" data-digit="7" type="button">7</button>
+      <button class="pin-key" data-digit="8" type="button">8</button>
+      <button class="pin-key" data-digit="9" type="button">9</button>
+      <button class="pin-key pin-key-backspace" data-action="backspace" type="button">
+        <i data-lucide="delete"></i>
+      </button>
+      <button class="pin-key" data-digit="0" type="button">0</button>
+      <button class="pin-key pin-key-submit" data-action="submit" type="button">
+        <i data-lucide="check"></i>
+      </button>
+    </div>
+  </div>
+`;
+
 let editModal: HTMLElement | null = null;
 
 function initEditModal(): void {
