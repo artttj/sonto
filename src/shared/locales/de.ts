@@ -46,6 +46,38 @@ const de: Record<string, string> = {
 
   status_saved: 'Gespeichert',
   status_deleted: 'Gelöscht',
+
+  nav_security: 'Sicherheit',
+  security_heading: 'Sicherheit',
+  security_desc: 'Schützen Sie Ihre Prompts mit einer PIN.',
+
+  prompt_lock_enabled: 'Prompts mit PIN sperren',
+  prompt_lock_enabled_desc: 'PIN erforderlich, um auf Ihre Prompts zuzugreifen',
+  prompt_lock_pin: 'PIN',
+  prompt_lock_change_pin: 'PIN ändern...',
+  prompt_lock_duration: 'Sperrdauer',
+  prompt_lock_duration_sidebar: 'Bis Sidebar geschlossen wird',
+  prompt_lock_duration_5min: '5 Minuten Inaktivität',
+  prompt_lock_duration_15min: '15 Minuten Inaktivität',
+  prompt_lock_duration_browser: 'Bis Browser-Neustart',
+  prompt_lock_forgot: 'PIN vergessen',
+  prompt_lock_forgot_confirm: 'Dies wird die PIN-Sperre entfernen. Sind Sie sicher?',
+  prompt_lock_set_title: 'PIN festlegen',
+  prompt_lock_set_desc: 'Geben Sie eine 4-stellige PIN ein, um Ihre Prompts zu schützen',
+  prompt_lock_change_title: 'PIN ändern',
+  prompt_lock_change_desc: 'Geben Sie Ihre aktuelle und dann eine neue 4-stellige PIN ein',
+  prompt_lock_current_pin: 'Aktuelle PIN',
+  prompt_lock_new_pin: 'Neue PIN',
+  prompt_lock_confirm_pin: 'PIN bestätigen',
+  prompt_lock_pin_set: 'PIN festgelegt',
+  prompt_lock_pin_changed: 'PIN geändert',
+  prompt_lock_pin_cleared: 'PIN-Sperre aufgehoben',
+  prompt_lock_pins_match: 'PINs stimmen nicht überein',
+  prompt_lock_invalid_current: 'Ungültige aktuelle PIN',
+
+  pin_pad_title: 'Prompts sind gesperrt',
+  pin_pad_subtitle: 'Geben Sie Ihre PIN ein, um auf Ihre Prompts zuzugreifen',
+  pin_pad_error: 'Ungültige PIN - versuchen Sie es erneut',
 };
 
 export default de;
