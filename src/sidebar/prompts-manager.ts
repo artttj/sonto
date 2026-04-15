@@ -149,6 +149,11 @@ export class PromptsManager {
   }
 
   async load(tagFilter?: string): Promise<void> {
+    if (await isPromptLocked()) {
+      this.renderPinPad();
+      return;
+    }
+
     this.allTags = await loadAllTags();
     this.setLoading(true);
     try {
