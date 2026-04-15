@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Sonto Clip",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "A clipboard manager for Chrome. Copy anything on any page and browse your history in the sidebar.",
   "author": "Artem Iagovdik (artyom.yagovdik@gmail.com)",
   "icons": {
@@ -27,7 +27,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Open Sonto"
+    "default_title": "Open Sonto Clip"
   },
   "side_panel": {
     "default_path": "sidebar/sidebar.html"
@@ -54,7 +54,7 @@
         "default": "Alt+Shift+S",
         "mac": "Alt+Shift+S"
       },
-      "description": "Open Sonto sidebar"
+      "description": "Open Sonto Clip sidebar"
     },
     "capture_selection": {
       "suggested_key": {
