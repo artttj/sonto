@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Sonto",
+  "name": "Sonto Clip",
   "version": "3.0.0",
   "description": "A clipboard manager for Chrome. Copy anything on any page and browse your history in the sidebar.",
   "author": "Artem Iagovdik (artyom.yagovdik@gmail.com)",

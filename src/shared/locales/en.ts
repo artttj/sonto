@@ -13,7 +13,7 @@ const en: Record<string, string> = {
   general_saved: 'Saved',
 
   clipboard_heading: 'Clipboard',
-  clipboard_desc: 'Configure how Sonto captures and stores clipboard history.',
+  clipboard_desc: 'Configure how Sonto Clip captures and stores clipboard history.',
   clipboard_capture: 'Capture',
   clipboard_auto: 'Auto-capture on copy',
   clipboard_auto_desc: 'Automatically save text whenever you copy on any webpage. Disable to capture only via shortcut or right-click.',
@@ -36,7 +36,7 @@ const en: Record<string, string> = {
   data_snippets: 'Saved snippets',
   data_confirm_delete: 'Delete all entries?',
 
-  about_heading: 'About Sonto',
+  about_heading: 'About Sonto Clip',
   about_desc: 'Clipboard manager for Chrome. No accounts, no backend, no tracking.',
   about_version: 'Version',
   about_author: 'Author',

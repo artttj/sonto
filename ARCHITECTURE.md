@@ -1,4 +1,4 @@
-# Sonto Extension Architecture
+# Sonto Clip Extension Architecture
 
 ## Overview
 
