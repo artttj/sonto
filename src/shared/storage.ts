@@ -1,8 +1,8 @@
 // Copyright (c) Artem Iagovdik. All rights reserved.
 // Licensed under the MIT License.
 
-import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_MAX_HISTORY_SIZE } from './constants';
-import type { AppLanguage, AppSettings } from './types';
+import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_MAX_HISTORY_SIZE, PROMPT_LOCK_UNLOCKED_AT } from './constants';
+import type { AppLanguage, AppSettings, LockDuration, PromptLockSettings } from './types';
 
 function isAppLanguage(value: string): value is AppLanguage {
   return value === 'en' || value === 'de';
@@ -143,4 +143,107 @@ export async function deletePrompt(id: string): Promise<void> {
   const prompts = await getAllPrompts();
   const updatedPrompts = prompts.filter((p) => p.id !== id);
   await chrome.storage.local.set({ [PROMPTS_KEY]: updatedPrompts });
+}
+
+// ============================================================================
+// PROMPT LOCK
+// ============================================================================
+
+const PIN_SALT = 'sonto-pin-salt-v1';
+
+async function hashPin(pin: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(PIN_SALT + pin);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+export async function getPromptLockSettings(): Promise<PromptLockSettings> {
+  try {
+    const result = await chrome.storage.local.get([
+      STORAGE_KEYS.PROMPT_LOCK_ENABLED,
+      STORAGE_KEYS.PROMPT_LOCK_PIN,
+      STORAGE_KEYS.PROMPT_LOCK_DURATION,
+    ]);
+    return {
+      enabled: (result[STORAGE_KEYS.PROMPT_LOCK_ENABLED] as boolean | undefined) ?? false,
+      pinHash: (result[STORAGE_KEYS.PROMPT_LOCK_PIN] as string | undefined) ?? null,
+      duration: (result[STORAGE_KEYS.PROMPT_LOCK_DURATION] as LockDuration | undefined) ?? 'sidebar',
+    };
+  } catch {
+    return { enabled: false, pinHash: null, duration: 'sidebar' };
+  }
+}
+
+export async function setPromptLockPin(pin: string): Promise<void> {
+  const pinHash = await hashPin(pin);
+  await chrome.storage.local.set({ [STORAGE_KEYS.PROMPT_LOCK_PIN]: pinHash });
+}
+
+export async function setPromptLockEnabled(enabled: boolean): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.PROMPT_LOCK_ENABLED]: enabled });
+}
+
+export async function setPromptLockDuration(duration: LockDuration): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.PROMPT_LOCK_DURATION]: duration });
+}
+
+export async function setPromptUnlocked(): Promise<void> {
+  await chrome.storage.session.set({ [PROMPT_LOCK_UNLOCKED_AT]: Date.now() });
+}
+
+export async function isPromptLocked(): Promise<boolean> {
+  try {
+    const settings = await getPromptLockSettings();
+
+    if (!settings.enabled || !settings.pinHash) {
+      return false;
+    }
+
+    const result = await chrome.storage.session.get(PROMPT_LOCK_UNLOCKED_AT);
+    const unlockedAt = result[PROMPT_LOCK_UNLOCKED_AT] as number | undefined;
+
+    if (unlockedAt === undefined) {
+      return true;
+    }
+
+    const now = Date.now();
+    const elapsed = now - unlockedAt;
+
+    switch (settings.duration) {
+      case 'sidebar':
+        return false;
+      case '5min':
+        return elapsed >= 5 * 60 * 1000;
+      case '15min':
+        return elapsed >= 15 * 60 * 1000;
+      case 'browser':
+        return false;
+      default:
+        return true;
+    }
+  } catch {
+    return false;
+  }
+}
+
+export async function verifyPromptPin(pin: string): Promise<boolean> {
+  try {
+    const settings = await getPromptLockSettings();
+    if (!settings.pinHash) return false;
+
+    const inputHash = await hashPin(pin);
+    return inputHash === settings.pinHash;
+  } catch {
+    return false;
+  }
+}
+
+export async function clearPromptLock(): Promise<void> {
+  await chrome.storage.local.set({
+    [STORAGE_KEYS.PROMPT_LOCK_ENABLED]: false,
+    [STORAGE_KEYS.PROMPT_LOCK_PIN]: null,
+  });
+  await chrome.storage.session.remove(PROMPT_LOCK_UNLOCKED_AT);
 }
