@@ -20,7 +20,6 @@ import {
   setPromptLockDuration,
   setPromptLockPin,
   verifyPromptPin,
-  clearPromptLock,
   type LockDuration,
 } from '../shared/storage';
 import {
@@ -189,7 +188,7 @@ async function initLanguageTab(): Promise<void> {
 }
 
 /* ═══ PIN MODAL ═════════════════════════════════════════════════════════════ */
-type PinMode = 'set' | 'change';
+type PinMode = 'set' | 'change' | 'disable';
 
 let pinMode: PinMode = 'set';
 
@@ -197,10 +196,8 @@ async function initSecurityTab(): Promise<void> {
   const lockToggle = qs<HTMLInputElement>('#prompt-lock-toggle');
   const durationSelect = qs<HTMLSelectElement>('#lock-duration-select');
   const changePinBtn = qs<HTMLButtonElement>('#btn-change-pin');
-  const forgotPinBtn = qs<HTMLButtonElement>('#btn-forgot-pin');
   const lockDurationRow = qs<HTMLElement>('#lock-duration-row');
   const changePinRow = qs<HTMLElement>('#change-pin-row');
-  const forgotPinRow = qs<HTMLElement>('#forgot-pin-row');
 
   const settings = await getPromptLockSettings();
 
@@ -212,7 +209,6 @@ async function initSecurityTab(): Promise<void> {
     const isEnabled = lockToggle.checked;
     lockDurationRow.classList.toggle('hidden', !isEnabled);
     changePinRow.classList.toggle('hidden', !isEnabled);
-    forgotPinRow.classList.toggle('hidden', !isEnabled);
   };
   updateRows();
 
@@ -229,9 +225,19 @@ async function initSecurityTab(): Promise<void> {
         updateRows();
       });
     } else {
-      // Disable lock
-      await setPromptLockEnabled(false);
-      updateRows();
+      // Disable lock - require current PIN for security
+      if (!settings.pinHash) {
+        // No PIN set, just disable
+        await setPromptLockEnabled(false);
+        updateRows();
+        return;
+      }
+      pinMode = 'disable';
+      showPinModal('disable', async () => {
+        await setPromptLockEnabled(false);
+        showStatus('status-pin-saved');
+        updateRows();
+      });
     }
   });
 
@@ -241,19 +247,22 @@ async function initSecurityTab(): Promise<void> {
   });
 
   changePinBtn?.addEventListener('click', () => {
+    if (!settings.pinHash) {
+      // No PIN set yet, show set PIN modal
+      pinMode = 'set';
+      showPinModal('set', async (pin) => {
+        await setPromptLockPin(pin);
+        await setPromptLockEnabled(true);
+        lockToggle.checked = true;
+        showStatus('status-pin-saved');
+        updateRows();
+      });
+      return;
+    }
     pinMode = 'change';
     showPinModal('change', async (pin) => {
       showStatus('status-pin-saved');
     });
-  });
-
-  forgotPinBtn?.addEventListener('click', async () => {
-    const msg = t('prompt_lock_forgot_confirm');
-    if (confirm(msg)) {
-      await clearPromptLock();
-      lockToggle.checked = false;
-      updateRows();
-    }
   });
 }
 
@@ -285,10 +294,23 @@ function showPinModal(
     titleEl.textContent = t('prompt_lock_set_title');
     descEl.textContent = t('prompt_lock_set_desc');
     currentField.classList.add('hidden');
-  } else {
+    newField.classList.remove('hidden');
+    confirmField.classList.remove('hidden');
+    saveBtn.textContent = 'Save';
+  } else if (mode === 'change') {
     titleEl.textContent = t('prompt_lock_change_title');
     descEl.textContent = t('prompt_lock_change_desc');
     currentField.classList.remove('hidden');
+    newField.classList.remove('hidden');
+    confirmField.classList.remove('hidden');
+    saveBtn.textContent = 'Save';
+  } else if (mode === 'disable') {
+    titleEl.textContent = 'Disable Prompt Lock';
+    descEl.textContent = 'Enter your current PIN to disable the prompt lock. Your prompts will remain protected until you disable it.';
+    currentField.classList.remove('hidden');
+    newField.classList.add('hidden');
+    confirmField.classList.add('hidden');
+    saveBtn.textContent = 'Disable';
   }
 
   const close = () => {
@@ -307,10 +329,10 @@ function showPinModal(
     const newPin = newInput.value;
     const confirm = confirmInput.value;
 
-    // Validate
-    if (mode === 'change') {
+    // For change and disable modes, verify current PIN
+    if (mode === 'change' || mode === 'disable') {
       if (!/^\d{4}$/.test(current)) {
-        showError(t('prompt_lock_invalid_current'));
+        showError('Enter your 4-digit PIN');
         return;
       }
       const isValid = await verifyPromptPin(current);
@@ -320,23 +342,31 @@ function showPinModal(
       }
     }
 
-    if (!/^\d{4}$/.test(newPin)) {
-      showError(t('prompt_lock_pins_match'));
-      return;
+    // For set and change modes, validate new PIN
+    if (mode === 'set' || mode === 'change') {
+      if (!/^\d{4}$/.test(newPin)) {
+        showError('Enter a 4-digit PIN');
+        return;
+      }
+
+      if (newPin !== confirm) {
+        showError(t('prompt_lock_pins_match'));
+        return;
+      }
+
+      // Save new PIN
+      await setPromptLockPin(newPin);
     }
 
-    if (newPin !== confirm) {
-      showError(t('prompt_lock_pins_match'));
-      return;
-    }
-
-    // Save
-    await setPromptLockPin(newPin);
     close();
     await onSave(newPin);
   };
 
-  newInput.focus();
+  if (mode === 'disable') {
+    currentInput.focus();
+  } else {
+    newInput.focus();
+  }
 }
 
 async function init(): Promise<void> {
