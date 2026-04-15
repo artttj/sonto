@@ -20,12 +20,6 @@ async function setViewport(page: Page, width: number, height: number, scale: num
   await page.setViewport({ width, height, deviceScaleFactor: scale });
 }
 
-async function setZenDisplay(page: Page, mode: 'feed' | 'cosmos'): Promise<void> {
-  await page.evaluate((m) => {
-    chrome.storage.local.set({ sonto_zen_display: m });
-  }, mode);
-}
-
 async function setTheme(page: Page, theme: 'dark' | 'light'): Promise<void> {
   await page.evaluate((t) => {
     chrome.storage.local.set({ sonto_theme: t });
@@ -179,6 +173,73 @@ async function addSampleClips(page: Page): Promise<void> {
   await delay(500);
 }
 
+async function addSamplePrompts(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const now = Date.now();
+    const prompts = [
+      {
+        id: `${now}-p1`,
+        type: 'prompt',
+        content: 'Explain this code like I\'m five years old. What does it do and why?',
+        label: 'Code Explainer',
+        color: 'blue',
+        createdAt: now - 3600000,
+      },
+      {
+        id: `${now}-p2`,
+        type: 'prompt',
+        content: 'Review this code for bugs, security issues, and improvements. Suggest refactoring opportunities.',
+        label: 'Code Review',
+        color: 'purple',
+        createdAt: now - 7200000,
+      },
+      {
+        id: `${now}-p3`,
+        type: 'prompt',
+        content: 'Convert this code to TypeScript. Add proper types and interfaces.',
+        label: 'To TypeScript',
+        color: 'yellow',
+        createdAt: now - 10800000,
+      },
+      {
+        id: `${now}-p4`,
+        type: 'prompt',
+        content: 'Write unit tests for this function using vitest. Cover edge cases.',
+        label: 'Unit Tests',
+        color: 'green',
+        createdAt: now - 14400000,
+      },
+    ];
+
+    return new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('sonto_db_v2', 3);
+      request.onerror = () => reject(request.error);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains('sonto_items')) {
+          const store = db.createObjectStore('sonto_items', { keyPath: 'id' });
+          store.createIndex('type', 'type', { unique: false });
+          store.createIndex('createdAt', 'createdAt', { unique: false });
+        }
+      };
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction('sonto_items', 'readwrite');
+        const store = tx.objectStore('sonto_items');
+        for (const prompt of prompts) {
+          store.put(prompt);
+        }
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+    });
+  });
+  await delay(500);
+}
+
 describe('Screenshot Generation', () => {
   let browser: Browser;
   let extensionId: string;
@@ -202,7 +263,7 @@ describe('Screenshot Generation', () => {
     await waitForElement(sidebar, '.header');
     await delay(500);
 
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_sidebar_dark');
+    const screenshotPath = await takeScreenshot(sidebar, 'sidebar_dark');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 
@@ -214,7 +275,7 @@ describe('Screenshot Generation', () => {
     await waitForElement(sidebar, '.header');
     await delay(500);
 
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_sidebar_light');
+    const screenshotPath = await takeScreenshot(sidebar, 'sidebar_light');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 
@@ -230,7 +291,7 @@ describe('Screenshot Generation', () => {
     await waitForElement(sidebar, '#clip-list');
     await delay(800);
 
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_clipboard_dark');
+    const screenshotPath = await takeScreenshot(sidebar, 'clipboard_dark');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 
@@ -246,188 +307,53 @@ describe('Screenshot Generation', () => {
     await waitForElement(sidebar, '#clip-list');
     await delay(800);
 
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_clipboard_light');
+    const screenshotPath = await takeScreenshot(sidebar, 'clipboard_light');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 
-  it('captures zen cosmos mode', async () => {
+  it('captures prompts view with content dark theme', async () => {
     const sidebar = await getSidebarPage(browser, extensionId);
     await setViewport(sidebar, 420, 800);
     await setTheme(sidebar, 'dark');
-    await setZenDisplay(sidebar, 'cosmos');
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await waitForElement(sidebar, '#btn-feed');
-    await delay(100);
-    await sidebar.evaluate(() => {
-  const btn = document.querySelector('#btn-feed');
-  if (btn) btn.click();
-});
-    await delay(2000);
-
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos');
-    expect(fs.existsSync(screenshotPath)).toBe(true);
-  });
-
-  it('captures zen cosmos mode variant 2', async () => {
-    const sidebar = await getSidebarPage(browser, extensionId);
-    await setViewport(sidebar, 420, 800);
-    await setTheme(sidebar, 'dark');
-    await setZenDisplay(sidebar, 'cosmos');
+    await addSamplePrompts(sidebar);
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
-    await waitForElement(sidebar, '.header');
+    await waitForElement(sidebar, '#nav-prompts');
 
-    await waitForElement(sidebar, '#btn-feed');
-    await delay(100);
     await sidebar.evaluate(() => {
-  const btn = document.querySelector('#btn-feed');
-  if (btn) btn.click();
-});
-    await delay(3000);
+      const promptsTab = document.querySelector('#nav-prompts') as HTMLElement;
+      if (promptsTab) promptsTab.click();
+    });
+    await delay(500);
+    await waitForElement(sidebar, '#prompts-list');
+    await delay(500);
 
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos_2');
+    const screenshotPath = await takeScreenshot(sidebar, 'prompts_dark');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 
-  it('captures zen cosmos mode variant 3', async () => {
-    const sidebar = await getSidebarPage(browser, extensionId);
-    await setViewport(sidebar, 420, 800);
-    await setTheme(sidebar, 'dark');
-    await setZenDisplay(sidebar, 'cosmos');
-    await sidebar.reload({ waitUntil: 'domcontentloaded' });
-    await waitForElement(sidebar, '.header');
-
-    await waitForElement(sidebar, '#btn-feed');
-    await delay(100);
-    await sidebar.evaluate(() => {
-  const btn = document.querySelector('#btn-feed');
-  if (btn) btn.click();
-});
-    await delay(4500);
-
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos_3');
-    expect(fs.existsSync(screenshotPath)).toBe(true);
-  });
-
-  it('captures zen feed mode', async () => {
-    const sidebar = await getSidebarPage(browser, extensionId);
-    await setViewport(sidebar, 420, 800);
-    await setTheme(sidebar, 'dark');
-    await setZenDisplay(sidebar, 'feed');
-    await sidebar.reload({ waitUntil: 'domcontentloaded' });
-    await waitForElement(sidebar, '.header');
-
-    await waitForElement(sidebar, '#btn-feed');
-    await delay(100);
-    await sidebar.evaluate(() => {
-  const btn = document.querySelector('#btn-feed');
-  if (btn) btn.click();
-});
-    await delay(2000);
-
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed');
-    expect(fs.existsSync(screenshotPath)).toBe(true);
-  });
-
-  it('captures zen feed mode variant 2', async () => {
-    const sidebar = await getSidebarPage(browser, extensionId);
-    await setViewport(sidebar, 420, 800);
-    await setTheme(sidebar, 'dark');
-    await setZenDisplay(sidebar, 'feed');
-    await sidebar.reload({ waitUntil: 'domcontentloaded' });
-    await waitForElement(sidebar, '.header');
-
-    await waitForElement(sidebar, '#btn-feed');
-    await delay(100);
-    await sidebar.evaluate(() => {
-  const btn = document.querySelector('#btn-feed');
-  if (btn) btn.click();
-});
-    await delay(4000);
-
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed_2');
-    expect(fs.existsSync(screenshotPath)).toBe(true);
-  });
-
-  it('captures zen feed mode variant 3', async () => {
-    const sidebar = await getSidebarPage(browser, extensionId);
-    await setViewport(sidebar, 420, 800);
-    await setTheme(sidebar, 'dark');
-    await setZenDisplay(sidebar, 'feed');
-    await sidebar.reload({ waitUntil: 'domcontentloaded' });
-    await waitForElement(sidebar, '.header');
-
-    await waitForElement(sidebar, '#btn-feed');
-    await delay(100);
-    await sidebar.evaluate(() => {
-  const btn = document.querySelector('#btn-feed');
-  if (btn) btn.click();
-});
-    await delay(6000);
-
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed_3');
-    expect(fs.existsSync(screenshotPath)).toBe(true);
-  });
-
-  it('captures zen feed light mode', async () => {
+  it('captures prompts view with content light theme', async () => {
     const sidebar = await getSidebarPage(browser, extensionId);
     await setViewport(sidebar, 420, 800);
     await setTheme(sidebar, 'light');
-    await setZenDisplay(sidebar, 'feed');
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await waitForElement(sidebar, '#btn-feed');
-    await delay(100);
-    await sidebar.evaluate(() => {
-  const btn = document.querySelector('#btn-feed');
-  if (btn) btn.click();
-});
-    await delay(3000);
-
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_feed_light');
-    expect(fs.existsSync(screenshotPath)).toBe(true);
-  });
-
-  it('captures zen cosmos light mode', async () => {
-    const sidebar = await getSidebarPage(browser, extensionId);
-    await setViewport(sidebar, 420, 800);
-    await setTheme(sidebar, 'light');
-    await setZenDisplay(sidebar, 'cosmos');
+    await addSamplePrompts(sidebar);
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
-    await waitForElement(sidebar, '.header');
+    await waitForElement(sidebar, '#nav-prompts');
 
-    await waitForElement(sidebar, '#btn-feed');
-    await delay(100);
     await sidebar.evaluate(() => {
-  const btn = document.querySelector('#btn-feed');
-  if (btn) btn.click();
-});
-    await delay(2500);
+      const promptsTab = document.querySelector('#nav-prompts') as HTMLElement;
+      if (promptsTab) promptsTab.click();
+    });
+    await delay(500);
+    await waitForElement(sidebar, '#prompts-list');
+    await delay(500);
 
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_zen_cosmos_light');
-    expect(fs.existsSync(screenshotPath)).toBe(true);
-  });
-
-  it('captures settings page', async () => {
-    const settings = await getSettingsPage(browser, extensionId);
-    await setViewport(settings, 900, 1000);
-    await waitForElement(settings, '.settings-layout');
-
-    const screenshotPath = await takeScreenshot(settings, 'e2e_settings_clipboard');
-    expect(fs.existsSync(screenshotPath)).toBe(true);
-  });
-
-  it('captures settings feed tab', async () => {
-    const settings = await getSettingsPage(browser, extensionId);
-    await setViewport(settings, 900, 1000);
-    await waitForElement(settings, '.settings-layout');
-
-    await settings.click('[data-tab="feed"]');
-    await delay(300);
-
-    const screenshotPath = await takeScreenshot(settings, 'e2e_settings_feed');
+    const screenshotPath = await takeScreenshot(sidebar, 'prompts_light');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 
@@ -456,7 +382,64 @@ describe('Screenshot Generation', () => {
     await sidebar.waitForSelector('#prompt-modal:not(.hidden)', { timeout: 5000 });
     await delay(500);
 
-    const screenshotPath = await takeScreenshot(sidebar, 'e2e_prompt_modal');
+    const screenshotPath = await takeScreenshot(sidebar, 'prompt_modal');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures settings clipboard tab', async () => {
+    const settings = await getSettingsPage(browser, extensionId);
+    await setViewport(settings, 900, 1000);
+    await waitForElement(settings, '.settings-layout');
+
+    const screenshotPath = await takeScreenshot(settings, 'settings_clipboard');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures settings language tab', async () => {
+    const settings = await getSettingsPage(browser, extensionId);
+    await setViewport(settings, 900, 1000);
+    await waitForElement(settings, '.settings-layout');
+
+    await settings.click('[data-tab="language"]');
+    await delay(300);
+
+    const screenshotPath = await takeScreenshot(settings, 'settings_language');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures settings security tab', async () => {
+    const settings = await getSettingsPage(browser, extensionId);
+    await setViewport(settings, 900, 1000);
+    await waitForElement(settings, '.settings-layout');
+
+    await settings.click('[data-tab="security"]');
+    await delay(300);
+
+    const screenshotPath = await takeScreenshot(settings, 'settings_security');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures settings data tab', async () => {
+    const settings = await getSettingsPage(browser, extensionId);
+    await setViewport(settings, 900, 1000);
+    await waitForElement(settings, '.settings-layout');
+
+    await settings.click('[data-tab="data"]');
+    await delay(300);
+
+    const screenshotPath = await takeScreenshot(settings, 'settings_data');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures settings about tab', async () => {
+    const settings = await getSettingsPage(browser, extensionId);
+    await setViewport(settings, 900, 1000);
+    await waitForElement(settings, '.settings-layout');
+
+    await settings.click('[data-tab="about"]');
+    await delay(300);
+
+    const screenshotPath = await takeScreenshot(settings, 'settings_about');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 
@@ -464,19 +447,34 @@ describe('Screenshot Generation', () => {
     const sidebar = await getSidebarPage(browser, extensionId);
     await setViewport(sidebar, 1280, 800, 2);
     await setTheme(sidebar, 'dark');
-    await setZenDisplay(sidebar, 'feed');
     await sidebar.reload({ waitUntil: 'domcontentloaded' });
     await waitForElement(sidebar, '.header');
 
-    await waitForElement(sidebar, '#btn-feed');
-    await delay(100);
-    await sidebar.evaluate(() => {
-  const btn = document.querySelector('#btn-feed');
-  if (btn) btn.click();
-});
-    await delay(3000);
+    await addSampleClips(sidebar);
+    await sidebar.reload({ waitUntil: 'domcontentloaded' });
+    await waitForElement(sidebar, '#clip-list');
+    await delay(800);
 
-    const screenshotPath = await takeScreenshot(sidebar, 'webstore_promo_1280x800');
+    const screenshotPath = await takeScreenshot(sidebar, 'promo_1280x800');
+    expect(fs.existsSync(screenshotPath)).toBe(true);
+  });
+
+  it('captures add clip modal', async () => {
+    const sidebar = await getSidebarPage(browser, extensionId);
+    await setViewport(sidebar, 420, 800);
+    await setTheme(sidebar, 'dark');
+    await sidebar.reload({ waitUntil: 'domcontentloaded' });
+    await waitForElement(sidebar, '#btn-add-clip');
+
+    await sidebar.evaluate(() => {
+      const btn = document.querySelector('#btn-add-clip') as HTMLElement;
+      if (btn) btn.click();
+    });
+
+    await sidebar.waitForSelector('#add-clip-modal:not(.hidden)', { timeout: 5000 });
+    await delay(300);
+
+    const screenshotPath = await takeScreenshot(sidebar, 'add_clip_modal');
     expect(fs.existsSync(screenshotPath)).toBe(true);
   });
 });

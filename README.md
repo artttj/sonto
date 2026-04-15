@@ -18,12 +18,16 @@ No accounts. No sync. No tracking. Everything stays on your machine.
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/e2e_clipboard_dark.png" alt="Clipboard history" width="400" /></td>
-    <td><img src="docs/screenshots/e2e_prompt_modal.png" alt="Prompt modal" width="400" /></td>
+    <td align="center"><strong>Clipboard History</strong><br><img src="docs/screenshots/clipboard_dark.png" alt="Clipboard history" width="400" /></td>
+    <td align="center"><strong>Prompts View</strong><br><img src="docs/screenshots/prompts_dark.png" alt="Prompts view" width="400" /></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/e2e_clipboard_light.png" alt="Light theme" width="400" /></td>
-    <td><img src="docs/screenshots/e2e_settings_clipboard.png" alt="Settings" width="400" /></td>
+    <td align="center"><strong>Add Clip Modal</strong><br><img src="docs/screenshots/add_clip_modal.png" alt="Add clip modal" width="400" /></td>
+    <td align="center"><strong>Settings - Security</strong><br><img src="docs/screenshots/settings_security.png" alt="Settings security" width="400" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Light Theme</strong><br><img src="docs/screenshots/sidebar_light.png" alt="Light theme" width="400" /></td>
+    <td align="center"><strong>Settings - Clipboard</strong><br><img src="docs/screenshots/settings_clipboard.png" alt="Settings" width="400" /></td>
   </tr>
 </table>
 
