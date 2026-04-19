@@ -50,7 +50,14 @@ class SontoSidebar {
   private currentDomain = '';
   private currentTab: 'browse' | 'prompts' = 'browse';
 
+  private randomizeBrandColor(): void {
+    const hue = Math.floor(Math.random() * 360);
+    document.documentElement.style.setProperty('--brand-color', `hsl(${hue} 70% 60%)`);
+  }
+
   async init(): Promise<void> {
+    this.randomizeBrandColor();
+
     this.settingsBtn.addEventListener('click', () => {
       void chrome.runtime.openOptionsPage();
     });

@@ -1,4 +1,4 @@
-# <img src="icons/icon128.png" width="36" alt="" valign="middle" /> SONTO CLIP
+# <img src="icons/icon128.png" width="36" alt="" valign="middle" /> NOTO
 
 **A clipboard manager for Chrome.** Copy anything on any page and browse your history in the sidebar.
 
@@ -6,7 +6,7 @@
 
 ## What it does
 
-Sonto Clip lives in Chrome's side panel. Two things happen there:
+Noto lives in Chrome's side panel. Two things happen there:
 
 **Browse** — Your clipboard history. Everything you copy flows in automatically. Pin what you need, tag it, search it. Related clips surface when you visit a page.
 

@@ -13,7 +13,7 @@ const de: Record<string, string> = {
   general_saved: 'Gespeichert',
 
   clipboard_heading: 'Zwischenablage',
-  clipboard_desc: 'Konfiguriere, wie Sonto Clip die Zwischenablage erfasst und speichert.',
+  clipboard_desc: 'Konfiguriere, wie Noto die Zwischenablage erfasst und speichert.',
   clipboard_capture: 'Erfassung',
   clipboard_auto: 'Automatisch erfassen',
   clipboard_auto_desc: 'Text automatisch speichern, wenn du auf einer Webseite kopierst. Deaktivieren, um nur über Tastenkürzel oder Rechtsklick zu erfassen.',
@@ -36,7 +36,7 @@ const de: Record<string, string> = {
   data_snippets: 'Gespeicherte Einträge',
   data_confirm_delete: 'Alle Einträge löschen?',
 
-  about_heading: 'Über Sonto Clip',
+  about_heading: 'Über Noto',
   about_desc: 'Zwischenablageverwaltung für Chrome. Keine Konten, kein Backend, kein Tracking.',
   about_version: 'Version',
   about_author: 'Autor',

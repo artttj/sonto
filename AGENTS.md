@@ -1,6 +1,6 @@
-# Sonto Clip Agents
+# Noto Agents
 
-Agent patterns for working with the Sonto Clip Chrome extension codebase.
+Agent patterns for working with the Noto Chrome extension codebase.
 
 ## Project Structure
 
@@ -34,7 +34,7 @@ sonto/
 Use for understanding code structure and finding relevant files.
 
 ```
-Explore the Sonto Clip Chrome extension codebase to find:
+Explore the Noto Chrome extension codebase to find:
 - Message routing between background and content scripts
 - IndexedDB schema and storage operations
 - Zen feed source fetchers
@@ -56,7 +56,7 @@ Investigate a bug where [describe symptom]. Check:
 Use for implementing new features.
 
 ```
-Implement [feature] for Sonto Clip:
+Implement [feature] for Noto:
 1. Add message type to shared/messages.ts
 2. Add handler in background/{handler}.ts
 3. Register in message-router.ts

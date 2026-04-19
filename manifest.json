@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Sonto Clip",
-  "version": "3.1.0",
-  "description": "A clipboard manager for Chrome. Copy anything on any page and browse your history in the sidebar.",
+  "name": "Noto",
+  "version": "3.2.0",
+  "description": "Clipboard history and a prompt shelf for Chrome — copy anything, save what matters, find it again.",
   "author": "Artem Iagovdik (artyom.yagovdik@gmail.com)",
   "icons": {
     "16": "icons/icon16.png",
@@ -27,7 +27,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Open Sonto Clip"
+    "default_title": "Open Noto"
   },
   "side_panel": {
     "default_path": "sidebar/sidebar.html"
@@ -54,7 +54,7 @@
         "default": "Alt+Shift+S",
         "mac": "Alt+Shift+S"
       },
-      "description": "Open Sonto Clip sidebar"
+      "description": "Open Noto sidebar"
     },
     "capture_selection": {
       "suggested_key": {

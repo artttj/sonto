@@ -4,7 +4,7 @@
 import type { ClipItem } from './types';
 
 export function exportToNotion(clip: ClipItem): void {
-  const title = encodeURIComponent(clip.title || 'Sonto Clip');
+  const title = encodeURIComponent(clip.title || 'Noto');
   const text = encodeURIComponent(clip.text);
   const url = clip.url ? encodeURIComponent(clip.url) : '';
   
@@ -17,7 +17,7 @@ export function exportToNotion(clip: ClipItem): void {
 
 export function exportToObsidian(clip: ClipItem): string {
   const date = new Date(clip.timestamp).toISOString().slice(0, 10);
-  const title = clip.title || 'Sonto Clip';
+  const title = clip.title || 'Noto';
   
   const frontmatter = [
     '---',
@@ -38,7 +38,7 @@ export function exportToObsidian(clip: ClipItem): string {
 
 export function exportToMarkdown(clip: ClipItem): string {
   const date = new Date(clip.timestamp).toLocaleDateString();
-  let md = `# ${clip.title || 'Sonto Clip'}\n\n`;
+  let md = `# ${clip.title || 'Noto'}\n\n`;
   md += `*Saved on ${date}*\n\n`;
   if (clip.url) md += `[Source](${clip.url})\n\n`;
   md += clip.text;
